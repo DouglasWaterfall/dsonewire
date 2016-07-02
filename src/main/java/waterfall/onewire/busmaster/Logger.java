@@ -15,9 +15,11 @@ public class Logger {
     public Logger() {
     }
 
+    /*
     public Logger(String name) {
         pushLevel(name);
     }
+    */
 
     public void debug(String str) {
         add("debug", str);
@@ -38,7 +40,11 @@ public class Logger {
     }
 
     public void append(String str) {
-        add(null, str);
+        add("nested", str);
+    }
+
+    public boolean isEmpty() {
+        return ((levelList.isEmpty()) || (levelList.get(levelList.size() - 1).length() == 0));
     }
 
     public void pushLevel(String name) {
@@ -54,10 +60,12 @@ public class Logger {
         String str = null;
         if (sb.length() > 0) {
             str = sb.toString();
-            append(str);
-        }
-        if (lIndex == 0) {
-            lastLevel = str;
+            if (lIndex == 0) {
+                lastLevel = str;
+            }
+            else {
+                append(str);
+            }
         }
         return str;
     }

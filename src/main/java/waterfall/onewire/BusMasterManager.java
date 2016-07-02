@@ -1,8 +1,6 @@
 package waterfall.onewire;
 
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,20 +13,46 @@ public class BusMasterManager {
 
     private Logger logger = LogManager.getLogger(BusMasterManager.class.getName());
 
-    private ArrayList<BusMaster> busMasterList = new ArrayList<BusMaster>();
+    private Hashtable<String, BusMaster> bms = new Hashtable<String, BusMaster>();
     private Hashtable<String, BusMaster> devices = new Hashtable<String, BusMaster>();
 
     public BusMasterManager() {
     }
 
     public void add(BusMaster bm) {
-        if (!busMasterList.contains(bm)) {
+        assert (bm != null);
+        
+        Base64.Encoder encoder = Base64.getUrlEncoder();
+        
+        String bmIdent = encoder.encodeToString(bm.getName().getBytes());
+        
+        if (!bms.containsKey(bmIdent)) {
             logger.info("Adding busMaster" + bm.getName());
-            busMasterList.add(bm);
+            bms.put(bmIdent, bm);
         }
-        else {
+        else if (bms.get(bmIdent) == bm) {
             logger.error("Duplicate add of busMaster" + bm.getName());
         }
+        else {
+            logger.error("name encoding collision of busMaster:" + bm.getName() + " and " + bms.get(bmIdent).getName());
+        }
+    }
+
+    public BusMaster getBusMasterByIdent(String bmIdent) {
+        assert (bmIdent != null);
+
+        return bms.get(bmIdent);
+    }
+
+    public String[] getBusMasterIdents() {
+        String[] list = new String[bms.size()];
+
+        int i = 0;
+        for (Enumeration<String> bmEnum = bms.keys(); bmEnum.hasMoreElements(); ) {
+            list[i++] = bmEnum.nextElement();
+        }
+
+        return list;
     }
 
     public void addDevice(String addrAsHex, BusMaster bm) {
@@ -36,20 +60,6 @@ public class BusMasterManager {
         if (currBM != bm) {
             devices.put(addrAsHex, bm);
         }
-    }
-
-    public BusMaster getBusMasterByName(String bmName) {
-        for (BusMaster bm : busMasterList) {
-            if (bm.getName().equals(bmName)) {
-                return bm;
-            }
-        }
-
-        return null;
-    }
-
-    public BusMaster[] getBusMasters() {
-        return busMasterList.toArray(new BusMaster[busMasterList.size()]);
     }
 
     public String[] getDevices() {

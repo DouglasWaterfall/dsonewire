@@ -51,7 +51,7 @@ public abstract class StopBusCmd {
 
         try {
             if (optLogger != null) {
-                optLogger.pushLevel(this.getClass().getSimpleName() + "execute() ");
+                optLogger.pushLevel(this.getClass().getSimpleName() + ".execute() ");
             }
 
             result = execute_internal();

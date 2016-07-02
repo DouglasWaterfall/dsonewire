@@ -24,7 +24,7 @@ public class JSSC implements HA7SSerial {
         public boolean readOverrun = false;
         public boolean readComplete = true;
 
-        public Logger noWaitingThreadLogger = new Logger("NoWaitingThread");
+        public Logger noWaitingThreadLogger = new Logger();
 
         public void addWaitingThread(Thread waitingThread, byte[] rBuf, Logger waitingThreadLogger) {
             this.waitingThread = waitingThread;
@@ -35,9 +35,10 @@ public class JSSC implements HA7SSerial {
             readOverrun = false;
             readComplete = false;
 
-            if (waitingThreadLogger != null) {
-                waitingThreadLogger.append(noWaitingThreadLogger.toString());
+            if ((waitingThreadLogger != null) && (!noWaitingThreadLogger.isEmpty())) {
+                waitingThreadLogger.append(noWaitingThreadLogger.popLevel());
                 noWaitingThreadLogger.clear();
+                noWaitingThreadLogger.pushLevel("NoWaitingThread");
             }
         }
 
@@ -134,11 +135,14 @@ public class JSSC implements HA7SSerial {
             }
 
             try {
+                sharedData.noWaitingThreadLogger.pushLevel("NoWaitingThread");
+
                 serialPort.addEventListener((SerialPortEvent serialPortEvent) -> {
                     if (serialPortEvent.isRXCHAR()) {
                         synchronized (serialPort) {
                             Logger activeLogger;
-                            if (sharedData.waitingThread == null) {
+                            if ((sharedData.waitingThread == null) ||
+                                    (sharedData.waitingThreadLogger == null)) {
                                 activeLogger = sharedData.noWaitingThreadLogger;
                             } else {
                                 activeLogger = sharedData.waitingThreadLogger;

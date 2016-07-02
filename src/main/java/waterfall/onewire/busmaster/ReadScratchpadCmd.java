@@ -77,7 +77,7 @@ public abstract class ReadScratchpadCmd {
 
         try {
             if (optLogger != null) {
-                optLogger.pushLevel(this.getClass().getSimpleName() + "execute() ");
+                optLogger.pushLevel(this.getClass().getSimpleName() + ".execute() ");
                 optLogger.debug("dsAddr:" + getAddress().toString());
             }
 

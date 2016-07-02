@@ -30,6 +30,12 @@ public class Application {
         BusMaster busmaster = new HA7S("/dev/ttyAMA0"); // or "/dev/ttyS0"
 
         busMasterManager.add(busmaster);
+
+        try {
+            Thread.sleep(1000 * 60 * 60 * 24 * 7);
+        } catch (InterruptedException e) {
+            System.out.println("Sleep interrupted");
+        }
     }
 
     public static void main(String[] args) {

@@ -78,4 +78,6 @@ public interface BusMaster {
      */
     public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount, Logger optLogger);
 
+    // ReadStatusCmd
+    // AA {0000 index} FFFFFFFFFF00007F {EDC1 crc}, so write 1 + 2 + 8 + 2 = 13 = 0D
 }

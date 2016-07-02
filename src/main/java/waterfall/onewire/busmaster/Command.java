@@ -1,4 +1,4 @@
-package waterfall.onewire;
+package waterfall.onewire.busmaster;
 
 public class Command {
 

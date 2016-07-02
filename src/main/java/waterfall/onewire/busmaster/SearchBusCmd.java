@@ -66,7 +66,7 @@ public abstract class SearchBusCmd {
 
         try {
             if (optLogger != null) {
-                optLogger.pushLevel(this.getClass().getSimpleName() + "execute(" + (isByAlarm() ? "byAlarm" : (isByFamilyCode() ? Integer.toHexString(familyCode) : "")) + ") ");
+                optLogger.pushLevel(this.getClass().getSimpleName() + ".execute(" + (isByAlarm() ? "byAlarm" : (isByFamilyCode() ? Integer.toHexString(familyCode) : "")) + ") ");
             }
 
             result = execute_internal();
