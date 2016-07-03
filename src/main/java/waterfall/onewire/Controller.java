@@ -14,6 +14,21 @@ import java.util.*;
 public class Controller {
     BusMasterManager busMasterManager;
 
+    enum Errors {
+        Unknown_bmIdent,
+        BM_not_started,
+        Bad_parm_log_not_true_or_false,
+        Bad_parm_byAlarm_not_true_false,
+        Bad_parm_only_one_byAlarm_or_byFamilyCode_allowed,
+        Bad_parm_byFamilyCode_not_a_number,
+        Bad_parm_byFamilyCode_must_be_unsigned_byte,
+        No_BM_for_dsAddr,
+        Invalid_dsAddr
+
+    }
+
+    ;
+
     @Autowired
     public Controller(BusMasterManager busMasterManager) {
         this.busMasterManager = busMasterManager;
@@ -49,243 +64,124 @@ public class Controller {
         return result;
     }
 
-    /*
-    public class myStartCmdResult extends HashMap<String, String> {
-        String error;
-        String result;
-        String log;
-
-        public myStartCmdResult(final String error) {
-            this.error = error;
-        }
-
-        public myStartCmdResult(final Map<String, String> map) {
-            String e = map.get("error");
-            if (e != null) {
-                error = e;
-            }
-            String r = map.get("result");
-            if (r != null) {
-                result = r;
-            }
-            String l = map.get("log");
-            if (l != null) {
-                log = l;
-            }
-        }
-
-        public String getError() {
-            return error;
-        }
-
-        public void setError(String error) {
-            this.error = error;
-        }
-
-        public String getResult() {
-            return result;
-        }
-
-        public void setResult(String result) {
-            this.result = result;
-        }
-
-        public String getLog() {
-            return log;
-        }
-
-        public void setLog(String log) {
-            this.log = log;
-        }
-
-        public static myStartCmdResult paramErrorUnknownBMIdent(String unknown_bmIdent) {
-            return new myStartCmdResult("Unknown bmIdent:" + unknown_bmIdent);
-        }
-
-        public static myStartCmdResult paramErrorBadLog(String bad_log) {
-            return new myStartCmdResult("Invalid log, must be true/false. Was:" + bad_log);
-        }
-
-    }
-
-    @RequestMapping(value = "/startCmd_new/{bmIdent}", method = RequestMethod.POST)
-    public myStartCmdResult startCmd_new(@PathVariable(value = "bmIdent") String bmIdent,
-                                        @RequestParam(value = "log", required = false, defaultValue = "false") String log) {
-        Map<String, String> result = startCmd(bmIdent, log);
-
-        return new myStartCmdResult(result);
-    }
-    */
-
     @RequestMapping(value = "/startCmd/{bmIdent}", method = RequestMethod.POST)
-    public Map<String, String> startCmd(@PathVariable(value = "bmIdent") String bmIdent,
-                                        @RequestParam(value = "log", required = false, defaultValue = "false") String log) {
+    public Map<String, Object> startCmd(@PathVariable String bmIdent,
+                                        @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         Map<String, String> result = new HashMap<String, String>();
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
         if (bm == null) {
-            result.put("error", "Unknown bmIdent:" + bmIdent);
-            return result;
+            return buildErrorResult(Errors.Unknown_bmIdent);
         }
 
-        boolean _log = false;
-        if (log != null) {
-            boolean hasTrue = "true".equals(log);
-            boolean hasFalse = ((!hasTrue) && ("false".equals(log)));
-
-            if (!hasTrue && !hasFalse) {
-                result.put("error", "log is optional and must be true/false");
-                return result;
-            }
-
-            _log = hasTrue;
+        Logger optLogger;
+        if ("true".equals(parmLog)) {
+            optLogger = new Logger();
+        } else if ("false".equals(parmLog)) {
+            optLogger = null;
+        } else {
+            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
 
-        StartBusCmd cmd = bm.queryStartBusCmd(_log ? new Logger() : null);
+        StartBusCmd cmd = bm.queryStartBusCmd(optLogger);
         cmd.execute();
 
-        if (cmd.getOptLogger() != null) {
-            result.put("log", cmd.getOptLogger().toString());
-        }
-
-        result.put("result", cmd.getResult().getClass().getName() + "." + cmd.getResult().name());
-        return result;
+        return buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
     }
 
     @RequestMapping(value = "/stopCmd/{bmIdent}", method = RequestMethod.POST)
-    public Map<String, String> stopCmd(@PathVariable(value = "bmIdent") String bmIdent,
-                                       @RequestParam(value = "log", required = false, defaultValue = "false") String log) {
+    public Map<String, Object> stopCmd(@PathVariable String bmIdent,
+                                       @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         Map<String, String> result = new HashMap<String, String>();
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
         if (bm == null) {
-            result.put("error", "Unknown bmIdent:" + bmIdent);
-            return result;
+            return buildErrorResult(Errors.Unknown_bmIdent);
         }
 
-        boolean _log = false;
-        if (log != null) {
-            boolean hasTrue = "true".equals(log);
-            boolean hasFalse = ((!hasTrue) && ("false".equals(log)));
-
-            if (!hasTrue && !hasFalse) {
-                result.put("error", "log is optional and must be true/false");
-                return result;
-            }
-
-            _log = hasTrue;
+        Logger optLogger;
+        if ("true".equals(parmLog)) {
+            optLogger = new Logger();
+        } else if ("false".equals(parmLog)) {
+            optLogger = null;
+        } else {
+            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
 
-        StopBusCmd cmd = bm.queryStopBusCmd("true".equals(log) ? new Logger() : null);
+        StopBusCmd cmd = bm.queryStopBusCmd(optLogger);
         cmd.execute();
 
-        if (cmd.getOptLogger() != null) {
-            result.put("log", cmd.getOptLogger().toString());
-        }
-
-        result.put("result", cmd.getResult().name());
-
-        return result;
+        return buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
     }
 
     @RequestMapping(value = "/searchCmd/{bmIdent}", method = RequestMethod.POST)
-    public Map<String, String> searchCmd(@PathVariable(value = "bmIdent") String bmIdent,
-                                         @RequestParam(value = "byAlarm", required = false, defaultValue = "false") String byAlarm,
-                                         @RequestParam(value = "byFamilyCode", required = false, defaultValue = "") String byFamilyCode,
-                                         @RequestParam(value = "log", required = false, defaultValue = "false") String log) {
-
-        Map<String, String> result = new HashMap<String, String>();
+    public Map<String, Object> searchCmd(@PathVariable(value = "bmIdent") String bmIdent,
+                                         @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
+                                         @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
+                                         @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
         if (bm == null) {
-            result.put("error", "Unknown bmIdent:" + bmIdent);
-            return result;
+            return buildErrorResult(Errors.Unknown_bmIdent);
         }
 
-        boolean _log = false;
-        if (log != null) {
-            boolean hasTrue = "true".equals(log);
-            boolean hasFalse = ((!hasTrue) && ("false".equals(log)));
-
-            if (!hasTrue && !hasFalse) {
-                result.put("error", "log is optional and must be true/false");
-                return result;
-            }
-
-            _log = hasTrue;
-        }
-
-        boolean _byAlarm = false;
-        if (byAlarm != null) {
-            boolean hasTrue = "true".equals(byAlarm);
-            boolean hasFalse = ((!hasTrue) && ("false".equals(byAlarm)));
-
-            if ((!hasTrue) && (!hasFalse)) {
-                result.put("error", "byAlarm is optional must be true/false");
-                return result;
-            }
-            _byAlarm = hasTrue;
-        }
-
-        Short familyCode = null;
-        if (!byFamilyCode.isEmpty()) {
-            try {
-                familyCode = Short.valueOf(byFamilyCode);
-            } catch (NumberFormatException e) {
-                result.put("error", "invalid byFamilyCode:" + byFamilyCode);
-                return result;
-            }
-
-            if ((familyCode < 0) || (familyCode > 255)) {
-                result.put("error", "0 <= byFamilyCode <= 255 invalid:" + familyCode);
-                return result;
-            }
-        }
-
-        if ((_byAlarm) && (familyCode != null)) {
-            result.put("error", "cannot have both byAlarm and byFamilyCode");
-            return result;
+        Logger optLogger;
+        if ("true".equals(parmLog)) {
+            optLogger = new Logger();
+        } else if ("false".equals(parmLog)) {
+            optLogger = null;
+        } else {
+            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
 
         SearchBusCmd cmd = null;
 
-        if (_byAlarm) {
-            cmd = bm.querySearchBusByAlarmCmd(_log ? new Logger() : null);
-        } else if (familyCode != null) {
-            cmd = bm.querySearchBusByFamilyCmd(familyCode, _log ? new Logger() : null);
+        if (parmByFamilyCode != null) {
+            if (parmByAlarm != null) {
+                return buildErrorResult(Errors.Bad_parm_only_one_byAlarm_or_byFamilyCode_allowed);
+            }
+            if (parmByFamilyCode.isEmpty()) {
+                return buildErrorResult(Errors.Bad_parm_byFamilyCode_not_a_number);
+            }
+
+            Short familyCode = null;
+
+            try {
+                familyCode = Short.valueOf(parmByFamilyCode);
+            } catch (NumberFormatException e) {
+                return buildErrorResult(Errors.Bad_parm_byFamilyCode_not_a_number);
+            }
+
+            if ((familyCode < 0) || (familyCode > 255)) {
+                return buildErrorResult(Errors.Bad_parm_byFamilyCode_must_be_unsigned_byte);
+            }
+
+            cmd = bm.querySearchBusByFamilyCmd(familyCode, optLogger);
+        } else if ((parmByAlarm == null) || ("false".equals(parmByAlarm))) {
+            cmd = bm.querySearchBusCmd(optLogger);
+        } else if ("true".equals(parmByAlarm)) {
+            cmd = bm.querySearchBusByAlarmCmd(optLogger);
         } else {
-            cmd = bm.querySearchBusCmd(_log ? new Logger() : null);
+            return buildErrorResult(Errors.Bad_parm_byAlarm_not_true_false);
         }
 
         cmd.execute();
 
-        if (cmd.getOptLogger() != null) {
-            result.put("log", cmd.getOptLogger().toString());
-        }
-
-        result.put("result", cmd.getResult().name());
+        Map<String, Object> result = buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
 
         if (cmd.getResult() == SearchBusCmd.Result.success) {
-            StringBuffer sb = new StringBuffer();
-            boolean updateDM = ((!cmd.isByAlarm()) && (!cmd.isByFamilyCode()));
+            result.put("resultList", cmd.getResultList());
 
-            for (String addrAsHex : cmd.getResultList()) {
-                if (updateDM) {
+            if ((!cmd.isByAlarm()) && (!cmd.isByFamilyCode())) {
+                for (String addrAsHex : cmd.getResultList()) {
                     busMasterManager.addDevice(addrAsHex, bm);
                 }
-
-                if (sb.length() > 0) {
-                    sb.append(',');
-                }
-                sb.append(addrAsHex);
             }
-
-            result.put("resultList", sb.toString());
         }
 
         return result;
@@ -298,44 +194,33 @@ public class Controller {
     }
 
     @RequestMapping(value = "/readPowerSupplyCmd/{dsAddr}", method = RequestMethod.POST)
-    public Map<String, String> readPowerSupplyCmd(@PathVariable(value = "dsAddr") String dsAddr,
-                                                  @RequestParam(value = "log", required = false, defaultValue = "false") String log) {
-
-        Map<String, String> result = new HashMap<String, String>();
+    public Map<String, Object> readPowerSupplyCmd(@PathVariable String dsAddr,
+                                                  @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
-            result.put("error", "invalid dsAddr:" + dsAddr);
-            return result;
+            return buildErrorResult(Errors.Invalid_dsAddr);
         }
 
         DSAddress _dsAddr = new DSAddress(dsAddr);
 
-        boolean _log = false;
-        if (log != null) {
-            boolean hasTrue = "true".equals(log);
-            boolean hasFalse = ((!hasTrue) && ("false".equals(log)));
-
-            if (!hasTrue && !hasFalse) {
-                result.put("error", "log is optional and must be true/false");
-                return result;
-            }
-
-            _log = hasTrue;
+        Logger optLogger;
+        if ("true".equals(parmLog)) {
+            optLogger = new Logger();
+        } else if ("false".equals(parmLog)) {
+            optLogger = null;
+        } else {
+            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
 
         BusMaster bm = busMasterManager.getBusMasterForDevice(dsAddr);
         if (bm == null) {
-            result.put("error", "no BusMaster for dsAddr:" + dsAddr);
+            return buildErrorResult(Errors.No_BM_for_dsAddr);
         }
 
-        ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(_dsAddr, _log ? new Logger() : null);
+        ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(_dsAddr, optLogger);
         cmd.execute();
 
-        if (cmd.getOptLogger() != null) {
-            result.put("log", cmd.getOptLogger().toString());
-        }
-
-        result.put("result", cmd.getResult().name());
+        Map<String, Object> result = buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
 
         if (cmd.getResult() == ReadPowerSupplyCmd.Result.success) {
             result.put("isParasitic", String.valueOf(cmd.getResultIsParasitic()));
@@ -362,4 +247,32 @@ public class Controller {
         return null;
     }
 
+    // Result builders
+    private static final String RESULT_KEY_ERROR = "error";
+    private static final String RESULT_KEY_LOG = "log";
+    private static final String RESULT_KEY_RESULT = "result";
+
+    public static Map<String, Object> buildErrorResult(Errors error) {
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put(RESULT_KEY_ERROR, error.getClass().getCanonicalName() + "." + error.name());
+        return result;
+    }
+
+    public static Map<String, Object> buildCmdExecuteResult(final Logger optLogger, final Enum cmdResult) {
+        Map<String, Object> result = new HashMap<String, Object>();
+
+        if (optLogger != null) {
+            result.put(RESULT_KEY_LOG, optLogger.toString());
+        }
+
+        if (cmdResult != null) {
+            result.put(RESULT_KEY_RESULT, cmdResult.getClass().getCanonicalName() + "." + cmdResult.name());
+        } else {
+            result.put(RESULT_KEY_RESULT, null);
+        }
+
+        return result;
+    }
+
 }
+

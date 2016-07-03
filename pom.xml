@@ -55,7 +55,7 @@
 
         <dependency>
             <groupId>waterfall</groupId>
-            <artifactId>dsonewireutils</artifactId>
+            <artifactId>dsonewire</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
