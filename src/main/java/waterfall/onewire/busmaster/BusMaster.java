@@ -26,57 +26,57 @@ public interface BusMaster {
     public boolean getIsStarted();
 
     /**
-     * @param optLogger
+     * @param doLog
      * @return
      */
-    public StartBusCmd queryStartBusCmd(Logger optLogger);
+    public StartBusCmd queryStartBusCmd(boolean doLog);
 
     /**
-     * @param optLogger
+     * @param doLog
      * @return
      */
-    public StopBusCmd queryStopBusCmd(Logger optLogger);
+    public StopBusCmd queryStopBusCmd(boolean doLog);
 
     /**
-     * @param optLogger
+     * @param doLog
      * @return
      */
-    public SearchBusCmd querySearchBusCmd(Logger optLogger);
+    public SearchBusCmd querySearchBusCmd(boolean doLog);
 
     /**
      * @param familyCode
-     * @param optLogger
+     * @param doLog
      * @return
      */
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger optLogger);
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, boolean doLog);
 
     /**
-     * @param optLogger
+     * @param doLog
      * @return
      */
-    public SearchBusCmd querySearchBusByAlarmCmd(Logger optLogger);
-
-    /**
-     * @param dsAddr
-     * @param optLogger
-     * @return
-     */
-    public ConvertTCmd queryConvertTCmd(final DSAddress dsAddr, Logger optLogger);
+    public SearchBusCmd querySearchBusByAlarmCmd(boolean doLog);
 
     /**
      * @param dsAddr
-     * @param optLogger
+     * @param doLog
      * @return
      */
-    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(final DSAddress dsAddr, Logger optLogger);
+    public ConvertTCmd queryConvertTCmd(final DSAddress dsAddr, boolean doLog);
+
+    /**
+     * @param dsAddr
+     * @param doLog
+     * @return
+     */
+    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(final DSAddress dsAddr, boolean doLog);
 
     /**
      * @param dsAddr
      * @param requestByteCount
-     * @param optLogger
+     * @param doLog
      * @return
      */
-    public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount, Logger optLogger);
+    public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount, boolean doLog);
 
     // ReadStatusCmd
     // AA {0000 index} FFFFFFFFFF00007F {EDC1 crc}, so write 1 + 2 + 8 + 2 = 13 = 0D

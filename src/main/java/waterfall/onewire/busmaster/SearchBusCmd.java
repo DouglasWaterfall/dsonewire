@@ -5,38 +5,27 @@ import java.util.List;
 /**
  * Created by dwaterfa on 6/9/16.
  */
-public abstract class SearchBusCmd {
+public abstract class SearchBusCmd extends BaseCmd {
 
-    protected BusMaster busMaster;
     protected final Short familyCode;
     protected final Boolean byAlarm;
 
     protected Result result = null;
     protected List<String> resultList;
     protected long resultWriteCTM;
-    protected Logger optLogger;
 
     /**
-     * The BusMaster the command is attached to
+     * @return
      */
-    public BusMaster getBusMaster() {
-        return busMaster;
-    }
-
     public boolean isByAlarm() {
         return ((byAlarm != null) && (byAlarm));
     }
 
-    public boolean isByFamilyCode() {
-        return (familyCode != null);
-    }
-
     /**
-     *
      * @return
      */
-    public Logger getOptLogger() {
-        return optLogger;
+    public boolean isByFamilyCode() {
+        return (familyCode != null);
     }
 
     /**
@@ -65,24 +54,13 @@ public abstract class SearchBusCmd {
         }
 
         try {
-            if (optLogger != null) {
-                optLogger.pushLevel(this.getClass().getSimpleName() + ".execute(" + (isByAlarm() ? "byAlarm" : (isByFamilyCode() ? Integer.toHexString(familyCode) : "")) + ") ");
-            }
-
+            logInfo("execute(" + (isByAlarm() ? "byAlarm" : (isByFamilyCode() ? Integer.toHexString(familyCode) : "")) + ")");
             result = execute_internal();
-
-            optLogger.debug("result:" + result.name());
+            logInfo("result:" + result.name());
 
         } catch (Exception e) {
-            if (optLogger != null) {
-                optLogger.error(e);
-            }
+            logError(e);
             result = Result.communication_error;
-        }
-        finally {
-            if (optLogger != null) {
-                optLogger.popLevel();
-            }
         }
 
         return result;
@@ -127,32 +105,27 @@ public abstract class SearchBusCmd {
     /**
      * Protected Constructors and Methods
      */
-    protected SearchBusCmd(BusMaster busMaster, boolean byAlarm, Logger optLogger) {
-        this.busMaster = busMaster;
+    protected SearchBusCmd(BusMaster busMaster, boolean byAlarm, boolean log) {
+        super(busMaster, log);
         this.familyCode = null;
         if (byAlarm) {
             this.byAlarm = new Boolean(byAlarm);
         } else {
             this.byAlarm = null;
         }
-        this.optLogger = optLogger;
     }
 
     /**
-     *
      * @param busMaster
      * @param familyCode
-     * @param optLogger
      */
-    protected SearchBusCmd(BusMaster busMaster, short familyCode, Logger optLogger) {
-        this.busMaster = busMaster;
+    protected SearchBusCmd(BusMaster busMaster, short familyCode, boolean log) {
+        super(busMaster, log);
         this.familyCode = new Short(familyCode);
         this.byAlarm = null;
-        this.optLogger = optLogger;
     }
 
     /**
-     *
      * @return
      */
     protected abstract Result execute_internal();

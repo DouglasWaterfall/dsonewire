@@ -7,24 +7,14 @@ import waterfall.onewire.DSAddress;
  * <p>
  * ReadScratchPad BEh
  */
-public abstract class ReadScratchpadCmd {
+public abstract class ReadScratchpadCmd extends BaseCmd {
 
-    protected BusMaster busMaster;
     protected DSAddress dsAddr;
     protected short requestByteCount;
-    protected Logger optLogger;
 
     protected Result result = null;
     protected long resultWriteCTM;
     protected byte[] resultData;
-
-    /**
-     * The BusMaster the command is attached to
-     */
-    public BusMaster getBusMaster() {
-        return busMaster;
-
-    }
 
     /**
      * @return The device address as a 8 character hex string.
@@ -38,14 +28,6 @@ public abstract class ReadScratchpadCmd {
      */
     public short getRequestCount() {
         return requestByteCount;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Logger getOptLogger() {
-        return optLogger;
     }
 
     /**
@@ -71,30 +53,18 @@ public abstract class ReadScratchpadCmd {
             }
 
             result = Result.busy;
-            resultWriteCTM = 0;
             resultData = null;
+            resultWriteCTM = 0;
         }
 
         try {
-            if (optLogger != null) {
-                optLogger.pushLevel(this.getClass().getSimpleName() + ".execute() ");
-                optLogger.debug("dsAddr:" + getAddress().toString());
-            }
-
+            logInfo("execute(dsAddr:" + getAddress().toString() + ")");
             result = execute_internal();
-
-            optLogger.debug("result:" + result.name());
+            logInfo("result:" + result.name());
 
         } catch (Exception e) {
-            if (optLogger != null) {
-                optLogger.error(e);
-            }
+            logError(e);
             result = Result.communication_error;
-        }
-        finally {
-            if (optLogger != null) {
-                optLogger.popLevel();
-            }
         }
 
         return result;
@@ -139,14 +109,12 @@ public abstract class ReadScratchpadCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected ReadScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, short requestByteCount, Logger optLogger) {
-        assert (busMaster != null);
+    protected ReadScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, short requestByteCount, boolean log) {
+        super(busMaster, log);
         assert (dsAddr != null);
         assert (requestByteCount >= 1);
-        this.busMaster = busMaster;
         this.dsAddr = dsAddr;
         this.requestByteCount = requestByteCount;
-        this.optLogger = optLogger;
     }
 
     protected abstract Result execute_internal();

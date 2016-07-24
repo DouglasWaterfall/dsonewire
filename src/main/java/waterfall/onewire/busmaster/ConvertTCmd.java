@@ -7,35 +7,18 @@ import waterfall.onewire.DSAddress;
  * <p>
  * ConvertT 44h
  */
-public abstract class ConvertTCmd {
+public abstract class ConvertTCmd extends BaseCmd {
 
-    protected BusMaster busMaster;
     protected DSAddress dsAddr;
-    protected Logger optLogger;
 
     protected Result result = null;
     protected long resultWriteCTM;
-
-    /**
-     * The BusMaster the command is attached to
-     */
-    public BusMaster getBusMaster() {
-        return busMaster;
-    }
 
     /**
      * @return The device address as a 8 character hex string.
      */
     public DSAddress getAddress() {
         return dsAddr;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Logger getOptLogger() {
-        return optLogger;
     }
 
     /**
@@ -65,25 +48,13 @@ public abstract class ConvertTCmd {
         }
 
         try {
-            if (optLogger != null) {
-                optLogger.pushLevel(this.getClass().getSimpleName() + ".execute() ");
-                optLogger.debug("dsAddr:" + getAddress().toString());
-            }
-
+            logInfo("execute(dsAddr:" + getAddress().toString() + ")");
             result = execute_internal();
-
-            optLogger.debug("result:" + result.name());
+            logInfo("result:" + result.name());
 
         } catch (Exception e) {
-            if (optLogger != null) {
-                optLogger.error(e);
-            }
+            logError(e);
             result = Result.communication_error;
-        }
-        finally {
-            if (optLogger != null) {
-                optLogger.popLevel();
-            }
         }
 
         return result;
@@ -116,12 +87,11 @@ public abstract class ConvertTCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected ConvertTCmd(BusMaster busMaster, DSAddress dsAddr, Logger optLogger) {
-        assert (busMaster != null);
+    protected ConvertTCmd(BusMaster busMaster, DSAddress dsAddr, boolean log) {
+        super(busMaster, log);
         assert (dsAddr != null);
         this.busMaster = busMaster;
         this.dsAddr = dsAddr;
-        this.optLogger = optLogger;
     }
 
     protected abstract Result execute_internal();

@@ -4,27 +4,9 @@ package waterfall.onewire.busmaster;
 /**
  * Created by dwaterfa on 6/9/16.
  */
-public abstract class StopBusCmd {
-
-    protected BusMaster busMaster;
-    protected Logger optLogger;
+public abstract class StopBusCmd extends BaseCmd {
 
     protected Result result = null;
-
-    /**
-     * The BusMaster the command is attached to
-     */
-    public BusMaster getBusMaster() {
-        return busMaster;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Logger getOptLogger() {
-        return optLogger;
-    }
 
     /**
      *
@@ -50,24 +32,13 @@ public abstract class StopBusCmd {
         }
 
         try {
-            if (optLogger != null) {
-                optLogger.pushLevel(this.getClass().getSimpleName() + ".execute() ");
-            }
-
+            logInfo("execute()");
             result = execute_internal();
-
-            optLogger.debug("result:" + result.name());
+            logInfo("result:" + result.name());
 
         } catch (Exception e) {
-            if (optLogger != null) {
-                optLogger.error(e);
-            }
+            logError(e);
             result = Result.communication_error;
-        }
-        finally {
-            if (optLogger != null) {
-                optLogger.popLevel();
-            }
         }
 
         return result;
@@ -85,11 +56,10 @@ public abstract class StopBusCmd {
     /**
      *
      * @param busMaster
-     * @param optLogger
+     * @param log
      */
-    protected StopBusCmd(BusMaster busMaster, Logger optLogger) {
-        this.busMaster = busMaster;
-        this.optLogger = optLogger;
+    protected StopBusCmd(BusMaster busMaster, boolean log) {
+        super(busMaster, log);
     }
 
     /**
