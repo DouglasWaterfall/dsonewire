@@ -10,12 +10,19 @@ import java.util.List;
  */
 public class HA7SSearchBusCmd extends SearchBusCmd {
 
-    public HA7SSearchBusCmd(HA7S ha7s, short familyCode, Logger optLogger) {
-        super(ha7s, familyCode, optLogger);
+    // All (so !Alarm)
+    public HA7SSearchBusCmd(HA7S ha7s, boolean log) {
+        super(ha7s, false, log);
     }
 
-    public HA7SSearchBusCmd(HA7S ha7s, boolean byAlarm, Logger optLogger) {
-        super(ha7s, byAlarm, optLogger);
+    // By familyCode
+    public HA7SSearchBusCmd(HA7S ha7s, short familyCode, boolean log) {
+        super(ha7s, familyCode, log);
+    }
+
+    // By Alarm
+    public HA7SSearchBusCmd(HA7S ha7s, boolean byAlarm, boolean log) {
+        super(ha7s, byAlarm, log);
     }
 
     public short getFamilyCode() {

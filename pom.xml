@@ -22,6 +22,17 @@
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>1.3.0.RELEASE</version>
     </parent>
+
+    <repositories>
+    <repository>
+        <id>snapshots</id>
+        <name>pihome-snapshot</name>
+        <url>scpexe://192.150.23.7/snapshot</url>
+        <snapshots>
+            <updatePolicy>always</updatePolicy>
+        </snapshots>
+    </repository>
+    </repositories>
     
     <dependencies>
         <dependency>
@@ -61,6 +72,19 @@
 
     </dependencies>
 
+    <!-- http://stackoverflow.com/questions/5819775/is-there-any-way-of-having-maven-scp-wagon-work-consistently-on-linux-mac-window -->
+
+    <distributionManagement>
+        <repository>
+            <id>ssh-repository</id>
+            <url>scp://pi/home/pi/repository/snapshot</url>
+            <!--
+            <name>homerepro</name>
+            <url>Host to Company Repository</url>
+            -->
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <plugin>
@@ -68,6 +92,17 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
         </plugins>
+
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ssh</artifactId>
+                <version>2.10</version>
+            </extension>
+        </extensions>
+
     </build>
 
 </project>
+
+

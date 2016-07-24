@@ -3,8 +3,8 @@ package waterfall.onewire.busmaster.HA7S;
 import java.util.ArrayList;
 
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.*;
+import com.dalsemi.onewire.utils.Address;
 
 public class HA7S implements BusMaster {
 
@@ -29,36 +29,36 @@ public class HA7S implements BusMaster {
         return ((started != null) && started.booleanValue());
     }
 
-    public StartBusCmd queryStartBusCmd(Logger optLogger) {
-        return new HA7SStartBusCmd(this, optLogger);
+    public StartBusCmd queryStartBusCmd(boolean log) {
+        return new HA7SStartBusCmd(this, log);
     }
 
-    public StopBusCmd queryStopBusCmd(Logger optLogger) {
-        return new HA7SStopBusCmd(this, optLogger);
+    public StopBusCmd queryStopBusCmd(boolean doLog) {
+        return new HA7SStopBusCmd(this, doLog);
     }
 
-    public SearchBusCmd querySearchBusCmd(Logger optLogger) {
-        return new HA7SSearchBusCmd(this, false, optLogger);
+    public SearchBusCmd querySearchBusCmd(boolean doLog) {
+        return new HA7SSearchBusCmd(this, false, doLog);
     }
 
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger optLogger) {
-        return new HA7SSearchBusCmd(this, familyCode, optLogger);
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, boolean doLog) {
+        return new HA7SSearchBusCmd(this, familyCode, doLog);
     }
 
-    public SearchBusCmd querySearchBusByAlarmCmd(Logger optLogger) {
-        return new HA7SSearchBusCmd(this, true, optLogger);
+    public SearchBusCmd querySearchBusByAlarmCmd(boolean doLog) {
+        return new HA7SSearchBusCmd(this, true, doLog);
     }
 
-    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, Logger optLogger) {
-        return new HA7SReadPowerSupplyCmd(this, dsAddr, optLogger);
+    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, boolean doLog) {
+        return new HA7SReadPowerSupplyCmd(this, dsAddr, doLog);
     }
 
-    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, Logger optLogger) {
-        return new HA7SConvertTCmd(this, dsAddr, optLogger);
+    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, boolean doLog) {
+        return new HA7SConvertTCmd(this, dsAddr, doLog);
     }
 
-    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, Logger optLogger) {
-        return new HA7SReadScratchpadCmd(this, dsAddr, requestByteCount, optLogger);
+    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, boolean doLog) {
+        return new HA7SReadScratchpadCmd(this, dsAddr, requestByteCount, doLog);
     }
 
     /*
@@ -82,7 +82,7 @@ public class HA7S implements BusMaster {
             serialPort = new JSSC(portDevName);
         }
 
-        HA7SSerial.StartResult startResult = serialPort.start(cmd.getOptLogger());
+        HA7SSerial.StartResult startResult = serialPort.start((Logger)cmd);
 
         if (startResult != HA7SSerial.StartResult.SR_Success) {
             return StartBusCmd.Result.communication_error;
@@ -90,28 +90,30 @@ public class HA7S implements BusMaster {
 
         byte[] rbuf = new byte[8];
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
 
         if ((readResult.error == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
                 (readResult.readCount == 1) &&
                 (rbuf[0] == 0x07)) {
             // This can occur during development when when the first thing read after open is
             // 0x07 0x0D. So we try this again once.
-            readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+            readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
         }
 
         if ((readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
                 (readResult.readCount != 0)) {
-            if (cmd.getOptLogger() != null) {
-                cmd.getOptLogger().error(readResult.error.name() + " readCount:" + readResult.readCount);
-            }
+            cmd.logError(readResult.error.name() + " readCount:" + readResult.readCount);
+
+            cmd.logError(readResult.error.name() + " stopping port");
+            HA7SSerial.StopResult stopResult = serialPort.stop((Logger)cmd);
+            cmd.logError(readResult.error.name() + " stop result:" + stopResult.name());
+
             return StartBusCmd.Result.communication_error;
         }
 
         started = new Boolean(true);
 
         return StartBusCmd.Result.started;
-
     }
 
     public synchronized StopBusCmd.Result executeStopBusCmd(HA7SStopBusCmd cmd) {
@@ -122,7 +124,7 @@ public class HA7S implements BusMaster {
             return StopBusCmd.Result.not_started;
         }
 
-        HA7SSerial.StopResult stopResult = serialPort.stop(cmd.getOptLogger());
+        HA7SSerial.StopResult stopResult = serialPort.stop((Logger)cmd);
 
         if (stopResult != HA7SSerial.StopResult.SR_Success) {
             return StopBusCmd.Result.communication_error;
@@ -133,6 +135,11 @@ public class HA7S implements BusMaster {
     }
 
     public synchronized SearchBusCmd.Result executeSearchBusCmd(HA7SSearchBusCmd cmd) {
+
+        if ((started == null) || (serialPort == null)) {
+            return SearchBusCmd.Result.bus_not_started;
+        }
+
         final byte[] firstNotByAlarm = {'S'};
         final byte[] secondNotByAlarm = {'s'};
 
@@ -168,7 +175,7 @@ public class HA7S implements BusMaster {
         for (; ; ) {
             final byte[] wbuf = (resultList.size() == 0) ? first : second;
 
-            HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(wbuf, rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+            HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(wbuf, rbuf, defaultTimeoutMSec, (Logger)cmd);
 
             if ((readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
                     ((readResult.readCount != 0) && (readResult.readCount != 16))) {
@@ -185,11 +192,27 @@ public class HA7S implements BusMaster {
                 return SearchBusCmd.Result.success;
             }
 
-            resultList.add(new String(rbuf, 0, 16));
+            // We have seen cases where the data comes back all garbled - the number of bytes
+            // is right but there are too many zeros. So we will validate that what we are
+            // really being returned is actually a good address
+            final String address = new String(rbuf, 0, 16);
+            if (!Address.isValid(address)) {
+                // that is bad.
+                cmd.logError("invalid address:" + address + " after " + resultList.size() + " found, reseting and aborting");
+                HA7SSerial.ReadResult resetResult = serialPort.writeReadTilCR(new byte[] { 'R' }, rbuf, defaultTimeoutMSec, (Logger)cmd);
+                cmd.logError("reset result:" + resetResult.error.name());
+                return SearchBusCmd.Result.communication_error;
+            }
+
+            resultList.add(address);
         }
     }
 
     public ReadPowerSupplyCmd.Result executeReadPowerSupplyCmd(HA7SReadPowerSupplyCmd cmd) {
+
+        if ((started == null) || (serialPort == null)) {
+            return ReadPowerSupplyCmd.Result.bus_not_started;
+        }
 
         final byte[] readPowerSupplyCmd = {
                 'W', '0', '2', 'B', '4', 'F', 'F', '\r'
@@ -199,7 +222,7 @@ public class HA7S implements BusMaster {
 
         ReadPowerSupplyCmd.Result result = null;
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadPowerSupplyCmd.Result.communication_error;
@@ -209,7 +232,7 @@ public class HA7S implements BusMaster {
             return ReadPowerSupplyCmd.Result.communication_error;
         }
 
-        readResult = serialPort.writeReadTilCR(readPowerSupplyCmd, rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+        readResult = serialPort.writeReadTilCR(readPowerSupplyCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadPowerSupplyCmd.Result.communication_error;
@@ -227,6 +250,10 @@ public class HA7S implements BusMaster {
 
     public synchronized ConvertTCmd.Result executeConvertTCmd(HA7SConvertTCmd cmd) {
 
+        if ((started == null) || (serialPort == null)) {
+            return ConvertTCmd.Result.bus_not_started;
+        }
+
         final byte[] convertTCmd = {
                 'W', '0', '1', '4', '4', '\r'
         };
@@ -235,7 +262,7 @@ public class HA7S implements BusMaster {
 
         ConvertTCmd.Result result = null;
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ConvertTCmd.Result.communication_error;
@@ -245,7 +272,7 @@ public class HA7S implements BusMaster {
             return ConvertTCmd.Result.communication_error;
         }
 
-        readResult = serialPort.writeReadTilCR(convertTCmd, rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+        readResult = serialPort.writeReadTilCR(convertTCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ConvertTCmd.Result.communication_error;
@@ -261,11 +288,15 @@ public class HA7S implements BusMaster {
 
     public synchronized ReadScratchpadCmd.Result executeReadScratchpadCmd(HA7SReadScratchpadCmd cmd) {
 
+        if ((started == null) || (serialPort == null)) {
+            return ReadScratchpadCmd.Result.bus_not_started;
+        }
+
         final byte[] rbuf = new byte[Math.max(cmd.getSelectCmdData().length, cmd.getReadScratchpadCmdData().length)];
 
         ReadScratchpadCmd.Result result = null;
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadScratchpadCmd.Result.communication_error;
@@ -275,7 +306,7 @@ public class HA7S implements BusMaster {
             return ReadScratchpadCmd.Result.communication_error;
         }
 
-        readResult = serialPort.writeReadTilCR(cmd.getReadScratchpadCmdData(), rbuf, defaultTimeoutMSec, cmd.getOptLogger());
+        readResult = serialPort.writeReadTilCR(cmd.getReadScratchpadCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadScratchpadCmd.Result.communication_error;

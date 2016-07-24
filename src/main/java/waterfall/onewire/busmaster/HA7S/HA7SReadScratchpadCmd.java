@@ -12,8 +12,8 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
     private final byte[] selectCmd;
     private final byte[] readScratchpadCmd;
 
-    public HA7SReadScratchpadCmd(HA7S ha7s, DSAddress dsAddr, short requestByteCount, Logger optLogger) {
-        super(ha7s, dsAddr, requestByteCount, optLogger);
+    public HA7SReadScratchpadCmd(HA7S ha7s, DSAddress dsAddr, short requestByteCount, boolean log) {
+        super(ha7s, dsAddr, requestByteCount, log);
         selectCmd = ha7s.buildSelectCmdData(dsAddr);
 
         final int totalLength = (5 + (requestByteCount * 2) + 1);

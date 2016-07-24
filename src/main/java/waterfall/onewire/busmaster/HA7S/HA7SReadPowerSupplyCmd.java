@@ -11,8 +11,8 @@ public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
     private final byte[] selectCmd;
 
-    public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr, Logger optLogger) {
-        super(ha7s, dsAddr, optLogger);
+    public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr, boolean log) {
+        super(ha7s, dsAddr, log);
         selectCmd = ha7s.buildSelectCmdData(dsAddr);
     }
 

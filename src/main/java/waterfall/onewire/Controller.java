@@ -76,19 +76,19 @@ public class Controller {
             return buildErrorResult(Errors.Unknown_bmIdent);
         }
 
-        Logger optLogger;
+        boolean doLog;
         if ("true".equals(parmLog)) {
-            optLogger = new Logger();
+            doLog = true;
         } else if ("false".equals(parmLog)) {
-            optLogger = null;
+            doLog = false;
         } else {
             return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
 
-        StartBusCmd cmd = bm.queryStartBusCmd(optLogger);
+        StartBusCmd cmd = bm.queryStartBusCmd(doLog);
         cmd.execute();
 
-        return buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
+        return buildCmdExecuteResult((Logger)cmd, cmd.getResult());
     }
 
     @RequestMapping(value = "/stopCmd/{bmIdent}", method = RequestMethod.POST)
@@ -103,19 +103,19 @@ public class Controller {
             return buildErrorResult(Errors.Unknown_bmIdent);
         }
 
-        Logger optLogger;
+        boolean log;
         if ("true".equals(parmLog)) {
-            optLogger = new Logger();
+            log = true;
         } else if ("false".equals(parmLog)) {
-            optLogger = null;
+            log = false;
         } else {
             return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
 
-        StopBusCmd cmd = bm.queryStopBusCmd(optLogger);
+        StopBusCmd cmd = bm.queryStopBusCmd(log);
         cmd.execute();
 
-        return buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
+        return buildCmdExecuteResult((Logger)cmd, cmd.getResult());
     }
 
     @RequestMapping(value = "/searchCmd/{bmIdent}", method = RequestMethod.POST)
@@ -130,11 +130,11 @@ public class Controller {
             return buildErrorResult(Errors.Unknown_bmIdent);
         }
 
-        Logger optLogger;
+        boolean doLog;
         if ("true".equals(parmLog)) {
-            optLogger = new Logger();
+            doLog = true;
         } else if ("false".equals(parmLog)) {
-            optLogger = null;
+            doLog = false;
         } else {
             return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
@@ -161,18 +161,18 @@ public class Controller {
                 return buildErrorResult(Errors.Bad_parm_byFamilyCode_must_be_unsigned_byte);
             }
 
-            cmd = bm.querySearchBusByFamilyCmd(familyCode, optLogger);
+            cmd = bm.querySearchBusByFamilyCmd(familyCode, doLog);
         } else if ((parmByAlarm == null) || ("false".equals(parmByAlarm))) {
-            cmd = bm.querySearchBusCmd(optLogger);
+            cmd = bm.querySearchBusCmd(doLog);
         } else if ("true".equals(parmByAlarm)) {
-            cmd = bm.querySearchBusByAlarmCmd(optLogger);
+            cmd = bm.querySearchBusByAlarmCmd(doLog);
         } else {
             return buildErrorResult(Errors.Bad_parm_byAlarm_not_true_false);
         }
 
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
+        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
 
         if (cmd.getResult() == SearchBusCmd.Result.success) {
             result.put("resultList", cmd.getResultList());
@@ -203,11 +203,11 @@ public class Controller {
 
         DSAddress _dsAddr = new DSAddress(dsAddr);
 
-        Logger optLogger;
+        boolean log;
         if ("true".equals(parmLog)) {
-            optLogger = new Logger();
+            log = true;
         } else if ("false".equals(parmLog)) {
-            optLogger = null;
+            log = false;
         } else {
             return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
         }
@@ -217,10 +217,10 @@ public class Controller {
             return buildErrorResult(Errors.No_BM_for_dsAddr);
         }
 
-        ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(_dsAddr, optLogger);
+        ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(_dsAddr, log);
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult(cmd.getOptLogger(), cmd.getResult());
+        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
 
         if (cmd.getResult() == ReadPowerSupplyCmd.Result.success) {
             result.put("isParasitic", String.valueOf(cmd.getResultIsParasitic()));
@@ -261,8 +261,13 @@ public class Controller {
     public static Map<String, Object> buildCmdExecuteResult(final Logger optLogger, final Enum cmdResult) {
         Map<String, Object> result = new HashMap<String, Object>();
 
-        if (optLogger != null) {
-            result.put(RESULT_KEY_LOG, optLogger.toString());
+        if ((optLogger != null) && (optLogger.getLogSize() > 0)) {
+            String[] logs = new String[optLogger.getLogSize()];
+            int i = 0;
+            for (Iterator<String> iter = optLogger.getLogIter(); iter.hasNext(); ) {
+                logs[i++] = iter.next();
+            }
+            result.put(RESULT_KEY_LOG, logs);
         }
 
         if (cmdResult != null) {
