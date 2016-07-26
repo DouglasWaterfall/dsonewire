@@ -7,19 +7,10 @@ import waterfall.onewire.DSAddress;
  * <p>
  * ConvertT 44h
  */
-public abstract class ConvertTCmd extends BaseCmd {
-
-    protected DSAddress dsAddr;
+public abstract class ConvertTCmd extends DeviceBaseCmd {
 
     protected Result result = null;
     protected long resultWriteCTM;
-
-    /**
-     * @return The device address as a 8 character hex string.
-     */
-    public DSAddress getAddress() {
-        return dsAddr;
-    }
 
     /**
      *
@@ -87,11 +78,8 @@ public abstract class ConvertTCmd extends BaseCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected ConvertTCmd(BusMaster busMaster, DSAddress dsAddr, boolean log) {
-        super(busMaster, log);
-        assert (dsAddr != null);
-        this.busMaster = busMaster;
-        this.dsAddr = dsAddr;
+    protected ConvertTCmd(BusMaster busMaster, DSAddress dsAddr, boolean doLog) {
+        super(busMaster, dsAddr, doLog);
     }
 
     protected abstract Result execute_internal();

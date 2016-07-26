@@ -13,9 +13,9 @@ public class BaseCmd implements Logger {
     protected ArrayList<String> logger;
     protected String logContext;
 
-    public BaseCmd(BusMaster busMaster, boolean log) {
+    public BaseCmd(BusMaster busMaster, boolean doLog) {
         this.busMaster = busMaster;
-        if (log) {
+        if (doLog) {
             this.logger = new ArrayList<String>();
             this.logContext = this.getClass().getSimpleName() + " ";
         }
@@ -30,6 +30,12 @@ public class BaseCmd implements Logger {
     public BusMaster getBusMaster() {
         return busMaster;
     }
+
+    /**
+     *
+     * @return
+     */
+    public Logger getLogger() { return this; }
 
     /**
      *

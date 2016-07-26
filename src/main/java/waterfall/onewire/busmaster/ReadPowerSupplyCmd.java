@@ -7,20 +7,11 @@ import waterfall.onewire.DSAddress;
  * <p>
  * ReadPowerSupply B4h
  */
-public abstract class ReadPowerSupplyCmd extends BaseCmd {
-
-    protected DSAddress dsAddr;
+public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
 
     protected Result result = null;
     protected boolean resultIsParasitic;
     protected long resultWriteCTM;
-
-    /**
-     * @return The device address as a 8 character hex string.
-     */
-    public DSAddress getAddress() {
-        return dsAddr;
-    }
 
     /**
      *
@@ -103,10 +94,7 @@ public abstract class ReadPowerSupplyCmd extends BaseCmd {
      * Protected Methods and Constructors
      */
     protected ReadPowerSupplyCmd(BusMaster busMaster, DSAddress dsAddr, boolean log) {
-        super(busMaster, log);
-        assert (dsAddr != null);
-        this.busMaster = busMaster;
-        this.dsAddr = dsAddr;
+        super(busMaster, dsAddr, log);
     }
 
     protected abstract Result execute_internal();

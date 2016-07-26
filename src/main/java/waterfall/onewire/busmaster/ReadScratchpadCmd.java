@@ -7,21 +7,13 @@ import waterfall.onewire.DSAddress;
  * <p>
  * ReadScratchPad BEh
  */
-public abstract class ReadScratchpadCmd extends BaseCmd {
+public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
 
-    protected DSAddress dsAddr;
     protected short requestByteCount;
 
     protected Result result = null;
     protected long resultWriteCTM;
     protected byte[] resultData;
-
-    /**
-     * @return The device address as a 8 character hex string.
-     */
-    public DSAddress getAddress() {
-        return dsAddr;
-    }
 
     /**
      * @return The number of bytes requested from the scratchpad.
@@ -109,11 +101,9 @@ public abstract class ReadScratchpadCmd extends BaseCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected ReadScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, short requestByteCount, boolean log) {
-        super(busMaster, log);
-        assert (dsAddr != null);
+    protected ReadScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, short requestByteCount, boolean doLog) {
+        super(busMaster, dsAddr, doLog);
         assert (requestByteCount >= 1);
-        this.dsAddr = dsAddr;
         this.requestByteCount = requestByteCount;
     }
 
