@@ -1,5 +1,6 @@
 package waterfall.onewire;
 
+import com.dalsemi.onewire.utils.Convert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import waterfall.onewire.busmaster.*;
@@ -23,11 +24,9 @@ public class Controller {
         Bad_parm_byFamilyCode_not_a_number,
         Bad_parm_byFamilyCode_must_be_unsigned_byte,
         No_BM_for_dsAddr,
-        Invalid_dsAddr
-
+        Invalid_dsAddr,
+        Invalid_rCount
     }
-
-    ;
 
     @Autowired
     public Controller(BusMasterManager busMasterManager) {
@@ -230,21 +229,74 @@ public class Controller {
     }
 
     @RequestMapping(value = "/readScratchPadCmd/{dsAddr}/{rCount}", method = RequestMethod.POST)
-    public Map<String, String> readScratchPadCmd(@PathVariable(value = "dsAddr") String dsAddr,
+    public Map<String, Object> readScratchPadCmd(@PathVariable(value = "dsAddr") String dsAddr,
                                                  @PathVariable(value = "rCount") Long rCount,
-                                                 @RequestParam(value = "log", required = false, defaultValue = "false") String log) {
-        // must specify a DSAddress
-        // must specify a read count
-        // optional logging request
-        return null;
+                                                 @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
+            return buildErrorResult(Errors.Invalid_dsAddr);
+        }
+
+        DSAddress _dsAddr = new DSAddress(dsAddr);
+
+        if ((rCount == null) || (rCount < 0) || (rCount > 254)) {
+            return buildErrorResult(Errors.Invalid_rCount);
+        }
+
+        boolean doLog;
+        if ("true".equals(parmLog)) {
+            doLog = true;
+        } else if ("false".equals(parmLog)) {
+            doLog = false;
+        } else {
+            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+        }
+
+        BusMaster bm = busMasterManager.getBusMasterForDevice(dsAddr);
+        if (bm == null) {
+            return buildErrorResult(Errors.No_BM_for_dsAddr);
+        }
+
+        ReadScratchpadCmd cmd = bm.queryReadScratchpadCmd(_dsAddr, rCount.shortValue(), doLog);
+        cmd.execute();
+
+        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+
+        if (cmd.getResult() == ReadScratchpadCmd.Result.success) {
+            result.put("dataAsHex", Convert.toHexString(cmd.getResultData()));
+        }
+
+        return result;
     }
 
     @RequestMapping(value = "/convertTCmd/{dsAddr}", method = RequestMethod.POST)
-    public Map<String, String> convertTCmd(@PathVariable(value = "dsAddr") String dsAddr,
-                                           @RequestParam(value = "log", required = false, defaultValue = "false") String log) {
-        // must specify a DSAddress
-        // optional logging request
-        return null;
+    public Map<String, Object> convertTCmd(@PathVariable(value = "dsAddr") String dsAddr,
+                                           @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
+            return buildErrorResult(Errors.Invalid_dsAddr);
+        }
+
+        DSAddress _dsAddr = new DSAddress(dsAddr);
+
+        boolean log;
+        if ("true".equals(parmLog)) {
+            log = true;
+        } else if ("false".equals(parmLog)) {
+            log = false;
+        } else {
+            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+        }
+
+        BusMaster bm = busMasterManager.getBusMasterForDevice(dsAddr);
+        if (bm == null) {
+            return buildErrorResult(Errors.No_BM_for_dsAddr);
+        }
+
+        ConvertTCmd cmd = bm.queryConvertTCmd(_dsAddr, log);
+        cmd.execute();
+
+        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+
+        return result;
     }
 
     // Result builders

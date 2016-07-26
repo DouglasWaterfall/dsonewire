@@ -90,14 +90,14 @@ public class HA7S implements BusMaster {
 
         byte[] rbuf = new byte[8];
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getLogger());
 
         if ((readResult.error == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
                 (readResult.readCount == 1) &&
                 (rbuf[0] == 0x07)) {
             // This can occur during development when when the first thing read after open is
             // 0x07 0x0D. So we try this again once.
-            readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
+            readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getLogger());
         }
 
         if ((readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
@@ -175,7 +175,7 @@ public class HA7S implements BusMaster {
         for (; ; ) {
             final byte[] wbuf = (resultList.size() == 0) ? first : second;
 
-            HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(wbuf, rbuf, defaultTimeoutMSec, (Logger)cmd);
+            HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(wbuf, rbuf, defaultTimeoutMSec, cmd.getLogger());
 
             if ((readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
                     ((readResult.readCount != 0) && (readResult.readCount != 16))) {
@@ -199,7 +199,7 @@ public class HA7S implements BusMaster {
             if (!Address.isValid(address)) {
                 // that is bad.
                 cmd.logError("invalid address:" + address + " after " + resultList.size() + " found, reseting and aborting");
-                HA7SSerial.ReadResult resetResult = serialPort.writeReadTilCR(new byte[] { 'R' }, rbuf, defaultTimeoutMSec, (Logger)cmd);
+                HA7SSerial.ReadResult resetResult = serialPort.writeReadTilCR(new byte[] { 'R' }, rbuf, defaultTimeoutMSec, cmd.getLogger());
                 cmd.logError("reset result:" + resetResult.error.name());
                 return SearchBusCmd.Result.communication_error;
             }
@@ -222,17 +222,22 @@ public class HA7S implements BusMaster {
 
         ReadPowerSupplyCmd.Result result = null;
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, cmd.getLogger());
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadPowerSupplyCmd.Result.communication_error;
+        }
+
+        if ((readResult.readCount == 1) && (rbuf[0] == 0x7)) {
+            // This is what the HA7S returns on an error, in this case the Address is unknown.
+            return ReadPowerSupplyCmd.Result.device_not_found;
         }
 
         if (readResult.readCount != 16) {
             return ReadPowerSupplyCmd.Result.communication_error;
         }
 
-        readResult = serialPort.writeReadTilCR(readPowerSupplyCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
+        readResult = serialPort.writeReadTilCR(readPowerSupplyCmd, rbuf, defaultTimeoutMSec, cmd.getLogger());
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadPowerSupplyCmd.Result.communication_error;
@@ -262,17 +267,22 @@ public class HA7S implements BusMaster {
 
         ConvertTCmd.Result result = null;
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, cmd.getLogger());
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ConvertTCmd.Result.communication_error;
+        }
+
+        if ((readResult.readCount == 1) && (rbuf[0] == 0x7)) {
+            // This is what the HA7S returns on an error, in this case the Address is unknown.
+            return ConvertTCmd.Result.device_not_found;
         }
 
         if (readResult.readCount != 16) {
             return ConvertTCmd.Result.communication_error;
         }
 
-        readResult = serialPort.writeReadTilCR(convertTCmd, rbuf, defaultTimeoutMSec, (Logger)cmd);
+        readResult = serialPort.writeReadTilCR(convertTCmd, rbuf, defaultTimeoutMSec, cmd.getLogger());
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ConvertTCmd.Result.communication_error;
@@ -283,6 +293,18 @@ public class HA7S implements BusMaster {
         }
 
         cmd.setResultWriteCTM(readResult.postWriteCTM);
+
+        try {
+            for (int i = 0; i < 10; i++) {
+                HA7SSerial.ReadResult oResult = serialPort.writeReadTilCR(new byte[]{'O'}, rbuf, defaultTimeoutMSec, cmd.getLogger());
+                cmd.getLogger().logError("O Cmd ", oResult.error.name());
+                Thread.sleep(100);
+            }
+        }
+        catch (InterruptedException e) {
+            cmd.getLogger().logError("O Cmd ", e);
+        }
+
         return ConvertTCmd.Result.success;
     }
 
@@ -296,17 +318,22 @@ public class HA7S implements BusMaster {
 
         ReadScratchpadCmd.Result result = null;
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmd.getSelectCmdData(), rbuf, defaultTimeoutMSec, cmd.getLogger());
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadScratchpadCmd.Result.communication_error;
+        }
+
+        if ((readResult.readCount == 1) && (rbuf[0] == 0x7)) {
+            // This is what the HA7S returns on an error, in this case the Address is unknown.
+            return ReadScratchpadCmd.Result.device_not_found;
         }
 
         if (readResult.readCount != 16) {
             return ReadScratchpadCmd.Result.communication_error;
         }
 
-        readResult = serialPort.writeReadTilCR(cmd.getReadScratchpadCmdData(), rbuf, defaultTimeoutMSec, (Logger)cmd);
+        readResult = serialPort.writeReadTilCR(cmd.getReadScratchpadCmdData(), rbuf, defaultTimeoutMSec, cmd.getLogger());
 
         if (readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) {
             return ReadScratchpadCmd.Result.communication_error;
@@ -392,8 +419,14 @@ public class HA7S implements BusMaster {
 
     public static byte[] buildSelectCmdData(DSAddress dsAddr) {
         // Select CMD (16 hex address bytes)
-        byte[] data = new byte[]{
-                'A', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '\r'};
+        byte[] data = new byte[] {
+                'A',
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                '\r'
+        };
 
         final String str = dsAddr.toString();
         for (int i = 0; i < 16; i++) {
