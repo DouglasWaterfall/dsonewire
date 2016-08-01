@@ -18,7 +18,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
     /**
      * @return The number of bytes requested from the scratchpad.
      */
-    public short getRequestCount() {
+    public short getRequestByteCount() {
         return requestByteCount;
     }
 
@@ -106,6 +106,10 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
         assert (requestByteCount >= 1);
         this.requestByteCount = requestByteCount;
     }
+
+    abstract public void setResultData(byte[] resultData);
+
+    abstract public void setResultWriteCTM(long resultWriteCTM);
 
     protected abstract Result execute_internal();
 
