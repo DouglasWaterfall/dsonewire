@@ -1,14 +1,18 @@
 package waterfall.onewire.busmaster.HA7S;
 
 import waterfall.onewire.busmaster.Logger;
+import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by dwaterfa on 6/9/16.
  */
 public class HA7SSearchBusCmd extends SearchBusCmd {
+
+    final static String logContext = "HA7SSearchBusCmd";
 
     // All (so !Alarm)
     public HA7SSearchBusCmd(HA7S ha7s, boolean log) {
@@ -45,8 +49,68 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
         assert (resultList == null);
         assert (resultWriteCTM == 0);
 
-        return ((HA7S) busMaster).executeSearchBusCmd(this);
-    }
+        ArrayList<String> resultList = new ArrayList<String>();
 
+        byte[] rbuf = new byte[16];
+
+        for (int i = 0; true; i++) {
+            HA7S.cmdReturn ret;
+
+            if (isByFamilyCode()) {
+                if (i == 0) {
+                    ret = ((HA7S)busMaster).cmdFamilySearch((byte)getFamilyCode(), rbuf, getLogger());
+                }
+                else {
+                    ret = ((HA7S) busMaster).cmdNextFamilySearch(rbuf, getLogger());
+                }
+            }
+            else if (isByAlarm()) {
+                if (i == 0) {
+                    ret = ((HA7S)busMaster).cmdConditionalSearch(rbuf, getLogger());
+                }
+                else {
+                    ret = ((HA7S) busMaster).cmdNextConditionalSearch(rbuf, getLogger());
+                }
+            }
+            else {
+                if (i == 0) {
+                    ret = ((HA7S)busMaster).cmdSearchROM(rbuf, getLogger());
+                }
+                else {
+                    ret = ((HA7S) busMaster).cmdNextSearchROM(rbuf, getLogger());
+                }
+            }
+
+            switch (ret.result) {
+                case NotStarted:
+                    return SearchBusCmd.Result.bus_not_started;
+                case Success:
+                    if ((ret.readCount == 0) || (ret.readCount == 16)) {
+                        break;
+                    }
+                    if (getLogger() != null) {
+                        getLogger().logError(logContext, "Expected readCount of 0 or 16, got:" + ret.readCount);
+                    }
+                    // FALLTHROUGH
+                case DeviceNotFound:
+                case ReadTimeout:
+                case ReadOverrun:
+                case ReadError:
+                default:
+                    return SearchBusCmd.Result.communication_error;
+            }
+
+            if (i == 0)  {
+                setResultWriteCTM(ret.writeCTM);
+                setResultList(resultList);
+            }
+
+            if (ret.readCount == 0) {
+                return SearchBusCmd.Result.success;
+            }
+
+            resultList.add(new String(rbuf, 0, 16));
+        }
+    }
 }
 

@@ -87,7 +87,7 @@ public class Controller {
         StartBusCmd cmd = bm.queryStartBusCmd(doLog);
         cmd.execute();
 
-        return buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+        return buildCmdExecuteResult((Logger) cmd, cmd.getResult());
     }
 
     @RequestMapping(value = "/stopCmd/{bmIdent}", method = RequestMethod.POST)
@@ -114,7 +114,7 @@ public class Controller {
         StopBusCmd cmd = bm.queryStopBusCmd(log);
         cmd.execute();
 
-        return buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+        return buildCmdExecuteResult((Logger) cmd, cmd.getResult());
     }
 
     @RequestMapping(value = "/searchCmd/{bmIdent}", method = RequestMethod.POST)
@@ -171,7 +171,7 @@ public class Controller {
 
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
 
         if (cmd.getResult() == SearchBusCmd.Result.success) {
             result.put("resultList", cmd.getResultList());
@@ -219,7 +219,7 @@ public class Controller {
         ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(_dsAddr, log);
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
 
         if (cmd.getResult() == ReadPowerSupplyCmd.Result.success) {
             result.put("isParasitic", String.valueOf(cmd.getResultIsParasitic()));
@@ -259,10 +259,21 @@ public class Controller {
         ReadScratchpadCmd cmd = bm.queryReadScratchpadCmd(_dsAddr, rCount.shortValue(), doLog);
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
 
         if (cmd.getResult() == ReadScratchpadCmd.Result.success) {
             result.put("dataAsHex", Convert.toHexString(cmd.getResultData()));
+
+            if ((cmd.getAddress().getFamilyCode() == 0x28) &&
+                    (cmd.getRequestByteCount() >= 2)) {
+                int msb = (int) cmd.getResultData()[1] & 0xff;
+                int lsb = (int) cmd.getResultData()[0] & 0xff;
+
+                float tempC = ((float)((msb << 8) + lsb) / (float)16.0);
+
+                result.put("tempC", tempC);
+                result.put("tempF", Convert.toFahrenheit(tempC));
+            }
         }
 
         return result;
@@ -294,7 +305,7 @@ public class Controller {
         ConvertTCmd cmd = bm.queryConvertTCmd(_dsAddr, log);
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger)cmd, cmd.getResult());
+        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
 
         return result;
     }

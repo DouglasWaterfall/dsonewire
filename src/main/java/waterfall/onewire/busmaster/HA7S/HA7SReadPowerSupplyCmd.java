@@ -1,7 +1,7 @@
 package waterfall.onewire.busmaster.HA7S;
 
+import com.dalsemi.onewire.utils.Convert;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
 
 /**
@@ -9,32 +9,71 @@ import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
  */
 public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
-    private final byte[] selectCmd;
+    final static String logContext = "HA7SReadPowerSupplyCmd";
 
     public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr, boolean log) {
         super(ha7s, dsAddr, log);
-        selectCmd = ha7s.buildSelectCmdData(dsAddr);
     }
 
-    public byte[] getSelectCmdData() {
-        return selectCmd;
-    }
-
+    @Override
     public void setResultIsParasitic(boolean isParasitic) {
         assert (result == Result.busy);
         this.resultIsParasitic = isParasitic;
     }
 
+    @Override
     public void setResultWriteCTM(long resultWriteCTM) {
         assert (result == Result.busy);
         this.resultWriteCTM = resultWriteCTM;
     }
 
+    @Override
     protected ReadPowerSupplyCmd.Result execute_internal() {
         assert (result == Result.busy);
         assert (resultWriteCTM == 0);
 
-        return ((HA7S) busMaster).executeReadPowerSupplyCmd(this);
+
+        HA7S.cmdReturn ret = ((HA7S)busMaster).cmdAddressSelect(getAddress(), getLogger());
+        switch (ret.result) {
+            case Success:
+                break;
+            case NotStarted:
+                return ReadPowerSupplyCmd.Result.bus_not_started;
+            case DeviceNotFound:
+                return ReadPowerSupplyCmd.Result.device_not_found;
+            case ReadTimeout:
+            case ReadOverrun:
+            case ReadError:
+            default:
+                return ReadPowerSupplyCmd.Result.communication_error;
+        }
+
+        final byte[] readPowerSupplyCmdData = {
+                'W', '0', '2', 'B', '4', 'F', 'F', '\r'
+        };
+
+        final byte[] rbuf = new byte[readPowerSupplyCmdData.length];
+
+        ret = ((HA7S)busMaster).cmdWriteBlock(readPowerSupplyCmdData, rbuf, getLogger());
+
+        if (ret.result != HA7S.cmdResult.Success) {
+            // All other returns are basically logic errors or real errors.
+            return ReadPowerSupplyCmd.Result.communication_error;
+        }
+
+        if (ret.readCount != 4) {
+            if (getLogger() != null) {
+                getLogger().logError(logContext, "Expected readCount of 4, got:" + ret.readCount);
+            }
+            return ReadPowerSupplyCmd.Result.communication_error;
+        }
+
+        // externally powered will pull the bus high
+        final int v = ((HA7S)busMaster).hexToFourBits(rbuf[3]);
+        setResultIsParasitic((v & 0x01) == 0);
+        setResultWriteCTM(ret.writeCTM);
+
+        return ReadPowerSupplyCmd.Result.success;
     }
 
 }
