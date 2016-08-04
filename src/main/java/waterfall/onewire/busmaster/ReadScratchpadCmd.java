@@ -14,6 +14,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
     protected Result result = null;
     protected long resultWriteCTM;
     protected byte[] resultData;
+    protected byte[] resultHexData;
 
     /**
      * @return The number of bytes requested from the scratchpad.
@@ -46,6 +47,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
 
             result = Result.busy;
             resultData = null;
+            resultHexData = null;
             resultWriteCTM = 0;
         }
 
@@ -84,6 +86,18 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
     }
 
     /**
+     * @return the bytes requested from the scratchpad encoded as two hex byte chars 0-9A-F.
+     * @throws NoResultException if the current result is not done.
+     */
+    public byte[] getResultHexData() throws NoResultException {
+        if ((result == null) || (result == Result.busy)) {
+            throw new NoResultException();
+        }
+
+        return resultHexData;
+    }
+
+    /**
      * This the closest value for System.getCurrentTimeMillis() on the physical bus controlling the device when
      * the write for the bus command was executed.
      *
@@ -107,7 +121,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
         this.requestByteCount = requestByteCount;
     }
 
-    abstract public void setResultData(byte[] resultData);
+    abstract public void setResultData(byte[] resultData, byte[] resultHexData);
 
     abstract public void setResultWriteCTM(long resultWriteCTM);
 
