@@ -262,7 +262,7 @@ public class Controller {
         Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
 
         if (cmd.getResult() == ReadScratchpadCmd.Result.success) {
-            result.put("dataAsHex", Convert.toHexString(cmd.getResultData()));
+            result.put("dataAsHex", new String(cmd.getResultHexData()));
 
             if ((cmd.getAddress().getFamilyCode() == 0x28) &&
                     (cmd.getRequestByteCount() >= 2)) {

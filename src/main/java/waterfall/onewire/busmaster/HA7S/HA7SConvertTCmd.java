@@ -67,6 +67,9 @@ public class HA7SConvertTCmd extends ConvertTCmd {
                 if (getLogger() != null) {
                     getLogger().logError(logContext + " O Cmd ", ret.result.name());
                 }
+                if ((ret.result == HA7S.cmdResult.Success) && (rbuf[0] == '1')) {
+                    break;
+                }
                 Thread.sleep(100);
             }
         }

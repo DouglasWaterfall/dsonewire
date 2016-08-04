@@ -1,6 +1,6 @@
 package waterfall.onewire.busmaster.HA7S;
 
-import com.dalsemi.onewire.utils.Convert;
+import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
 
@@ -69,7 +69,7 @@ public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
         }
 
         // externally powered will pull the bus high
-        final int v = ((HA7S)busMaster).hexToFourBits(rbuf[3]);
+        final int v = Convert.hexToFourBits(rbuf[3]);
         setResultIsParasitic((v & 0x01) == 0);
         setResultWriteCTM(ret.writeCTM);
 

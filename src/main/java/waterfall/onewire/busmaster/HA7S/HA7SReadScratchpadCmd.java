@@ -1,9 +1,11 @@
 package waterfall.onewire.busmaster.HA7S;
 
 import com.dalsemi.onewire.utils.CRC8;
-import com.dalsemi.onewire.utils.Convert;
+import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
+
+import java.util.Arrays;
 
 /**
  * Created by dwaterfa on 6/11/16.
@@ -17,9 +19,10 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
         super(ha7s, dsAddr, requestByteCount, log);
     }
 
-    public void setResultData(byte[] resultData) {
+    public void setResultData(byte[] resultData, byte[] resultHexData) {
         assert (result == ReadScratchpadCmd.Result.busy);
         this.resultData = resultData;
+        this.resultHexData = resultHexData;
     }
 
     public void setResultWriteCTM(long resultWriteCTM) {
@@ -37,8 +40,8 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
             readScratchpadCmdData = new byte[totalLength];
             int i = 0;
             readScratchpadCmdData[i++] = 'W';
-            readScratchpadCmdData[i++] = ((HA7S)busMaster).fourBitsToHex(((int) (requestByteCount + 1) & 0xff) >> 4);
-            readScratchpadCmdData[i++] = ((HA7S)busMaster).fourBitsToHex(((int) (requestByteCount + 1) & 0xff) & 0xf);
+            readScratchpadCmdData[i++] = Convert.fourBitsToHex(((int) (requestByteCount + 1) & 0xff) >> 4);
+            readScratchpadCmdData[i++] = Convert.fourBitsToHex(((int) (requestByteCount + 1) & 0xff) & 0xf);
             readScratchpadCmdData[i++] = 'B';
             readScratchpadCmdData[i++] = 'E';
             while (i < (totalLength - 1)) {
@@ -81,31 +84,23 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
             return ReadScratchpadCmd.Result.communication_error;
         }
 
+        final int hexByteCount = (getRequestByteCount() * 2);
+        byte[] resultData = new byte[getRequestByteCount()];
+        Convert.hexToByte(rbuf, 2, hexByteCount, resultData, 0);
+
+        byte[] resultHexData = Arrays.copyOfRange(rbuf, 2, (2 + hexByteCount));
+
         // check the CRC
         final short crcIndex = dsAddrToCRCIndex(dsAddr);
-        if ((crcIndex >= 0) && ((crcIndex + 1) == getRequestByteCount())) {
-            try {
-                String s = new String(rbuf, 2, getRequestByteCount());
-                byte[] ba = Convert.toByteArray(s);
-                if (CRC8.compute(ba) != 0) {
-                    if (getLogger() != null) {
-                        getLogger().logError(logContext, "CRC8 failed, crcIndex:" + crcIndex + " s:" + s);
-                    }
-                    return ReadScratchpadCmd.Result.communication_error;
-                }
+        if ((crcIndex >= 0) && ((crcIndex + 1) == getRequestByteCount()) && (CRC8.compute(resultData) != 0)) {
+            if (getLogger() != null) {
+                getLogger().logError(logContext, "CRC8 failed, crcIndex:" + crcIndex + " hex:" + resultHexData);
             }
-            catch (Convert.ConvertException e) {
-                if (getLogger() != null) {
-                    getLogger().logError(logContext, e);
-                }
-                return ReadScratchpadCmd.Result.communication_error;
-            }
+            return ReadScratchpadCmd.Result.communication_error;
         }
 
         // return count of characters in the char buffer.
-        byte[] resultData = new byte[getRequestByteCount()];
-        ((HA7S) busMaster).hexToChar(rbuf, 2, (getRequestByteCount() * 2), resultData, 0);
-        setResultData(resultData);
+        setResultData(resultData, resultHexData);
         setResultWriteCTM(ret.writeCTM);
 
         return ReadScratchpadCmd.Result.success;

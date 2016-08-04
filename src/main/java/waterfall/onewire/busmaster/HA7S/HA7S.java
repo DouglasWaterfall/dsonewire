@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.*;
+import waterfall.onewire.Convert;
 import com.dalsemi.onewire.utils.Address;
 
 public class HA7S implements BusMaster {
@@ -170,8 +171,8 @@ public class HA7S implements BusMaster {
 
     public cmdReturn cmdFamilySearch(byte familyCode, byte[] rbuf, Logger optLogger) {
         final byte[] wbuf = {'F', '0', '0'};
-        wbuf[1] = fourBitsToHex(((int)familyCode & 0xff) >> 4);
-        wbuf[2] = fourBitsToHex(((int)familyCode & 0xff) & 0xf);
+        wbuf[1] = Convert.fourBitsToHex(((int)familyCode & 0xff) >> 4);
+        wbuf[2] = Convert.fourBitsToHex(((int)familyCode & 0xff) & 0xf);
         return cmdSearchInternal(wbuf, rbuf, optLogger, "cmdFamilySearch");
     }
 
@@ -396,73 +397,5 @@ public class HA7S implements BusMaster {
                 return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
         }
     }
-
-
-    //
-    // char-hex conversion static methods
-    //
-    // returns new value for toffset.
-    //
-    private static int byteToHex(final byte[] from, int from_offset, int from_count, final byte[] tbuf, int toffset) {
-        int f_index = from_offset;
-        int t_idx = toffset;
-
-        for (int i = 0; i < from_count; i++) {
-            tbuf[t_idx++] = fourBitsToHex(((int) from[f_index] & 0xff) >> 4);
-            tbuf[t_idx++] = fourBitsToHex(((int) from[f_index++] & 0xff) & 0xf);
-        }
-
-        return t_idx;
-    }
-
-    private static int byteToHex(final byte[] from, final byte[] tbuf, int toffset) {
-        return byteToHex(from, 0, from.length, tbuf, toffset);
-    }
-
-    private static int byteToHex(byte fill_char, int fill_count, final byte[] tbuf, int toffset) {
-        int t_idx = toffset;
-        byte b1 = fourBitsToHex(((int) fill_char & 0xff) >> 4);
-        byte b2 = fourBitsToHex(((int) fill_char & 0xff) & 0xf);
-
-        for (int i = 0; i < fill_count; i++) {
-            tbuf[t_idx++] = b1;
-            tbuf[t_idx++] = b2;
-        }
-
-        return t_idx;
-    }
-
-    // return count of characters in the char buffer.
-    public static int hexToChar(final byte[] from, int findex, int fcount, byte[] tbuf, int toffset) {
-        int idx = toffset;
-
-        for (int i = 0; i < fcount; i += 2) {
-            tbuf[idx++] = (byte) ((hexToFourBits(from[findex + i]) << 4) + hexToFourBits(from[findex + i + 1]));
-        }
-
-        return (fcount / 2);
-    }
-
-    private static final byte[] toHexTable = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
-            'E', 'F'};
-
-    public static byte fourBitsToHex(int fourBits) {
-        return toHexTable[fourBits];
-    }
-
-    public static byte hexToFourBits(byte hex) {
-        if ((hex >= '0') && (hex <= '9')) {
-            return (byte) (hex - '0');
-        }
-
-        if ((hex >= 'A') && (hex <= 'F')) {
-            return (byte) (10 + (hex - 'A'));
-        }
-
-        Thread.dumpStack();
-        System.exit(1);
-        return -1;
-    }
-
 
 }
