@@ -67,9 +67,12 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
      *
      * @throws NoResultException if the current result is not success.
      */
-    public boolean getResultIsParasitic() throws NoResultException {
+    public boolean getResultIsParasitic() throws NoResultException, NoResultDataException {
         if ((result == null) || (result == Result.busy)) {
             throw new NoResultException();
+        }
+        if (result != Result.success) {
+            throw new NoResultDataException();
         }
 
         return resultIsParasitic;

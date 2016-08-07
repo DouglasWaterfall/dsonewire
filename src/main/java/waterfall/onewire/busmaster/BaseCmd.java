@@ -122,6 +122,19 @@ public class BaseCmd implements Logger {
     }
 
     /**
+     * Merge another log stream into this one.
+     *
+     * @param other
+     */
+    public void logMerge(ArrayList<String> other) {
+        if (logger != null) {
+            for (String s: other) {
+                logger.add(s);
+            }
+        }
+    }
+
+    /**
      * interface Logger.getLogSize()
      *
      * @return

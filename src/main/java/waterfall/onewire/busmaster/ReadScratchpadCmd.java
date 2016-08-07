@@ -89,9 +89,12 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
      * @return the bytes requested from the scratchpad encoded as two hex byte chars 0-9A-F.
      * @throws NoResultException if the current result is not done.
      */
-    public byte[] getResultHexData() throws NoResultException {
+    public byte[] getResultHexData() throws NoResultException, NoResultDataException {
         if ((result == null) || (result == Result.busy)) {
             throw new NoResultException();
+        }
+        if (result != Result.success) {
+            throw new NoResultDataException();
         }
 
         return resultHexData;

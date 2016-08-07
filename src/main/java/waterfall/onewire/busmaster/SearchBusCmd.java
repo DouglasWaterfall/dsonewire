@@ -79,7 +79,10 @@ public abstract class SearchBusCmd extends BaseCmd {
      * @return List of devices Addresses.
      * @throws NoResultException if the current result is not success.
      */
-    public List<String> getResultList() throws NoResultException {
+    public List<String> getResultList() throws NoResultException, NoResultDataException {
+        if (result != Result.success) {
+            throw new NoResultDataException();
+        }
         if (result != Result.success) {
             throw new NoResultDataException();
         }

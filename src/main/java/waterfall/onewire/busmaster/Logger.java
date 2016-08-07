@@ -1,5 +1,6 @@
 package waterfall.onewire.busmaster;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
@@ -14,6 +15,8 @@ public interface Logger {
     public void logError(String context, String str);
 
     public void logError(String context, Throwable t);
+
+    public void logMerge(ArrayList<String> data);
 
     public int getLogSize();
 
