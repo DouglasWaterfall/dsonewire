@@ -24,6 +24,7 @@
     </parent>
 
     <repositories>
+        <!--
     <repository>
         <id>snapshots</id>
         <name>pihome-snapshot</name>
@@ -32,6 +33,7 @@
             <updatePolicy>always</updatePolicy>
         </snapshots>
     </repository>
+    -->
     </repositories>
     
     <dependencies>

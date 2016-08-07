@@ -3,6 +3,7 @@ package waterfall.onewire;
 import com.dalsemi.onewire.utils.Convert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import waterfall.onewire.HttpClient.BaseCmdResult;
 import waterfall.onewire.busmaster.*;
 
 import java.util.*;
@@ -15,18 +16,6 @@ import java.util.*;
 public class Controller {
     BusMasterManager busMasterManager;
 
-    enum Errors {
-        Unknown_bmIdent,
-        BM_not_started,
-        Bad_parm_log_not_true_or_false,
-        Bad_parm_byAlarm_not_true_false,
-        Bad_parm_only_one_byAlarm_or_byFamilyCode_allowed,
-        Bad_parm_byFamilyCode_not_a_number,
-        Bad_parm_byFamilyCode_must_be_unsigned_byte,
-        No_BM_for_dsAddr,
-        Invalid_dsAddr,
-        Invalid_rCount
-    }
 
     @Autowired
     public Controller(BusMasterManager busMasterManager) {
@@ -64,15 +53,13 @@ public class Controller {
     }
 
     @RequestMapping(value = "/startCmd/{bmIdent}", method = RequestMethod.POST)
-    public Map<String, Object> startCmd(@PathVariable String bmIdent,
-                                        @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
-
-        Map<String, String> result = new HashMap<String, String>();
+    public waterfall.onewire.HttpClient.StartBusCmdResult startCmd(@PathVariable String bmIdent,
+                                                                   @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
         if (bm == null) {
-            return buildErrorResult(Errors.Unknown_bmIdent);
+            return new waterfall.onewire.HttpClient.StartBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
         boolean doLog;
@@ -81,25 +68,25 @@ public class Controller {
         } else if ("false".equals(parmLog)) {
             doLog = false;
         } else {
-            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+            return new waterfall.onewire.HttpClient.StartBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
         }
 
         StartBusCmd cmd = bm.queryStartBusCmd(doLog);
         cmd.execute();
 
-        return buildCmdExecuteResult((Logger) cmd, cmd.getResult());
+        return new waterfall.onewire.HttpClient.StartBusCmdResult(cmd);
     }
 
     @RequestMapping(value = "/stopCmd/{bmIdent}", method = RequestMethod.POST)
-    public Map<String, Object> stopCmd(@PathVariable String bmIdent,
-                                       @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+    public waterfall.onewire.HttpClient.StopBusCmdResult stopCmd(@PathVariable String bmIdent,
+                                                                 @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         Map<String, String> result = new HashMap<String, String>();
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
         if (bm == null) {
-            return buildErrorResult(Errors.Unknown_bmIdent);
+            return new waterfall.onewire.HttpClient.StopBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
         boolean log;
@@ -108,25 +95,25 @@ public class Controller {
         } else if ("false".equals(parmLog)) {
             log = false;
         } else {
-            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+            return new waterfall.onewire.HttpClient.StopBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
         }
 
         StopBusCmd cmd = bm.queryStopBusCmd(log);
         cmd.execute();
 
-        return buildCmdExecuteResult((Logger) cmd, cmd.getResult());
+        return new waterfall.onewire.HttpClient.StopBusCmdResult(cmd);
     }
 
     @RequestMapping(value = "/searchCmd/{bmIdent}", method = RequestMethod.POST)
-    public Map<String, Object> searchCmd(@PathVariable(value = "bmIdent") String bmIdent,
-                                         @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
-                                         @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
-                                         @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+    public waterfall.onewire.HttpClient.SearchBusCmdResult searchCmd(@PathVariable(value = "bmIdent") String bmIdent,
+                                                                     @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
+                                                                     @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
+                                                                     @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
         if (bm == null) {
-            return buildErrorResult(Errors.Unknown_bmIdent);
+            return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
         boolean doLog;
@@ -135,17 +122,17 @@ public class Controller {
         } else if ("false".equals(parmLog)) {
             doLog = false;
         } else {
-            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+            return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
         }
 
         SearchBusCmd cmd = null;
 
         if (parmByFamilyCode != null) {
             if (parmByAlarm != null) {
-                return buildErrorResult(Errors.Bad_parm_only_one_byAlarm_or_byFamilyCode_allowed);
+                return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_only_one_byAlarm_or_byFamilyCode_allowed);
             }
             if (parmByFamilyCode.isEmpty()) {
-                return buildErrorResult(Errors.Bad_parm_byFamilyCode_not_a_number);
+                return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byFamilyCode_not_a_number);
             }
 
             Short familyCode = null;
@@ -153,11 +140,11 @@ public class Controller {
             try {
                 familyCode = Short.valueOf(parmByFamilyCode);
             } catch (NumberFormatException e) {
-                return buildErrorResult(Errors.Bad_parm_byFamilyCode_not_a_number);
+                return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byFamilyCode_not_a_number);
             }
 
             if ((familyCode < 0) || (familyCode > 255)) {
-                return buildErrorResult(Errors.Bad_parm_byFamilyCode_must_be_unsigned_byte);
+                return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byFamilyCode_must_be_unsigned_byte);
             }
 
             cmd = bm.querySearchBusByFamilyCmd(familyCode, doLog);
@@ -166,24 +153,18 @@ public class Controller {
         } else if ("true".equals(parmByAlarm)) {
             cmd = bm.querySearchBusByAlarmCmd(doLog);
         } else {
-            return buildErrorResult(Errors.Bad_parm_byAlarm_not_true_false);
+            return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byAlarm_not_true_false);
         }
 
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
-
-        if (cmd.getResult() == SearchBusCmd.Result.success) {
-            result.put("resultList", cmd.getResultList());
-
-            if ((!cmd.isByAlarm()) && (!cmd.isByFamilyCode())) {
-                for (String addrAsHex : cmd.getResultList()) {
-                    busMasterManager.addDevice(addrAsHex, bm);
-                }
+        if ((cmd.getResult() == SearchBusCmd.Result.success) && (!cmd.isByAlarm()) && (!cmd.isByFamilyCode())) {
+            for (String addrAsHex : cmd.getResultList()) {
+                busMasterManager.addDevice(addrAsHex, bm);
             }
         }
 
-        return result;
+        return new waterfall.onewire.HttpClient.SearchBusCmdResult(cmd);
     }
 
     @RequestMapping(value = "/devices", method = RequestMethod.POST)
@@ -193,11 +174,11 @@ public class Controller {
     }
 
     @RequestMapping(value = "/readPowerSupplyCmd/{dsAddr}", method = RequestMethod.POST)
-    public Map<String, Object> readPowerSupplyCmd(@PathVariable String dsAddr,
-                                                  @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+    public waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult readPowerSupplyCmd(@PathVariable String dsAddr,
+                                                                                    @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
 
         if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
-            return buildErrorResult(Errors.Invalid_dsAddr);
+            return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
         }
 
         DSAddress _dsAddr = new DSAddress(dsAddr);
@@ -208,38 +189,32 @@ public class Controller {
         } else if ("false".equals(parmLog)) {
             log = false;
         } else {
-            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+            return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
         }
 
         BusMaster bm = busMasterManager.getBusMasterForDevice(dsAddr);
         if (bm == null) {
-            return buildErrorResult(Errors.No_BM_for_dsAddr);
+            return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.No_BM_for_dsAddr);
         }
 
         ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(_dsAddr, log);
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
-
-        if (cmd.getResult() == ReadPowerSupplyCmd.Result.success) {
-            result.put("isParasitic", String.valueOf(cmd.getResultIsParasitic()));
-        }
-
-        return result;
+        return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(cmd);
     }
 
     @RequestMapping(value = "/readScratchPadCmd/{dsAddr}/{rCount}", method = RequestMethod.POST)
-    public Map<String, Object> readScratchPadCmd(@PathVariable(value = "dsAddr") String dsAddr,
+    public waterfall.onewire.HttpClient.ReadScratchpadCmdResult readScratchPadCmd(@PathVariable(value = "dsAddr") String dsAddr,
                                                  @PathVariable(value = "rCount") Long rCount,
                                                  @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
         if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
-            return buildErrorResult(Errors.Invalid_dsAddr);
+            return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
         }
 
         DSAddress _dsAddr = new DSAddress(dsAddr);
 
         if ((rCount == null) || (rCount < 0) || (rCount > 254)) {
-            return buildErrorResult(Errors.Invalid_rCount);
+            return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Invalid_rCount);
         }
 
         boolean doLog;
@@ -248,42 +223,39 @@ public class Controller {
         } else if ("false".equals(parmLog)) {
             doLog = false;
         } else {
-            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+            return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
         }
 
         BusMaster bm = busMasterManager.getBusMasterForDevice(dsAddr);
         if (bm == null) {
-            return buildErrorResult(Errors.No_BM_for_dsAddr);
+            return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.No_BM_for_dsAddr);
         }
 
         ReadScratchpadCmd cmd = bm.queryReadScratchpadCmd(_dsAddr, rCount.shortValue(), doLog);
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
-
         if (cmd.getResult() == ReadScratchpadCmd.Result.success) {
-            result.put("dataAsHex", new String(cmd.getResultHexData()));
+            Float tempF = null;
+            Float tempC = null;
 
-            if ((cmd.getAddress().getFamilyCode() == 0x28) &&
-                    (cmd.getRequestByteCount() >= 2)) {
+            if ((cmd.getAddress().getFamilyCode() == 0x28) && (cmd.getRequestByteCount() >= 2)) {
                 int msb = (int) cmd.getResultData()[1] & 0xff;
                 int lsb = (int) cmd.getResultData()[0] & 0xff;
 
-                float tempC = ((float)((msb << 8) + lsb) / (float)16.0);
-
-                result.put("tempC", tempC);
-                result.put("tempF", Convert.toFahrenheit(tempC));
+                tempC = ((float) ((msb << 8) + lsb) / (float) 16.0);
+                tempF = (float)Convert.toFahrenheit(tempC);
             }
+            return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(cmd, tempF, tempC);
         }
 
-        return result;
+        return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(cmd, null, null);
     }
 
     @RequestMapping(value = "/convertTCmd/{dsAddr}", method = RequestMethod.POST)
-    public Map<String, Object> convertTCmd(@PathVariable(value = "dsAddr") String dsAddr,
-                                           @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+    public waterfall.onewire.HttpClient.ConvertTCmdResult convertTCmd(@PathVariable(value = "dsAddr") String dsAddr,
+                                                                      @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
         if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
-            return buildErrorResult(Errors.Invalid_dsAddr);
+            return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
         }
 
         DSAddress _dsAddr = new DSAddress(dsAddr);
@@ -294,52 +266,18 @@ public class Controller {
         } else if ("false".equals(parmLog)) {
             log = false;
         } else {
-            return buildErrorResult(Errors.Bad_parm_log_not_true_or_false);
+            return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
         }
 
         BusMaster bm = busMasterManager.getBusMasterForDevice(dsAddr);
         if (bm == null) {
-            return buildErrorResult(Errors.No_BM_for_dsAddr);
+            return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.No_BM_for_dsAddr);
         }
 
         ConvertTCmd cmd = bm.queryConvertTCmd(_dsAddr, log);
         cmd.execute();
 
-        Map<String, Object> result = buildCmdExecuteResult((Logger) cmd, cmd.getResult());
-
-        return result;
-    }
-
-    // Result builders
-    private static final String RESULT_KEY_ERROR = "error";
-    private static final String RESULT_KEY_LOG = "log";
-    private static final String RESULT_KEY_RESULT = "result";
-
-    public static Map<String, Object> buildErrorResult(Errors error) {
-        Map<String, Object> result = new HashMap<String, Object>();
-        result.put(RESULT_KEY_ERROR, error.getClass().getCanonicalName() + "." + error.name());
-        return result;
-    }
-
-    public static Map<String, Object> buildCmdExecuteResult(final Logger optLogger, final Enum cmdResult) {
-        Map<String, Object> result = new HashMap<String, Object>();
-
-        if ((optLogger != null) && (optLogger.getLogSize() > 0)) {
-            String[] logs = new String[optLogger.getLogSize()];
-            int i = 0;
-            for (Iterator<String> iter = optLogger.getLogIter(); iter.hasNext(); ) {
-                logs[i++] = iter.next();
-            }
-            result.put(RESULT_KEY_LOG, logs);
-        }
-
-        if (cmdResult != null) {
-            result.put(RESULT_KEY_RESULT, cmdResult.getClass().getCanonicalName() + "." + cmdResult.name());
-        } else {
-            result.put(RESULT_KEY_RESULT, null);
-        }
-
-        return result;
+        return new waterfall.onewire.HttpClient.ConvertTCmdResult(cmd);
     }
 
 }
