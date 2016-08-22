@@ -8,8 +8,6 @@ import waterfall.onewire.busmaster.ConvertTCmd;
  */
 public class HA7SConvertTCmd extends ConvertTCmd {
 
-    private final static String logContext = "HAS7SConvertTCmd";
-
     public HA7SConvertTCmd(HA7S ha7s, DSAddress dsAddr, boolean log) {
         super(ha7s, dsAddr, log);
     }
@@ -53,7 +51,7 @@ public class HA7SConvertTCmd extends ConvertTCmd {
 
         if (ret.readCount != 2) {
             if (getLogger() != null) {
-                getLogger().logError(logContext, "Expected readCount of 2, got:" + ret.readCount);
+                getLogger().logError(this.getClass().getSimpleName(), "Expected readCount of 2, got:" + ret.readCount);
             }
             return ConvertTCmd.Result.communication_error;
         }
@@ -65,7 +63,7 @@ public class HA7SConvertTCmd extends ConvertTCmd {
             for (int i = 0; i < 10; i++) {
                 ret = ((HA7S) busMaster).cmdReadBit(rbuf, getLogger());
                 if (getLogger() != null) {
-                    getLogger().logError(logContext + " O Cmd ", ret.result.name());
+                    getLogger().logError(this.getClass().getSimpleName() + " O Cmd ", ret.result.name());
                 }
                 if ((ret.result == HA7S.cmdResult.Success) && (rbuf[0] == '1')) {
                     break;
@@ -75,7 +73,7 @@ public class HA7SConvertTCmd extends ConvertTCmd {
         }
         catch (InterruptedException e) {
             if (getLogger() != null) {
-                getLogger().logError(logContext + " O Cmd ", e);
+                getLogger().logError(this.getClass().getSimpleName() + " O Cmd ", e);
             }
         }
 

@@ -9,8 +9,6 @@ import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
  */
 public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
-    final static String logContext = "HA7SReadPowerSupplyCmd";
-
     public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr, boolean log) {
         super(ha7s, dsAddr, log);
     }
@@ -63,7 +61,7 @@ public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
         if (ret.readCount != 4) {
             if (getLogger() != null) {
-                getLogger().logError(logContext, "Expected readCount of 4, got:" + ret.readCount);
+                getLogger().logError(this.getClass().getSimpleName(), "Expected readCount of 4, got:" + ret.readCount);
             }
             return ReadPowerSupplyCmd.Result.communication_error;
         }

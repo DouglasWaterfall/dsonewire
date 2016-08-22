@@ -13,7 +13,6 @@ import java.util.Arrays;
 public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
 
     private byte[] readScratchpadCmdData;
-    private final static String logContext = "HA7SReadScratchPad";
 
     public HA7SReadScratchpadCmd(HA7S ha7s, DSAddress dsAddr, short requestByteCount, boolean log) {
         super(ha7s, dsAddr, requestByteCount, log);
@@ -79,7 +78,7 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
 
         if (ret.readCount != expectedReadCount) {
             if (getLogger() != null) {
-                getLogger().logError(logContext, "Expected readCount of " + expectedReadCount + ", got:" + ret.readCount);
+                getLogger().logError(this.getClass().getSimpleName(), "Expected readCount of " + expectedReadCount + ", got:" + ret.readCount);
             }
             return ReadScratchpadCmd.Result.communication_error;
         }
@@ -94,7 +93,7 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
         final short crcIndex = dsAddrToCRCIndex(dsAddr);
         if ((crcIndex >= 0) && ((crcIndex + 1) == getRequestByteCount()) && (CRC8.compute(resultData) != 0)) {
             if (getLogger() != null) {
-                getLogger().logError(logContext, "CRC8 failed, crcIndex:" + crcIndex + " hex:" + resultHexData);
+                getLogger().logError(this.getClass().getSimpleName(), "CRC8 failed, crcIndex:" + crcIndex + " hex:" + resultHexData);
             }
             return ReadScratchpadCmd.Result.communication_error;
         }

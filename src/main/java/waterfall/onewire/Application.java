@@ -5,7 +5,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.HA7S.HA7S;
 
 /*
@@ -19,7 +18,7 @@ import org.springframework.context.ApplicationContext;
 public class Application {
 
     @Autowired
-    private BusMasterManager busMasterManager;
+    Controller  controller;
 
     public void start() {
         System.out.println("starting dsonewireserver...");
@@ -27,9 +26,7 @@ public class Application {
         //
         // This a hard wired device configuration.
         //
-        BusMaster busmaster = new HA7S("/dev/ttyAMA0"); // or "/dev/ttyS0"
-
-        busMasterManager.add(busmaster);
+        controller.addBusMaster(new HA7S("/dev/ttyAMA0")); // or "/dev/ttyS0"
 
         try {
             Thread.sleep(1000 * 60 * 60 * 24 * 7);

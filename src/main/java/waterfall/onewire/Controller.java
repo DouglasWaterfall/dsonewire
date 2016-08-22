@@ -2,10 +2,15 @@ package waterfall.onewire;
 
 import com.dalsemi.onewire.utils.Convert;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import waterfall.onewire.HttpClient.BaseCmdResult;
+import waterfall.onewire.HttpClient.StatusCmdResult;
 import waterfall.onewire.busmaster.*;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -15,11 +20,15 @@ import java.util.*;
 @RequestMapping(value = "/httpbusmaster")
 public class Controller {
     BusMasterManager busMasterManager;
+    String currentAuthenticationValue;
 
+    public Controller() {
+        this.busMasterManager = new BusMasterManager();
+        this.currentAuthenticationValue = null;
+    }
 
-    @Autowired
-    public Controller(BusMasterManager busMasterManager) {
-        this.busMasterManager = busMasterManager;
+    public void addBusMaster(BusMaster bm) {
+        busMasterManager.add(bm);
     }
 
     /*
@@ -31,30 +40,33 @@ public class Controller {
         ...
     */
 
-
-    @RequestMapping(value = "/status", method = RequestMethod.POST)
-    public Collection<Map<String, String>> status() {
-        // return list of busmasters with their status started/stopped
-        String[] bmIdents = busMasterManager.getBusMasterIdents();
-
-        Base64.Encoder encoder = Base64.getEncoder();
-
-        ArrayList<Map<String, String>> result = new ArrayList<Map<String, String>>();
-        for (String bmIdent : bmIdents) {
-            HashMap<String, String> data = new HashMap<String, String>();
-            BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
-            data.put("ident", bmIdent);
-            data.put("name", bm.getName());
-            data.put("started", Boolean.toString(bm.getIsStarted()));
-            result.add(data);
-        }
-
-        return result;
+    @RequestMapping(value = "/bmList", method = RequestMethod.POST)
+    public List<String> bms() {
+        return busMasterManager.getBusMasterIdents();
     }
 
-    @RequestMapping(value = "/startCmd/{bmIdent}", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.StartBusCmdResult startCmd(@PathVariable String bmIdent,
+    @RequestMapping(value = "/busStatusCmd/{bmIdent}", method = RequestMethod.POST)
+    public waterfall.onewire.HttpClient.StatusCmdResult busStatusCmd(@PathVariable String bmIdent) {
+
+        BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
+
+        if (bm == null) {
+            return new waterfall.onewire.HttpClient.StatusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
+        }
+
+        if (currentAuthenticationValue == null) {
+            currentAuthenticationValue = Base64.getUrlEncoder().encodeToString(new Date(System.currentTimeMillis()).toString().getBytes());
+            System.out.println("status " + bmIdent + " currentAuthenticationValue:" + currentAuthenticationValue);
+        }
+
+        return new StatusCmdResult(bmIdent, bm, currentAuthenticationValue);
+    }
+
+    @RequestMapping(value = "/startBusCmd/{bmIdent}", method = RequestMethod.POST)
+    public waterfall.onewire.HttpClient.StartBusCmdResult startBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                                   @PathVariable String bmIdent,
                                                                    @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        checkAuthenticationHeader(authorization);
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
@@ -77,9 +89,11 @@ public class Controller {
         return new waterfall.onewire.HttpClient.StartBusCmdResult(cmd);
     }
 
-    @RequestMapping(value = "/stopCmd/{bmIdent}", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.StopBusCmdResult stopCmd(@PathVariable String bmIdent,
+    @RequestMapping(value = "/stopBusCmd/{bmIdent}", method = RequestMethod.POST)
+    public waterfall.onewire.HttpClient.StopBusCmdResult stopBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                                 @PathVariable String bmIdent,
                                                                  @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        checkAuthenticationHeader(authorization);
 
         Map<String, String> result = new HashMap<String, String>();
 
@@ -104,11 +118,13 @@ public class Controller {
         return new waterfall.onewire.HttpClient.StopBusCmdResult(cmd);
     }
 
-    @RequestMapping(value = "/searchCmd/{bmIdent}", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.SearchBusCmdResult searchCmd(@PathVariable(value = "bmIdent") String bmIdent,
+    @RequestMapping(value = "/searchBusCmd/{bmIdent}", method = RequestMethod.POST)
+    public waterfall.onewire.HttpClient.SearchBusCmdResult searchBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                                     @PathVariable(value = "bmIdent") String bmIdent,
                                                                      @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
                                                                      @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
                                                                      @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        checkAuthenticationHeader(authorization);
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
 
@@ -167,15 +183,11 @@ public class Controller {
         return new waterfall.onewire.HttpClient.SearchBusCmdResult(cmd);
     }
 
-    @RequestMapping(value = "/devices", method = RequestMethod.POST)
-    public String[] devices() {
-        // return list of devices gathered from the last full search
-        return busMasterManager.getDevices();
-    }
-
     @RequestMapping(value = "/readPowerSupplyCmd/{dsAddr}", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult readPowerSupplyCmd(@PathVariable String dsAddr,
+    public waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult readPowerSupplyCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                                                    @PathVariable String dsAddr,
                                                                                     @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        checkAuthenticationHeader(authorization);
 
         if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
             return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
@@ -203,10 +215,13 @@ public class Controller {
         return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(cmd);
     }
 
-    @RequestMapping(value = "/readScratchPadCmd/{dsAddr}/{rCount}", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.ReadScratchpadCmdResult readScratchPadCmd(@PathVariable(value = "dsAddr") String dsAddr,
-                                                 @PathVariable(value = "rCount") Long rCount,
-                                                 @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+    @RequestMapping(value = "/readScratchpadCmd/{dsAddr}/{rCount}", method = RequestMethod.POST)
+    public waterfall.onewire.HttpClient.ReadScratchpadCmdResult readScratchPadCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                                                  @PathVariable(value = "dsAddr") String dsAddr,
+                                                                                  @PathVariable(value = "rCount") Long rCount,
+                                                                                  @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        checkAuthenticationHeader(authorization);
+
         if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
             return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
         }
@@ -243,7 +258,7 @@ public class Controller {
                 int lsb = (int) cmd.getResultData()[0] & 0xff;
 
                 tempC = ((float) ((msb << 8) + lsb) / (float) 16.0);
-                tempF = (float)Convert.toFahrenheit(tempC);
+                tempF = (float) Convert.toFahrenheit(tempC);
             }
             return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(cmd, tempF, tempC);
         }
@@ -252,8 +267,11 @@ public class Controller {
     }
 
     @RequestMapping(value = "/convertTCmd/{dsAddr}", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.ConvertTCmdResult convertTCmd(@PathVariable(value = "dsAddr") String dsAddr,
+    public waterfall.onewire.HttpClient.ConvertTCmdResult convertTCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                                      @PathVariable(value = "dsAddr") String dsAddr,
                                                                       @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+        checkAuthenticationHeader(authorization);
+
         if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
             return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
         }
@@ -278,6 +296,25 @@ public class Controller {
         cmd.execute();
 
         return new waterfall.onewire.HttpClient.ConvertTCmdResult(cmd);
+    }
+
+    public class AuthException extends RuntimeException {
+        public AuthException() {
+            super();
+        }
+    }
+
+    @ExceptionHandler(AuthException.class)
+    void handleBadRequests(HttpServletResponse response) throws IOException {
+        response.sendError(HttpStatus.GONE.value(), "Authorization header mismatch");
+    }
+
+    private void checkAuthenticationHeader(String authentication) throws AuthException {
+        if ((authentication == null) ||
+                (currentAuthenticationValue == null) ||
+                (!authentication.equals(currentAuthenticationValue))) {
+            throw new AuthException();
+        }
     }
 
 }

@@ -12,8 +12,6 @@ import java.util.List;
  */
 public class HA7SSearchBusCmd extends SearchBusCmd {
 
-    final static String logContext = "HA7SSearchBusCmd";
-
     // All (so !Alarm)
     public HA7SSearchBusCmd(HA7S ha7s, boolean log) {
         super(ha7s, false, log);
@@ -89,7 +87,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
                         break;
                     }
                     if (getLogger() != null) {
-                        getLogger().logError(logContext, "Expected readCount of 0 or 16, got:" + ret.readCount);
+                        getLogger().logError(this.getClass().getSimpleName(), "Expected readCount of 0 or 16, got:" + ret.readCount);
                     }
                     // FALLTHROUGH
                 case DeviceNotFound:
