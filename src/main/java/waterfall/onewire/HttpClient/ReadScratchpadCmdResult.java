@@ -12,6 +12,12 @@ public class ReadScratchpadCmdResult extends BaseCmdResult {
         super();
     };
 
+    public ReadScratchpadCmdResult(PostErrors e) {
+        super(e);
+        this.result = null;
+        this.resultHexData = null;
+    }
+
     public ReadScratchpadCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
@@ -19,7 +25,7 @@ public class ReadScratchpadCmdResult extends BaseCmdResult {
     }
 
     public ReadScratchpadCmdResult(ReadScratchpadCmd cmd, Float tempF, Float tempC) {
-        super(null);
+        super();
         this.result = cmd.getResult().name();
         if (cmd.getResult() == ReadScratchpadCmd.Result.success) {
             this.resultHexData = cmd.getResultHexData();
@@ -44,9 +50,6 @@ public class ReadScratchpadCmdResult extends BaseCmdResult {
             return null;
         }
     }
-
-    @JsonIgnore
-    public byte[] resultData;
 
     @JsonProperty("resultHexData")
     public byte[] resultHexData;

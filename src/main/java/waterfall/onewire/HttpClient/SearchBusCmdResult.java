@@ -16,6 +16,12 @@ public class SearchBusCmdResult extends BaseCmdResult {
         super();
     };
 
+    public SearchBusCmdResult(PostErrors e) {
+        super(e);
+        this.result = null;
+        this.resultList = null;
+    }
+
     public SearchBusCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
@@ -23,7 +29,7 @@ public class SearchBusCmdResult extends BaseCmdResult {
     }
 
     public SearchBusCmdResult(SearchBusCmd cmd) {
-        super(null);
+        super();
         this.result = cmd.getResult().name();
         if (cmd.getResult() == SearchBusCmd.Result.success) {
             this.resultList = cmd.getResultList();

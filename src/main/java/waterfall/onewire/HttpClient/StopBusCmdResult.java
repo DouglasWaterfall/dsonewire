@@ -14,13 +14,18 @@ public class StopBusCmdResult extends BaseCmdResult {
         super();
     };
 
+    public StopBusCmdResult(PostErrors e) {
+        super(e);
+        this.result = null;
+    }
+
     public StopBusCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
     }
 
     public StopBusCmdResult(StopBusCmd cmd) {
-        super(null);
+        super();
         this.result = cmd.getResult().name();
         super.setLogger(cmd.getLogger());
     }

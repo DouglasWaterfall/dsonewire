@@ -14,6 +14,12 @@ public class ReadPowerSupplyCmdResult extends BaseCmdResult {
         super();
     };
 
+    public ReadPowerSupplyCmdResult(PostErrors e) {
+        super(e);
+        this.result = null;
+        this.isParasitic = null;
+    }
+
     public ReadPowerSupplyCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
@@ -21,7 +27,7 @@ public class ReadPowerSupplyCmdResult extends BaseCmdResult {
     }
 
     public ReadPowerSupplyCmdResult(ReadPowerSupplyCmd cmd) {
-        super(null);
+        super();
         this.result = cmd.getResult().name();
         if (cmd.getResult() == ReadPowerSupplyCmd.Result.success) {
             this.isParasitic = cmd.getResultIsParasitic();

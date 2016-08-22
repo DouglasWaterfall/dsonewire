@@ -1,5 +1,6 @@
 package waterfall.onewire.HttpClient;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import waterfall.onewire.busmaster.Logger;
 
@@ -11,14 +12,16 @@ import java.util.Iterator;
  */
 public class BaseCmdResult {
 
-    public enum ControllerErrors {
+    public enum PostErrors {
         ConnectException,
         MethodNotAllowed,
         ReadTimeout,
         ParseException,
         ServerError, // 500
-        UnknownError,
+        UnknownError
+    }
 
+    public enum ControllerErrors {
         Unknown_bmIdent,
         BM_not_started,
         Bad_parm_log_not_true_or_false,
@@ -32,18 +35,30 @@ public class BaseCmdResult {
     }
 
     protected BaseCmdResult() {
+        postError = null;
+        controllerError = null;
     }
 
-    protected BaseCmdResult(ControllerErrors e) {
-        error = (e != null) ? e.name() : null;
+    protected BaseCmdResult(PostErrors pe) {
+        postError = pe;
+        controllerError = null;
     }
 
-    @JsonProperty("error")
-    public String error;
+    protected BaseCmdResult(ControllerErrors ce) {
+        postError = null;
+        controllerError = (ce != null) ? ce.name() : null;
+    }
+
+    @JsonIgnore
+    public PostErrors postError;
+
+    @JsonProperty("controllerError")
+    public String controllerError;
 
     @JsonProperty("log")
     public String[] log;
 
+    @JsonIgnore
     protected void setLogger(Logger optLogger) {
         if ((optLogger != null) && (optLogger.getLogSize() > 0)) {
             log = new String[optLogger.getLogSize()];
@@ -54,21 +69,4 @@ public class BaseCmdResult {
         }
     }
 
-    public String toString() {
-        StringBuffer sb = new StringBuffer();
-
-        if (error != null) {
-            sb.append("error:" + error);
-            sb.append('\n');
-        }
-
-        if (log != null) {
-            sb.append("log[" + log.length + "]:\n");
-            for (String s : log) {
-                sb.append(s + "\n");
-            }
-        }
-
-        return sb.toString();
-    }
 }

@@ -13,13 +13,18 @@ public class ConvertTCmdResult extends BaseCmdResult {
         super();
     };
 
-    public ConvertTCmdResult(BaseCmdResult.ControllerErrors e) {
+    public ConvertTCmdResult(PostErrors e) {
+        super(e);
+        this.result = null;
+    }
+
+    public ConvertTCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
     }
 
     public ConvertTCmdResult(ConvertTCmd cmd) {
-        super(null);
+        super();
         this.result = cmd.getResult().name();
         super.setLogger(cmd.getLogger());
     }

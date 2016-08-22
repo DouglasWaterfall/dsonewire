@@ -31,14 +31,19 @@ public abstract class StopBusCmd extends BaseCmd {
             result = Result.busy;
         }
 
-        try {
-            logInfo("execute()");
-            result = execute_internal();
-            logInfo("result:" + result.name());
+        if (!getBusMaster().getIsStarted()) {
+            result = Result.stopped;
+        }
+        else {
+            try {
+                logInfo("execute()");
+                result = execute_internal();
+                logInfo("result:" + result.name());
 
-        } catch (Exception e) {
-            logError(e);
-            result = Result.communication_error;
+            } catch (Exception e) {
+                logError(e);
+                result = Result.communication_error;
+            }
         }
 
         return result;

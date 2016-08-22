@@ -85,6 +85,21 @@ public class Convert {
         return (fcount / 2);
     }
 
+    /**
+     * Convert a hex encoded byte[] to a new full byte[]
+     * @param from    hex encoded byte[] to read from
+     * @return new byte[] with the full data
+     */
+    public static byte[] hexToByte(final byte[] from) {
+        int fromLen = from.length;
+
+        byte[] ret = new byte[fromLen / 2];
+
+        hexToByte(from, 0, fromLen, ret, 0);
+
+        return ret;
+    }
+
     private static final byte[] toHexTable = {
             '0', '1', '2', '3', '4', '5', '6', '7',
             '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'

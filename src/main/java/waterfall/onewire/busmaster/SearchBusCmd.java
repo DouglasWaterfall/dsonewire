@@ -53,14 +53,19 @@ public abstract class SearchBusCmd extends BaseCmd {
             resultWriteCTM = 0;
         }
 
-        try {
-            logInfo("execute(" + (isByAlarm() ? "byAlarm" : (isByFamilyCode() ? Integer.toHexString(familyCode) : "")) + ")");
-            result = execute_internal();
-            logInfo("result:" + result.name());
+        if (!getBusMaster().getIsStarted()) {
+            result = Result.bus_not_started;
+        }
+        else {
+            try {
+                logInfo("execute(" + (isByAlarm() ? "byAlarm" : (isByFamilyCode() ? Integer.toHexString(familyCode) : "")) + ")");
+                result = execute_internal();
+                logInfo("result:" + result.name());
 
-        } catch (Exception e) {
-            logError(e);
-            result = Result.communication_error;
+            } catch (Exception e) {
+                logError(e);
+                result = Result.communication_error;
+            }
         }
 
         return result;

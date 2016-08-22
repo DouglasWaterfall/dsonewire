@@ -40,14 +40,19 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
             resultWriteCTM = 0;
         }
 
-        try {
-            logInfo("execute(dsAddr:" + getAddress().toString() + ")");
-            result = execute_internal();
-            logInfo("result:" + result.name());
+        if (!getBusMaster().getIsStarted()) {
+            result = Result.bus_not_started;
+        }
+        else {
+            try {
+                logInfo("execute(dsAddr:" + getAddress().toString() + ")");
+                result = execute_internal();
+                logInfo("result:" + result.name());
 
-        } catch (Exception e) {
-            logError(e);
-            result = Result.communication_error;
+            } catch (Exception e) {
+                logError(e);
+                result = Result.communication_error;
+            }
         }
 
         return result;
