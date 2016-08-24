@@ -41,8 +41,19 @@ public class Controller {
     */
 
     @RequestMapping(value = "/bmList", method = RequestMethod.POST)
-    public List<String> bms() {
-        return busMasterManager.getBusMasterIdents();
+    public waterfall.onewire.HttpClient.ListBusMastersCmdResult listBusMasters(
+            @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+
+        boolean doLog;
+        if ("true".equals(parmLog)) {
+            doLog = true;
+        } else if ("false".equals(parmLog)) {
+            doLog = false;
+        } else {
+            return new waterfall.onewire.HttpClient.ListBusMastersCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        }
+
+        return new waterfall.onewire.HttpClient.ListBusMastersCmdResult(busMasterManager.getBusMasterIdents(), null);
     }
 
     @RequestMapping(value = "/busStatusCmd/{bmIdent}", method = RequestMethod.POST)
@@ -64,8 +75,8 @@ public class Controller {
 
     @RequestMapping(value = "/startBusCmd/{bmIdent}", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.StartBusCmdResult startBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-                                                                   @PathVariable String bmIdent,
-                                                                   @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                      @PathVariable String bmIdent,
+                                                                      @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
@@ -91,8 +102,8 @@ public class Controller {
 
     @RequestMapping(value = "/stopBusCmd/{bmIdent}", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.StopBusCmdResult stopBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-                                                                 @PathVariable String bmIdent,
-                                                                 @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                    @PathVariable String bmIdent,
+                                                                    @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
         checkAuthenticationHeader(authorization);
 
         Map<String, String> result = new HashMap<String, String>();
@@ -120,10 +131,10 @@ public class Controller {
 
     @RequestMapping(value = "/searchBusCmd/{bmIdent}", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.SearchBusCmdResult searchBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-                                                                     @PathVariable(value = "bmIdent") String bmIdent,
-                                                                     @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
-                                                                     @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
-                                                                     @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                        @PathVariable(value = "bmIdent") String bmIdent,
+                                                                        @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
+                                                                        @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
+                                                                        @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm = busMasterManager.getBusMasterByIdent(bmIdent);
