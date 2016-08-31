@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import waterfall.onewire.busmaster.HA7S.HA7S;
+import waterfall.onewire.busmasters.HA7S.HA7S;
 
 /*
 import org.springframework.beans.BeansException;
@@ -39,7 +39,6 @@ public class Application {
         ApplicationContext ctx = SpringApplication.run(Application.class, args);
         Application app = (Application) ctx.getBean(Application.class);
         app.start();
-        System.exit(0);
     }
 
 }

@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>waterfall</groupId>
-    <artifactId>dsonewireserver</artifactId>
+    <artifactId>dsonewire-busmasterserver</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>dsonewireserver</name>
+    <name>dsonewire-busmasterserver</name>
     <url>http://maven.apache.org</url>
 
     <properties>
@@ -43,12 +43,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.scream3r</groupId>
-            <artifactId>jssc</artifactId>
-            <version>2.8.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.0</version>
@@ -62,7 +56,13 @@
 
         <dependency>
             <groupId>waterfall</groupId>
-            <artifactId>dsonewire</artifactId>
+            <artifactId>dsonewire-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>waterfall</groupId>
+            <artifactId>dsonewire-ha7s</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
