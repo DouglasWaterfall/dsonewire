@@ -158,5 +158,14 @@ public class BaseCmd implements Logger {
         return null;
     }
 
+    /**
+     * interface Logger.clearLog()
+     */
+    public void clearLog() {
+        if (logger != null) {
+            logger.clear();
+        }
+    }
+
 }
 

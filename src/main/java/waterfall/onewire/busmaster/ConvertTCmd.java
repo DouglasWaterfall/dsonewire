@@ -29,6 +29,8 @@ public abstract class ConvertTCmd extends DeviceBaseCmd {
      * implementation must be responsible for re-initializing the result and writeCTM.
      */
     public Result execute() {
+        clearLog();
+
         synchronized (this) {
             if (result == Result.busy) {
                 throw new NoResultException("busy");

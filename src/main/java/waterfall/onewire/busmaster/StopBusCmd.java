@@ -23,6 +23,8 @@ public abstract class StopBusCmd extends BaseCmd {
      * implementation must be responsible for re-initializing the result.
      */
     public Result execute() {
+        clearLog();
+
         synchronized (this) {
             if (result == Result.busy) {
                 throw new NoResultException("busy");

@@ -22,4 +22,6 @@ public interface Logger {
 
     public Iterator<String> getLogIter();
 
+    public void clearLog();
+
 }
