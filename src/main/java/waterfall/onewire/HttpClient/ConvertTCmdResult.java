@@ -9,6 +9,13 @@ import waterfall.onewire.busmaster.ConvertTCmd;
  * Created by dwaterfa on 8/6/16.
  */
 public class ConvertTCmdResult extends BaseCmdResult {
+
+    @JsonProperty("result")
+    public String result;
+
+    @JsonProperty("resultWriteCTM")
+    public long resultWriteCTM;
+
     public ConvertTCmdResult() {
         super();
     };
@@ -16,21 +23,21 @@ public class ConvertTCmdResult extends BaseCmdResult {
     public ConvertTCmdResult(PostErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
     }
 
     public ConvertTCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
     }
 
     public ConvertTCmdResult(ConvertTCmd cmd) {
         super();
         this.result = cmd.getResult().name();
+        this.resultWriteCTM = cmd.getResultWriteCTM();
         super.setLogger(cmd.getLogger());
     }
-
-    @JsonProperty("result")
-    public String result;
 
     @JsonIgnore
     public ConvertTCmd.Result getResult() {

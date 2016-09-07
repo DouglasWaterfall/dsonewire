@@ -126,6 +126,10 @@ public abstract class SearchBusCmd extends BaseCmd {
     }
 
     /**
+     * Protected Methods and Constructors
+     */
+
+    /**
      * @param busMaster
      * @param familyCode
      */
@@ -135,9 +139,8 @@ public abstract class SearchBusCmd extends BaseCmd {
         this.byAlarm = null;
     }
 
-    /**
-     * @return
-     */
     protected abstract Result execute_internal();
+
+    protected abstract void setResultData(long resultWriteCTM, List<String> resultList);
 
 }

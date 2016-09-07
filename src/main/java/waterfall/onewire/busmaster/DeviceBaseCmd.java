@@ -17,6 +17,12 @@ public abstract class DeviceBaseCmd extends BaseCmd {
     }
 
     /**
+     * This the closest value for System.getCurrentTimeMillis() on the physical bus controlling the device when
+     * the write for the bus command was executed.
+     */
+    protected long resultWriteCTM;
+
+    /**
      * Protected Methods and Constructors
      */
     protected DeviceBaseCmd(BusMaster busMaster, DSAddress dsAddr, boolean doLog) {

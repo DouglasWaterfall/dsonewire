@@ -10,6 +10,15 @@ import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
  */
 public class ReadPowerSupplyCmdResult extends BaseCmdResult {
 
+    @JsonProperty("result")
+    public String result;
+
+    @JsonProperty("isParasitic")
+    public Boolean isParasitic;
+
+    @JsonProperty("resultWriteCTM")
+    public long resultWriteCTM;
+
     public ReadPowerSupplyCmdResult() {
         super();
     };
@@ -17,12 +26,14 @@ public class ReadPowerSupplyCmdResult extends BaseCmdResult {
     public ReadPowerSupplyCmdResult(PostErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
         this.isParasitic = null;
     }
 
     public ReadPowerSupplyCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
         this.isParasitic = null;
     }
 
@@ -30,13 +41,11 @@ public class ReadPowerSupplyCmdResult extends BaseCmdResult {
         super();
         this.result = cmd.getResult().name();
         if (cmd.getResult() == ReadPowerSupplyCmd.Result.success) {
+            this.resultWriteCTM = cmd.getResultWriteCTM();
             this.isParasitic = cmd.getResultIsParasitic();
         }
         super.setLogger(cmd.getLogger());
     }
-
-    @JsonProperty("result")
-    public String result;
 
     @JsonIgnore
     public ReadPowerSupplyCmd.Result getResult() {
@@ -50,9 +59,6 @@ public class ReadPowerSupplyCmdResult extends BaseCmdResult {
             return null;
         }
     }
-
-    @JsonProperty("isParasitic")
-    public Boolean isParasitic;
 
     @JsonIgnore
     public String toString() {

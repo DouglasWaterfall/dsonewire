@@ -11,7 +11,6 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
 
     protected Result result = null;
     protected boolean resultIsParasitic;
-    protected long resultWriteCTM;
 
     /**
      *
@@ -107,10 +106,7 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
         super(busMaster, dsAddr, log);
     }
 
-    protected abstract void setResultIsParasitic(boolean isParasitic);
-
-    public abstract void setResultWriteCTM(long resultWriteCTM);
-
     protected abstract Result execute_internal();
 
+    protected abstract void setResultData(long resultWriteCTM, boolean isParasitic);
 }

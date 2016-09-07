@@ -12,6 +12,15 @@ import java.util.List;
  */
 public class SearchBusCmdResult extends BaseCmdResult {
 
+    @JsonProperty("result")
+    public String result;
+
+    @JsonProperty("resultWriteCTM")
+    public long resultWriteCTM;
+
+    @JsonProperty("resultList")
+    public List<String> resultList;
+
     public SearchBusCmdResult() {
         super();
     };
@@ -19,12 +28,14 @@ public class SearchBusCmdResult extends BaseCmdResult {
     public SearchBusCmdResult(PostErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
         this.resultList = null;
     }
 
     public SearchBusCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
         this.resultList = null;
     }
 
@@ -32,13 +43,11 @@ public class SearchBusCmdResult extends BaseCmdResult {
         super();
         this.result = cmd.getResult().name();
         if (cmd.getResult() == SearchBusCmd.Result.success) {
+            this.resultWriteCTM = cmd.getResultWriteCTM();
             this.resultList = cmd.getResultList();
         }
         super.setLogger(cmd.getLogger());
     }
-
-    @JsonProperty("result")
-    public String result;
 
     @JsonIgnore
     public SearchBusCmd.Result getResult() {
@@ -52,9 +61,6 @@ public class SearchBusCmdResult extends BaseCmdResult {
             return null;
         }
     }
-
-    @JsonProperty("resultList")
-    public List<String> resultList;
 
     @JsonIgnore
     public String toString() {

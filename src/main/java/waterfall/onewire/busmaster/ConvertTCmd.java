@@ -10,7 +10,6 @@ import waterfall.onewire.DSAddress;
 public abstract class ConvertTCmd extends DeviceBaseCmd {
 
     protected Result result = null;
-    protected long resultWriteCTM;
 
     /**
      *
@@ -90,6 +89,8 @@ public abstract class ConvertTCmd extends DeviceBaseCmd {
     }
 
     protected abstract Result execute_internal();
+
+    protected abstract void setResultData(long resultWriteCTM);
 
 }
 

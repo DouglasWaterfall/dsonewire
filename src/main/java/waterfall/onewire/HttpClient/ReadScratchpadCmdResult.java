@@ -8,6 +8,22 @@ import waterfall.onewire.busmaster.ReadScratchpadCmd;
  * Created by dwaterfa on 8/6/16.
  */
 public class ReadScratchpadCmdResult extends BaseCmdResult {
+
+    @JsonProperty("result")
+    public String result;
+
+    @JsonProperty("resultWriteCTM")
+    public long resultWriteCTM;
+
+    @JsonProperty("resultHexData")
+    public byte[] resultHexData;
+
+    @JsonProperty("tempF")
+    public Float tempF;
+
+    @JsonProperty("tempC")
+    public Float tempC;
+
     public ReadScratchpadCmdResult() {
         super();
     };
@@ -15,12 +31,14 @@ public class ReadScratchpadCmdResult extends BaseCmdResult {
     public ReadScratchpadCmdResult(PostErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
         this.resultHexData = null;
     }
 
     public ReadScratchpadCmdResult(ControllerErrors e) {
         super(e);
         this.result = null;
+        this.resultWriteCTM = 0;
         this.resultHexData = null;
     }
 
@@ -28,15 +46,13 @@ public class ReadScratchpadCmdResult extends BaseCmdResult {
         super();
         this.result = cmd.getResult().name();
         if (cmd.getResult() == ReadScratchpadCmd.Result.success) {
+            this.resultWriteCTM = cmd.getResultWriteCTM();
             this.resultHexData = cmd.getResultHexData();
             this.tempF = tempF;
             this.tempC = tempC;
         }
         super.setLogger(cmd.getLogger());
     }
-
-    @JsonProperty("result")
-    public String result;
 
     @JsonIgnore
     public ReadScratchpadCmd.Result getResult() {
@@ -50,15 +66,6 @@ public class ReadScratchpadCmdResult extends BaseCmdResult {
             return null;
         }
     }
-
-    @JsonProperty("resultHexData")
-    public byte[] resultHexData;
-
-    @JsonProperty("tempF")
-    public Float tempF;
-
-    @JsonProperty("tempC")
-    public Float tempC;
 
     @JsonIgnore
     public String toString() {

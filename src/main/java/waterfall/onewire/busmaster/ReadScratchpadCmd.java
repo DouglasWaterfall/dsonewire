@@ -12,7 +12,6 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
     protected short requestByteCount;
 
     protected Result result = null;
-    protected long resultWriteCTM;
     protected byte[] resultData;
     protected byte[] resultHexData;
 
@@ -131,10 +130,8 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
         this.requestByteCount = requestByteCount;
     }
 
-    abstract public void setResultData(byte[] resultData, byte[] resultHexData);
-
-    abstract public void setResultWriteCTM(long resultWriteCTM);
-
     protected abstract Result execute_internal();
+
+    protected abstract void setResultData(long resultWriteCTM, byte[] resultData, byte[] resultHexData);
 
 }
