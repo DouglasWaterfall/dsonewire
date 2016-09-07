@@ -18,17 +18,6 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
         super(ha7s, dsAddr, requestByteCount, log);
     }
 
-    public void setResultData(byte[] resultData, byte[] resultHexData) {
-        assert (result == ReadScratchpadCmd.Result.busy);
-        this.resultData = resultData;
-        this.resultHexData = resultHexData;
-    }
-
-    public void setResultWriteCTM(long resultWriteCTM) {
-        assert (result == ReadScratchpadCmd.Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-    }
-
     protected ReadScratchpadCmd.Result execute_internal() {
         assert (result == ReadScratchpadCmd.Result.busy);
         assert (resultData == null);
@@ -99,10 +88,16 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
         }
 
         // return count of characters in the char buffer.
-        setResultData(resultData, resultHexData);
-        setResultWriteCTM(ret.writeCTM);
+        setResultData(ret.writeCTM, resultData, resultHexData);
 
         return ReadScratchpadCmd.Result.success;
+    }
+
+    public void setResultData(long resultWriteCTM, byte[] resultData, byte[] resultHexData) {
+        assert (result == ReadScratchpadCmd.Result.busy);
+        this.resultWriteCTM = resultWriteCTM;
+        this.resultData = resultData;
+        this.resultHexData = resultHexData;
     }
 
     private static short dsAddrToCRCIndex(final DSAddress dsAddr) {

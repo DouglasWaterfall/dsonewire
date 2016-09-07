@@ -14,18 +14,6 @@ public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
     }
 
     @Override
-    public void setResultIsParasitic(boolean isParasitic) {
-        assert (result == Result.busy);
-        this.resultIsParasitic = isParasitic;
-    }
-
-    @Override
-    public void setResultWriteCTM(long resultWriteCTM) {
-        assert (result == Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-    }
-
-    @Override
     protected ReadPowerSupplyCmd.Result execute_internal() {
         assert (result == Result.busy);
         assert (resultWriteCTM == 0);
@@ -68,10 +56,16 @@ public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
         // externally powered will pull the bus high
         final int v = Convert.hexToFourBits(rbuf[3]);
-        setResultIsParasitic((v & 0x01) == 0);
-        setResultWriteCTM(ret.writeCTM);
+        setResultData(ret.writeCTM, ((v & 0x01) == 0));
 
         return ReadPowerSupplyCmd.Result.success;
+    }
+
+    @Override
+    public void setResultData(long resultWriteCTM, boolean isParasitic) {
+        assert (result == Result.busy);
+        this.resultWriteCTM = resultWriteCTM;
+        this.resultIsParasitic = isParasitic;
     }
 
 }

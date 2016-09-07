@@ -12,11 +12,6 @@ public class HA7SConvertTCmd extends ConvertTCmd {
         super(ha7s, dsAddr, log);
     }
 
-    public void setResultWriteCTM(long resultWriteCTM) {
-        assert (result == Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-    }
-
     protected ConvertTCmd.Result execute_internal() {
         assert (result == Result.busy);
         assert (resultWriteCTM == 0);
@@ -56,7 +51,7 @@ public class HA7SConvertTCmd extends ConvertTCmd {
             return ConvertTCmd.Result.communication_error;
         }
 
-        setResultWriteCTM(ret.writeCTM);
+        setResultData(ret.writeCTM);
 
         // Bonus...
         try {
@@ -78,6 +73,11 @@ public class HA7SConvertTCmd extends ConvertTCmd {
         }
 
         return ConvertTCmd.Result.success;
+    }
+
+    public void setResultData(long resultWriteCTM) {
+        assert (result == Result.busy);
+        this.resultWriteCTM = resultWriteCTM;
     }
 
 }

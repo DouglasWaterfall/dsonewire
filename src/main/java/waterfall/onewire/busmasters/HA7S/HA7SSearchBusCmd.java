@@ -30,16 +30,6 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
         return familyCode;
     }
 
-    public void setResultList(List<String> resultList) {
-        assert (result == SearchBusCmd.Result.busy);
-        this.resultList = resultList;
-    }
-
-    public void setResultWriteCTM(long resultWriteCTM) {
-        assert (result == SearchBusCmd.Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-    }
-
     protected SearchBusCmd.Result execute_internal() {
         assert (result == SearchBusCmd.Result.busy);
         assert (resultList == null);
@@ -97,8 +87,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
             }
 
             if (i == 0)  {
-                setResultWriteCTM(ret.writeCTM);
-                setResultList(resultList);
+                setResultData(ret.writeCTM, resultList);
             }
 
             if (ret.readCount == 0) {
@@ -108,5 +97,12 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
             resultList.add(new String(rbuf, 0, 16));
         }
     }
+
+    public void setResultData(long resultWriteCTM, List<String> resultList) {
+        assert (result == SearchBusCmd.Result.busy);
+        this.resultWriteCTM = resultWriteCTM;
+        this.resultList = resultList;
+    }
+
 }
 
