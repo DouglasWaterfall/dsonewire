@@ -3,6 +3,8 @@ package waterfall.onewire.busmasters.Http;
 import waterfall.onewire.HttpClient.SearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
+import java.util.List;
+
 /**
  * Created by dwaterfa on 8/17/16.
  */
@@ -17,11 +19,6 @@ public class HttpSearchBusCmd extends SearchBusCmd {
     public HttpSearchBusCmd(Client client, short familyCode, boolean log) {
         super(client, familyCode, log);
         this.resultList = null;
-    }
-
-    public void setResultWriteCTM(long resultWriteCTM) {
-        assert (result == Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
     }
 
     protected Result execute_internal() {
@@ -56,7 +53,7 @@ public class HttpSearchBusCmd extends SearchBusCmd {
             Result result = Enum.valueOf(Result.class, postResult.result);
 
             if (result == Result.success) {
-                resultList = postResult.resultList;
+                setResultData(postResult.resultWriteCTM, postResult.resultList);
             }
 
             return result;
@@ -68,6 +65,12 @@ public class HttpSearchBusCmd extends SearchBusCmd {
 
             return Result.communication_error;
         }
+    }
+
+    public void setResultData(long resultWriteCTM, List<String> resultList) {
+        assert (result == Result.busy);
+        this.resultWriteCTM = resultWriteCTM;
+        this.resultList = resultList;
     }
 
 }

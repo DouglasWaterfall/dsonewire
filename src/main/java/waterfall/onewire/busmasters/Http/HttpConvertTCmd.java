@@ -15,7 +15,7 @@ public class HttpConvertTCmd extends ConvertTCmd {
         super(client, dsAddr, log);
     }
 
-    public void setResultWriteCTM(long resultWriteCTM) {
+    public void setResultData(long resultWriteCTM) {
         assert (result == Result.busy);
         this.resultWriteCTM = resultWriteCTM;
     }
@@ -50,7 +50,13 @@ public class HttpConvertTCmd extends ConvertTCmd {
         }
 
         try {
-            return Enum.valueOf(Result.class, postResult.result);
+            Result result = Enum.valueOf(Result.class, postResult.result);
+
+            if (result == Result.success) {
+                setResultData(postResult.resultWriteCTM);
+            }
+
+            return result;
         }
         catch (IllegalArgumentException e) {
             if (getLogger() != null) {

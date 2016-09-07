@@ -16,15 +16,11 @@ public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
         super(client, dsAddr, requestCount, log);
     }
 
-    public void setResultData(byte[] resultData, byte[] resultHexData) {
-        assert (result == Result.busy);
-        this.resultData = resultData;
-        this.resultHexData = resultHexData;
-    }
-
-    public void setResultWriteCTM(long resultWriteCTM) {
+    public void setResultData(long resultWriteCTM, byte[] resultData, byte[] resultHexData) {
         assert (result == Result.busy);
         this.resultWriteCTM = resultWriteCTM;
+        this.resultData = resultData;
+        this.resultHexData = resultHexData;
     }
 
     protected Result execute_internal() {
@@ -59,7 +55,7 @@ public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
             Result result = Enum.valueOf(Result.class, postResult.result);
 
             if (result == Result.success) {
-                setResultData(Convert.hexToByte(postResult.resultHexData), postResult.resultHexData);
+                setResultData(postResult.resultWriteCTM, Convert.hexToByte(postResult.resultHexData), postResult.resultHexData);
             }
 
             return result;

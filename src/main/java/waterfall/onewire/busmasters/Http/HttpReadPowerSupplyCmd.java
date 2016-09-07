@@ -15,14 +15,10 @@ public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
         super(client, dsAddr, log);
     }
 
-    public void setResultIsParasitic(boolean isParasitic) {
-        assert (result == Result.busy);
-        this.resultIsParasitic = isParasitic;
-    }
-
-    public void setResultWriteCTM(long resultWriteCTM) {
+    public void setResultData(long resultWriteCTM, boolean isParasitic) {
         assert (result == Result.busy);
         this.resultWriteCTM = resultWriteCTM;
+        this.resultIsParasitic = isParasitic;
     }
 
     protected Result execute_internal() {
@@ -57,7 +53,7 @@ public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
             Result result = Enum.valueOf(Result.class, postResult.result);
 
             if (result == Result.success) {
-                setResultIsParasitic(postResult.isParasitic);
+                setResultData(postResult.resultWriteCTM, postResult.isParasitic);
             }
 
             return result;
