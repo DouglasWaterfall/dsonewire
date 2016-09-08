@@ -29,6 +29,7 @@ public class BaseCmdResult {
         Bad_parm_only_one_byAlarm_or_byFamilyCode_allowed,
         Bad_parm_byFamilyCode_not_a_number,
         Bad_parm_byFamilyCode_must_be_unsigned_byte,
+        Bad_parm_clientSentTimeMSec,
         Invalid_dsAddr,
         Invalid_rCount
     }
