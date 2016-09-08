@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import waterfall.onewire.HttpClient.BaseCmdResult;
 import waterfall.onewire.HttpClient.StatusCmdResult;
+import waterfall.onewire.HttpClient.TimeDiffResult;
 import waterfall.onewire.busmaster.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -304,6 +305,28 @@ public class Controller {
         cmd.execute();
 
         return new waterfall.onewire.HttpClient.ConvertTCmdResult(cmd);
+    }
+
+    @RequestMapping(value = "/timeDiff/{clientSentTimeMSec}", method = RequestMethod.POST)
+    public TimeDiffResult timeDiff(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                   @PathVariable(value = "clientSentTimeMSec") String clientSentTimeMSec) {
+        long serverReceivedTimeMSec = System.currentTimeMillis();
+
+        checkAuthenticationHeader(authorization);
+
+        Long t;
+
+        try {
+            t = Long.valueOf(clientSentTimeMSec);
+            if (t.longValue() <= 0) {
+                throw new NumberFormatException();
+            }
+        }
+        catch (NumberFormatException e) {
+            return new TimeDiffResult(BaseCmdResult.ControllerErrors.Bad_parm_clientSentTimeMSec);
+        }
+
+        return new TimeDiffResult(t, serverReceivedTimeMSec);
     }
 
     private BusMaster getBusMasterByIdent(String bmIdent) {
