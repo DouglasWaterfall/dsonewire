@@ -55,7 +55,7 @@ public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
             Result result = Enum.valueOf(Result.class, postResult.result);
 
             if (result == Result.success) {
-                setResultData(postResult.resultWriteCTM, Convert.hexToByte(postResult.resultHexData), postResult.resultHexData);
+                setResultData(postResult.resultWriteCTM + ((Client)busMaster).getRemoteTimeDiffMSec(), Convert.hexToByte(postResult.resultHexData), postResult.resultHexData);
             }
 
             return result;

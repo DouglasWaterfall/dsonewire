@@ -14,17 +14,19 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 
 /**
  * Created by dwaterfa on 2/15/16.
  */
 public class Client implements BusMaster {
-    private final String USER_AGENT = "waterfall waterfall.onewire.busmaster.HA7S.HTTP;1.0";
+    private final String USER_AGENT = "waterfall.onewire.busmaster.HTTP;1.0";
 
     private final String endpoint;
     private final String bmIdent;
 
     private boolean started;
+    private long remoteTimeDiffMSec;
 
     private String bmName;
     private String authorization;
@@ -34,6 +36,7 @@ public class Client implements BusMaster {
         this.bmIdent = bmIdent;
         this.started = false;
         this.bmName = null;
+        this.remoteTimeDiffMSec = 0;
     }
 
     public String getName() {
@@ -56,7 +59,7 @@ public class Client implements BusMaster {
     }
 
     public long getCurrentTimeMillis() {
-        return 0;
+        return System.currentTimeMillis() + remoteTimeDiffMSec;
     }
 
     public boolean getIsStarted() {
@@ -109,7 +112,7 @@ public class Client implements BusMaster {
 
         final String logContext = (optLogger != null) ? this.getClass().getSimpleName() + ".StartBusCmd bmIdent:" + bmIdent + " " : "";
         final String statusSuffix = "busStatusCmd/" + bmIdent;
-        
+
         StatusCmdResult statusPostResult = (StatusCmdResult) postURLDataNoAuthorization(statusSuffix, StatusCmdResult.class);
 
         if (statusPostResult.postError != null) {
@@ -143,6 +146,9 @@ public class Client implements BusMaster {
                 optLogger.logError(logContext, " status already started");
             }
             started = true;
+
+            remoteTimeDiffMSec = calculateTimeDiff(optLogger);
+
             return StartBusCmd.Result.started;
         }
 
@@ -185,6 +191,8 @@ public class Client implements BusMaster {
 
         started = true;
 
+        remoteTimeDiffMSec = calculateTimeDiff(optLogger);
+
         return StartBusCmd.Result.started;
     }
 
@@ -192,7 +200,7 @@ public class Client implements BusMaster {
         if (!started) {
             return StopBusCmd.Result.not_started;
         }
-        
+
         final String logContext = (optLogger != null) ? this.getClass().getSimpleName() + ".StopBusCmd bmIdent:" + bmIdent + " " : "";
 
         // Try to stop the remote busmaster.
@@ -237,6 +245,10 @@ public class Client implements BusMaster {
         return StopBusCmd.Result.stopped;
     }
 
+    public long getRemoteTimeDiffMSec() {
+        return remoteTimeDiffMSec;
+    }
+
     public static ListBusMastersCmdResult ListBusMastersCmd(String endpoint, Logger optLogger) {
         final String logContext = (optLogger != null) ? Client.class.getSimpleName() + ".ListBusMastersCmd: " : "";
 
@@ -247,16 +259,58 @@ public class Client implements BusMaster {
 
         if (listBMSPostResult.postError != null) {
             if (optLogger != null) {
-                optLogger.logError(logContext, " listBMS postError:" + listBMSPostResult.postError.name());
+                optLogger.logError(logContext, " postError:" + listBMSPostResult.postError.name());
             }
-        }
-        else if (listBMSPostResult.controllerError != null) {
+        } else if (listBMSPostResult.controllerError != null) {
             if (optLogger != null) {
-                optLogger.logError(logContext, " listBMS controllerError:" + listBMSPostResult.controllerError);
+                optLogger.logError(logContext, " controllerError:" + listBMSPostResult.controllerError);
             }
         }
 
         return listBMSPostResult;
+    }
+
+    private long calculateTimeDiff(Logger optLogger) {
+        final String logContext = (optLogger != null) ? Client.class.getSimpleName() + ".calculateTimeDiff: " : "";
+        ArrayList<TimeDiffResult> results = new ArrayList<TimeDiffResult>();
+
+        for (int i = 0; i < 5; i++) {
+            final String suffix = "timeDiff/" + System.currentTimeMillis();
+
+            TimeDiffResult result = (TimeDiffResult) postURLDataWithAuthorization(suffix, TimeDiffResult.class);
+
+            long clientReceivedTimeMSec = System.currentTimeMillis();
+
+            if (result.postError != null) {
+                if (optLogger != null) {
+                    optLogger.logError(logContext, " postError:" + result.postError.name());
+                }
+            } else if (result.controllerError != null) {
+                if (optLogger != null) {
+                    optLogger.logError(logContext, " controllerError:" + result.controllerError);
+                }
+            } else {
+                result.setClientReceivedTimeMSec(clientReceivedTimeMSec);
+                results.add(result);
+            }
+        }
+
+        if (results.size() == 0) {
+            return 0;
+        }
+
+        // what to ADD to the server writeCTM to put it in our local terms.
+        long minDiff = (results.get(0).serverReceivedTimeMSec - results.get(0).clientSentTimeMSec);
+
+        for (int i = 1; i < results.size(); i++) {
+            long t_minDiff = (results.get(i).serverReceivedTimeMSec - results.get(i).clientSentTimeMSec);
+            if (t_minDiff < minDiff) {
+                minDiff = t_minDiff;
+            }
+        }
+
+        optLogger.logError(logContext, " minDiff:" + minDiff);
+        return minDiff;
     }
 
     public static BaseCmdResult postURLDataNoAuthorization(String endpoint, String suffix, Class respClass) {

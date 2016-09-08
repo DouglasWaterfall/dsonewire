@@ -53,7 +53,7 @@ public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
             Result result = Enum.valueOf(Result.class, postResult.result);
 
             if (result == Result.success) {
-                setResultData(postResult.resultWriteCTM, postResult.isParasitic);
+                setResultData(postResult.resultWriteCTM + ((Client)busMaster).getRemoteTimeDiffMSec(), postResult.isParasitic);
             }
 
             return result;

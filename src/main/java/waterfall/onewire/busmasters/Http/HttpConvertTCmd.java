@@ -53,7 +53,7 @@ public class HttpConvertTCmd extends ConvertTCmd {
             Result result = Enum.valueOf(Result.class, postResult.result);
 
             if (result == Result.success) {
-                setResultData(postResult.resultWriteCTM);
+                setResultData(postResult.resultWriteCTM + ((Client)busMaster).getRemoteTimeDiffMSec());
             }
 
             return result;
