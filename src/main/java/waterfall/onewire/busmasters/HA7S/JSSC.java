@@ -42,16 +42,6 @@ public class JSSC implements HA7SSerial {
             this.readBuffer = null;
         }
 
-        public void logDebug(String msg) {
-            if (waitingThread != null) {
-                if (waitingThreadLogger != null) {
-                    waitingThreadLogger.logDebug(waitingThreadLoggerContext, msg);
-                }
-            } else {
-                System.err.println("[DEBUG] " + "noWaitingThread " + msg);
-            }
-        }
-
         public void logInfo(String msg) {
             if (waitingThread != null) {
                 if (waitingThreadLogger != null) {
@@ -91,7 +81,7 @@ public class JSSC implements HA7SSerial {
 
         if (sharedData.started) {
             if (optLogger != null) {
-                optLogger.logDebug(logContext, "Already started");
+                optLogger.logInfo(logContext, "Already started");
             }
             return StartResult.SR_Success;
         }
@@ -147,7 +137,7 @@ public class JSSC implements HA7SSerial {
             if (serialPort.getInputBufferBytesCount() > 0) {
                 byte[] flushed = serialPort.readBytes();
                 if (optLogger != null) {
-                    optLogger.logDebug(logContext, "flushing[" + flushed.length + "]:" + JSSC.byteToSafeString(flushed, 0, flushed.length));
+                    optLogger.logInfo(logContext, "flushing[" + flushed.length + "]:" + JSSC.byteToSafeString(flushed, 0, flushed.length));
                 }
             }
         } catch (SerialPortException ex) {
@@ -166,7 +156,7 @@ public class JSSC implements HA7SSerial {
                         try {
                             byte[] rbuf = serialPort.readBytes();
                             if ((rbuf != null) && (rbuf.length > 0)) {
-                                sharedData.logDebug("read[" + rbuf.length + "]:" + byteToSafeString(rbuf, 0, rbuf.length));
+                                sharedData.logInfo("read[" + rbuf.length + "]:" + byteToSafeString(rbuf, 0, rbuf.length));
                                 if ((sharedData.waitingThread == null) || (sharedData.readComplete)) {
                                     // nobody is waiting so log and clear.
                                     sharedData.logError("No thread or readComplete, flushing");
@@ -239,7 +229,7 @@ public class JSSC implements HA7SSerial {
                             final int wcount = wBuf.length;
 
                             if (optLogger != null) {
-                                optLogger.logDebug(logContext, "write[" + wcount + "]:" + byteToSafeString(wBuf, 0, wcount));
+                                optLogger.logInfo(logContext, "write[" + wcount + "]:" + byteToSafeString(wBuf, 0, wcount));
                             }
 
                             for (int i = 0; i < wcount; i++) {
@@ -281,13 +271,13 @@ public class JSSC implements HA7SSerial {
                 }
             } else {
                 if (optLogger != null) {
-                    optLogger.logDebug(logContext, "not started.");
+                    optLogger.logInfo(logContext, "not started.");
                 }
                 result.error = ReadResult.ErrorCode.RR_Error;
             }
         }
         if (optLogger != null) {
-            optLogger.logDebug(logContext, result.error.name());
+            optLogger.logInfo(logContext, result.error.name());
         }
 
         return result;
@@ -307,7 +297,7 @@ public class JSSC implements HA7SSerial {
 
         if (!sharedData.started) {
             if (optLogger != null) {
-                optLogger.logDebug(logContext, "Already stopped");
+                optLogger.logInfo(logContext, "Already stopped");
             }
             return StopResult.SR_Success;
         }
@@ -329,7 +319,7 @@ public class JSSC implements HA7SSerial {
         }
 
         if (optLogger != null) {
-            optLogger.logDebug(logContext, "stopped");
+            optLogger.logInfo(logContext, "stopped");
         }
 
         return StopResult.SR_Success;

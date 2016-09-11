@@ -27,36 +27,36 @@ public class HA7S implements BusMaster {
         return ((started != null) && started.booleanValue());
     }
 
-    public StartBusCmd queryStartBusCmd(boolean log) {
-        return new HA7SStartBusCmd(this, log);
+    public StartBusCmd queryStartBusCmd(Logger.LogLevel logLevel) {
+        return new HA7SStartBusCmd(this, logLevel);
     }
 
-    public StopBusCmd queryStopBusCmd(boolean doLog) {
-        return new HA7SStopBusCmd(this, doLog);
+    public StopBusCmd queryStopBusCmd(Logger.LogLevel logLevel) {
+        return new HA7SStopBusCmd(this, logLevel);
     }
 
-    public SearchBusCmd querySearchBusCmd(boolean doLog) {
-        return new HA7SSearchBusCmd(this, false, doLog);
+    public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel) {
+        return new HA7SSearchBusCmd(this, false, logLevel);
     }
 
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, boolean doLog) {
-        return new HA7SSearchBusCmd(this, familyCode, doLog);
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel) {
+        return new HA7SSearchBusCmd(this, familyCode, logLevel);
     }
 
-    public SearchBusCmd querySearchBusByAlarmCmd(boolean doLog) {
-        return new HA7SSearchBusCmd(this, true, doLog);
+    public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel) {
+        return new HA7SSearchBusCmd(this, true, logLevel);
     }
 
-    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, boolean doLog) {
-        return new HA7SReadPowerSupplyCmd(this, dsAddr, doLog);
+    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
+        return new HA7SReadPowerSupplyCmd(this, dsAddr, logLevel);
     }
 
-    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, boolean doLog) {
-        return new HA7SConvertTCmd(this, dsAddr, doLog);
+    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
+        return new HA7SConvertTCmd(this, dsAddr, logLevel);
     }
 
-    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, boolean doLog) {
-        return new HA7SReadScratchpadCmd(this, dsAddr, requestByteCount, doLog);
+    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, Logger.LogLevel logLevel) {
+        return new HA7SReadScratchpadCmd(this, dsAddr, requestByteCount, logLevel);
     }
 
     /*
@@ -80,7 +80,7 @@ public class HA7S implements BusMaster {
             serialPort = new JSSC(portDevName);
         }
 
-        HA7SSerial.StartResult startResult = serialPort.start((Logger)cmd);
+        HA7SSerial.StartResult startResult = serialPort.start(cmd.getDeviceLevelLogger());
 
         if (startResult != HA7SSerial.StartResult.SR_Success) {
             return StartBusCmd.Result.communication_error;
@@ -88,23 +88,23 @@ public class HA7S implements BusMaster {
 
         byte[] rbuf = new byte[8];
 
-        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getLogger());
+        HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getDeviceLevelLogger());
 
         if ((readResult.error == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
                 (readResult.readCount == 1) &&
                 (rbuf[0] == 0x07)) {
             // This can occur during development when when the first thing read after open is
             // 0x07 0x0D. So we try this again once.
-            readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getLogger());
+            readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getDeviceLevelLogger());
         }
 
         if ((readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
                 (readResult.readCount != 0)) {
-            cmd.logError(readResult.error.name() + " readCount:" + readResult.readCount);
+            cmd.logErrorInternal(readResult.error.name() + " readCount:" + readResult.readCount);
 
-            cmd.logError(readResult.error.name() + " stopping port");
+            cmd.logErrorInternal(readResult.error.name() + " stopping port");
             HA7SSerial.StopResult stopResult = serialPort.stop((Logger)cmd);
-            cmd.logError(readResult.error.name() + " stop result:" + stopResult.name());
+            cmd.logErrorInternal(readResult.error.name() + " stop result:" + stopResult.name());
 
             return StartBusCmd.Result.communication_error;
         }
@@ -122,7 +122,7 @@ public class HA7S implements BusMaster {
             return StopBusCmd.Result.not_started;
         }
 
-        HA7SSerial.StopResult stopResult = serialPort.stop((Logger)cmd);
+        HA7SSerial.StopResult stopResult = serialPort.stop(cmd.getDeviceLevelLogger());
 
         if (stopResult != HA7SSerial.StopResult.SR_Success) {
             return StopBusCmd.Result.communication_error;

@@ -2,6 +2,7 @@ package waterfall.onewire.busmasters.HA7S;
 
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
+import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
 
 /**
@@ -9,8 +10,8 @@ import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
  */
 public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
-    public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr, boolean log) {
-        super(ha7s, dsAddr, log);
+    public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr, LogLevel logLevel) {
+        super(ha7s, dsAddr, logLevel);
     }
 
     @Override
@@ -48,9 +49,7 @@ public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
         }
 
         if (ret.readCount != 4) {
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), "Expected readCount of 4, got:" + ret.readCount);
-            }
+            logErrorInternal("Expected readCount of 4, got:" + ret.readCount);
             return ReadPowerSupplyCmd.Result.communication_error;
         }
 
@@ -66,6 +65,19 @@ public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
         assert (result == Result.busy);
         this.resultWriteCTM = resultWriteCTM;
         this.resultIsParasitic = isParasitic;
+    }
+
+    private Logger getDeviceLevelLogger() {
+        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+            return getLogger();
+        }
+        return null;
+    }
+
+    private void logErrorInternal(String str) {
+        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+            getLogger().logError(this.getClass().getSimpleName(), str);
+        }
     }
 
 }

@@ -3,6 +3,7 @@ package waterfall.onewire.busmasters.HA7S;
 import com.dalsemi.onewire.utils.CRC8;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
+import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
 
 import java.util.Arrays;
@@ -14,8 +15,8 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
 
     private byte[] readScratchpadCmdData;
 
-    public HA7SReadScratchpadCmd(HA7S ha7s, DSAddress dsAddr, short requestByteCount, boolean log) {
-        super(ha7s, dsAddr, requestByteCount, log);
+    public HA7SReadScratchpadCmd(HA7S ha7s, DSAddress dsAddr, short requestByteCount, LogLevel logLevel) {
+        super(ha7s, dsAddr, requestByteCount, logLevel);
     }
 
     protected ReadScratchpadCmd.Result execute_internal() {
@@ -66,9 +67,7 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
         final int expectedReadCount = (2 + (getRequestByteCount() * 2));
 
         if (ret.readCount != expectedReadCount) {
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), "Expected readCount of " + expectedReadCount + ", got:" + ret.readCount);
-            }
+            logErrorInternal("Expected readCount of " + expectedReadCount + ", got:" + ret.readCount);
             return ReadScratchpadCmd.Result.communication_error;
         }
 
@@ -81,9 +80,7 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
         // check the CRC
         final short crcIndex = dsAddrToCRCIndex(dsAddr);
         if ((crcIndex >= 0) && ((crcIndex + 1) == getRequestByteCount()) && (CRC8.compute(resultData) != 0)) {
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), "CRC8 failed, crcIndex:" + crcIndex + " hex:" + resultHexData);
-            }
+            logErrorInternal("CRC8 failed, crcIndex:" + crcIndex + " hex:" + resultHexData);
             return ReadScratchpadCmd.Result.communication_error;
         }
 
@@ -98,6 +95,19 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
         this.resultWriteCTM = resultWriteCTM;
         this.resultData = resultData;
         this.resultHexData = resultHexData;
+    }
+
+    private Logger getDeviceLevelLogger() {
+        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+            return getLogger();
+        }
+        return null;
+    }
+
+    private void logErrorInternal(String str) {
+        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+            getLogger().logError(this.getClass().getSimpleName(), str);
+        }
     }
 
     private static short dsAddrToCRCIndex(final DSAddress dsAddr) {

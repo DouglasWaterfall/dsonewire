@@ -1,5 +1,6 @@
 package waterfall.onewire.busmasters.HA7S;
 
+import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.StartBusCmd;
 
 /**
@@ -7,14 +8,27 @@ import waterfall.onewire.busmaster.StartBusCmd;
  */
 public class HA7SStartBusCmd extends StartBusCmd {
 
-    public HA7SStartBusCmd(HA7S ha7s, boolean log) {
-        super(ha7s, log);
+    public HA7SStartBusCmd(HA7S ha7s, LogLevel logLevel) {
+        super(ha7s, logLevel);
     }
 
     protected StartBusCmd.Result execute_internal() {
         assert (result == StartBusCmd.Result.busy);
 
         return ((HA7S) busMaster).executeStartBusCmd(this);
+    }
+
+    public Logger getDeviceLevelLogger() {
+        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+            return getLogger();
+        }
+        return null;
+    }
+
+    public void logErrorInternal(String str) {
+        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+            getLogger().logError(this.getClass().getSimpleName(), str);
+        }
     }
 
 }
