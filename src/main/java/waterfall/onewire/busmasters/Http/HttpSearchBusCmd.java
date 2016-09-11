@@ -11,13 +11,13 @@ import java.util.List;
 public class HttpSearchBusCmd extends SearchBusCmd {
     private String suffix = null;
 
-    public HttpSearchBusCmd(Client client, boolean byAlarm, boolean log) {
-        super(client, byAlarm, log);
+    public HttpSearchBusCmd(Client client, boolean byAlarm, LogLevel logLevel) {
+        super(client, byAlarm, logLevel);
         this.resultList = null;
     }
 
-    public HttpSearchBusCmd(Client client, short familyCode, boolean log) {
-        super(client, familyCode, log);
+    public HttpSearchBusCmd(Client client, short familyCode, LogLevel logLevel) {
+        super(client, familyCode, logLevel);
         this.resultList = null;
     }
 
@@ -26,26 +26,18 @@ public class HttpSearchBusCmd extends SearchBusCmd {
         assert (resultList == null);
         assert (resultWriteCTM == 0);
 
-        final String logContext = (getLogger() != null) ? this.getClass().getSimpleName() + " bmIdent:" + ((Client)busMaster).getBmIdent() + " " : "";
-        final String suffix = "searchBusCmd/" + ((Client)busMaster).getBmIdent() + ((getLogger() != null) ? "?log=true" : "");
+        String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+        final String suffix = "searchBusCmd/" + ((Client)busMaster).getBmIdent() + ((logLevelParam != null) ? logLevelParam : "");
 
         SearchBusCmdResult postResult = (SearchBusCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, SearchBusCmdResult.class);
 
         if (postResult.postError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(logContext,  "postError:" + postResult.postError.name());
-            }
-
+            logErrorInternal("postError:" + postResult.postError.name());
             return Result.communication_error;
         }
 
         if (postResult.controllerError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(logContext, " controllerError:" + postResult.controllerError);
-            }
-
+            logErrorInternal(" controllerError:" + postResult.controllerError);
             return Result.communication_error;
         }
 
@@ -59,10 +51,7 @@ public class HttpSearchBusCmd extends SearchBusCmd {
             return result;
         }
         catch (IllegalArgumentException e) {
-            if (getLogger() != null) {
-                getLogger().logError(logContext, " bad result enum:" + postResult.result);
-            }
-
+            logErrorInternal(" bad result enum:" + postResult.result);
             return Result.communication_error;
         }
     }
@@ -71,6 +60,13 @@ public class HttpSearchBusCmd extends SearchBusCmd {
         assert (result == Result.busy);
         this.resultWriteCTM = resultWriteCTM;
         this.resultList = resultList;
+    }
+
+    private void logErrorInternal(String str) {
+        if ((getLogger() != null) && (getLogLevel().isLevelComm())) {
+            final String logContext = this.getClass().getSimpleName() + " bmIdent:" + ((Client)busMaster).getBmIdent() + " ";
+            getLogger().logError(logContext, str);
+        }
     }
 
 }

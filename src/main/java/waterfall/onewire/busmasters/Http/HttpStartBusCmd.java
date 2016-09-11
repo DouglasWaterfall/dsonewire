@@ -7,8 +7,8 @@ import waterfall.onewire.busmaster.StartBusCmd;
  */
 public class HttpStartBusCmd extends StartBusCmd {
 
-    public HttpStartBusCmd(Client client, boolean log) {
-        super(client, log);
+    public HttpStartBusCmd(Client client, LogLevel logLevel) {
+        super(client, logLevel);
     }
 
     protected Result execute_internal() {

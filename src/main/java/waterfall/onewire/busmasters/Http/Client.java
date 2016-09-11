@@ -66,36 +66,36 @@ public class Client implements BusMaster {
         return started;
     }
 
-    public StartBusCmd queryStartBusCmd(boolean doLog) {
-        return new HttpStartBusCmd(this, doLog);
+    public StartBusCmd queryStartBusCmd(Logger.LogLevel logLevel) {
+        return new HttpStartBusCmd(this, logLevel);
     }
 
-    public StopBusCmd queryStopBusCmd(boolean doLog) {
-        return new HttpStopBusCmd(this, doLog);
+    public StopBusCmd queryStopBusCmd(Logger.LogLevel logLevel) {
+        return new HttpStopBusCmd(this, logLevel);
     }
 
-    public SearchBusCmd querySearchBusCmd(boolean doLog) {
-        return new HttpSearchBusCmd(this, false, doLog);
+    public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel) {
+        return new HttpSearchBusCmd(this, false, logLevel);
     }
 
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, boolean doLog) {
-        return new HttpSearchBusCmd(this, familyCode, doLog);
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel) {
+        return new HttpSearchBusCmd(this, familyCode, logLevel);
     }
 
-    public SearchBusCmd querySearchBusByAlarmCmd(boolean doLog) {
-        return new HttpSearchBusCmd(this, true, doLog);
+    public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel) {
+        return new HttpSearchBusCmd(this, true, logLevel);
     }
 
-    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, boolean doLog) {
-        return new HttpConvertTCmd(this, dsAddr, doLog);
+    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
+        return new HttpConvertTCmd(this, dsAddr, logLevel);
     }
 
-    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, boolean doLog) {
-        return new HttpReadPowerSupplyCmd(this, dsAddr, doLog);
+    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
+        return new HttpReadPowerSupplyCmd(this, dsAddr, logLevel);
     }
 
-    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, boolean doLog) {
-        return new HttpReadScratchpadCmd(this, dsAddr, requestByteCount, doLog);
+    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, Logger.LogLevel logLevel) {
+        return new HttpReadScratchpadCmd(this, dsAddr, requestByteCount, logLevel);
     }
 
     //
@@ -116,20 +116,12 @@ public class Client implements BusMaster {
         StatusCmdResult statusPostResult = (StatusCmdResult) postURLDataNoAuthorization(statusSuffix, StatusCmdResult.class);
 
         if (statusPostResult.postError != null) {
-
-            if (optLogger != null) {
-                optLogger.logError(logContext, " status postError:" + statusPostResult.postError.name());
-            }
-
+            logErrorCommLevel(optLogger, logContext, " status postError:" + statusPostResult.postError.name());
             return StartBusCmd.Result.communication_error;
         }
 
         if (statusPostResult.controllerError != null) {
-
-            if (optLogger != null) {
-                optLogger.logError(logContext, " status controllerError:" + statusPostResult.controllerError);
-            }
-
+            logErrorCommLevel(optLogger, logContext, " status controllerError:" + statusPostResult.controllerError);
             return StartBusCmd.Result.communication_error;
         }
 
@@ -137,14 +129,10 @@ public class Client implements BusMaster {
 
         authorization = statusPostResult.authorization;
 
-        if (optLogger != null) {
-            optLogger.logError(logContext, " status name:" + bmName + " authorization:" + authorization);
-        }
+        logErrorCommLevel(optLogger, logContext, " status name:" + bmName + " authorization:" + authorization);
 
         if (statusPostResult.started) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " status already started");
-            }
+            logErrorCommLevel(optLogger, logContext, " status already started");
             started = true;
 
             remoteTimeDiffMSec = calculateTimeDiff(optLogger);
@@ -153,21 +141,18 @@ public class Client implements BusMaster {
         }
 
         // Try to start the remote busmaster.
-        final String startSuffix = "startBusCmd/" + bmIdent + ((optLogger != null) ? "?log=true" : "");
+        String logLevelParam = computeLogLevelParam(optLogger);
+        final String startSuffix = "startBusCmd/" + bmIdent + ((logLevelParam != null) ? logLevelParam : "");
 
         StartBusCmdResult startPostResult = (StartBusCmdResult) postURLDataWithAuthorization(startSuffix, StartBusCmdResult.class);
 
         if (startPostResult.postError != null) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " start postError:" + startPostResult.postError.name());
-            }
+            logErrorCommLevel(optLogger, logContext, " start postError:" + startPostResult.postError.name());
             return StartBusCmd.Result.bus_not_found;
         }
 
         if (startPostResult.controllerError != null) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " start controllerError:" + startPostResult.controllerError);
-            }
+            logErrorCommLevel(optLogger, logContext, " start controllerError:" + startPostResult.controllerError);
             return StartBusCmd.Result.communication_error;
         }
 
@@ -175,17 +160,13 @@ public class Client implements BusMaster {
         try {
             tStartResult = Enum.valueOf(StartBusCmd.Result.class, startPostResult.result);
         } catch (IllegalArgumentException e) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " start bad result enum:" + startPostResult.result);
-            }
+            logErrorCommLevel(optLogger, logContext, " start bad result enum:" + startPostResult.result);
             return StartBusCmd.Result.communication_error;
         }
 
         if ((tStartResult != StartBusCmd.Result.already_started) &&
                 (tStartResult != StartBusCmd.Result.started)) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " start result:" + tStartResult.name());
-            }
+            logErrorCommLevel(optLogger, logContext, " start result:" + tStartResult.name());
             return StartBusCmd.Result.communication_error;
         }
 
@@ -204,21 +185,18 @@ public class Client implements BusMaster {
         final String logContext = (optLogger != null) ? this.getClass().getSimpleName() + ".StopBusCmd bmIdent:" + bmIdent + " " : "";
 
         // Try to stop the remote busmaster.
-        final String suffix = "stopBusCmd/" + bmIdent + ((optLogger != null) ? "?log=true" : "");
+        String logLevelParam = computeLogLevelParam(optLogger);
+        final String suffix = "stopBusCmd/" + bmIdent + ((logLevelParam != null) ? logLevelParam : "");
 
         StopBusCmdResult stopPostResult = (StopBusCmdResult) postURLDataWithAuthorization(suffix, StopBusCmdResult.class);
 
         if (stopPostResult.postError != null) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " stop postError:" + stopPostResult.postError.name());
-            }
+            logErrorCommLevel(optLogger, logContext, " stop postError:" + stopPostResult.postError.name());
             return StopBusCmd.Result.communication_error;
         }
 
         if (stopPostResult.controllerError != null) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " stop controllerError:" + stopPostResult.controllerError);
-            }
+            logErrorCommLevel(optLogger, logContext, " stop controllerError:" + stopPostResult.controllerError);
             return StopBusCmd.Result.communication_error;
         }
 
@@ -226,17 +204,13 @@ public class Client implements BusMaster {
         try {
             tStopResult = Enum.valueOf(StopBusCmd.Result.class, stopPostResult.result);
         } catch (IllegalArgumentException e) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " stop bad result enum:" + stopPostResult.result);
-            }
+            logErrorCommLevel(optLogger, logContext, " stop bad result enum:" + stopPostResult.result);
             return StopBusCmd.Result.communication_error;
         }
 
         if ((tStopResult != StopBusCmd.Result.not_started) &&
                 (tStopResult != StopBusCmd.Result.stopped)) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " stop result:" + tStopResult.name());
-            }
+            logErrorCommLevel(optLogger, logContext, " stop result:" + tStopResult.name());
             return StopBusCmd.Result.communication_error;
         }
 
@@ -253,18 +227,15 @@ public class Client implements BusMaster {
         final String logContext = (optLogger != null) ? Client.class.getSimpleName() + ".ListBusMastersCmd: " : "";
 
         // Try to list the remote busmasters.
-        final String suffix = "bmList/" + ((optLogger != null) ? "?log=true" : "");
+        String logLevelParam = computeLogLevelParam(optLogger);
+        final String suffix = "bmList/" + ((logLevelParam != null) ? logLevelParam : "");
 
         ListBusMastersCmdResult listBMSPostResult = (ListBusMastersCmdResult) postURLDataNoAuthorization(endpoint, suffix, ListBusMastersCmdResult.class);
 
         if (listBMSPostResult.postError != null) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " postError:" + listBMSPostResult.postError.name());
-            }
+            logErrorCommLevel(optLogger, logContext, " postError:" + listBMSPostResult.postError.name());
         } else if (listBMSPostResult.controllerError != null) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, " controllerError:" + listBMSPostResult.controllerError);
-            }
+            logErrorCommLevel(optLogger, logContext, " controllerError:" + listBMSPostResult.controllerError);
         }
 
         return listBMSPostResult;
@@ -282,13 +253,9 @@ public class Client implements BusMaster {
             long clientReceivedTimeMSec = System.currentTimeMillis();
 
             if (result.postError != null) {
-                if (optLogger != null) {
-                    optLogger.logError(logContext, " postError:" + result.postError.name());
-                }
+                logErrorCommLevel(optLogger, logContext, " postError:" + result.postError.name());
             } else if (result.controllerError != null) {
-                if (optLogger != null) {
-                    optLogger.logError(logContext, " controllerError:" + result.controllerError);
-                }
+                logErrorCommLevel(optLogger, logContext, " controllerError:" + result.controllerError);
             } else {
                 result.setClientReceivedTimeMSec(clientReceivedTimeMSec);
                 results.add(result);
@@ -309,7 +276,7 @@ public class Client implements BusMaster {
             }
         }
 
-        optLogger.logError(logContext, " minDiff:" + minDiff);
+        logErrorCommLevel(optLogger, logContext, " minDiff:" + minDiff);
         return minDiff;
     }
 
@@ -384,6 +351,48 @@ public class Client implements BusMaster {
             return null;
         } catch (InvocationTargetException e) {
             return null;
+        }
+    }
+
+    public static String computeLogLevelParam(Logger optLogger) {
+        Logger.LogLevel logLevel = null;
+
+        if ((optLogger == null) || ((logLevel = optLogger.getLogLevel()) == null) || (!logLevel.isAnyLevelSet())) {
+            return null;
+        }
+
+        StringBuffer sb = new StringBuffer();
+
+        int count = 0;
+        sb.append("?logLevel=");
+        if (logLevel.isLevelDevice()) {
+            if (count > 0) {
+                sb.append(",");
+            }
+            sb.append("device");
+            count++;
+        }
+        if (logLevel.isLevelCmd()) {
+            if (count > 0) {
+                sb.append(",");
+            }
+            sb.append("cmd");
+            count++;
+        }
+        if (logLevel.isLevelComm()) {
+            if (count > 0) {
+                sb.append(",");
+            }
+            sb.append("comm");
+            count++;
+        }
+
+        return sb.toString();
+    }
+
+    private static void logErrorCommLevel(Logger optLogger, String context, String msg) {
+        if ((optLogger != null) && (optLogger.getLogLevel().isLevelComm())) {
+            optLogger.logError(context, msg);
         }
     }
 

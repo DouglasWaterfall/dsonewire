@@ -3,6 +3,7 @@ package waterfall.onewire.busmasters.Http;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HttpClient.ConvertTCmdResult;
 import waterfall.onewire.busmaster.ConvertTCmd;
+import waterfall.onewire.busmaster.Logger;
 
 /**
  * Created by dwaterfa on 8/7/16.
@@ -11,8 +12,8 @@ public class HttpConvertTCmd extends ConvertTCmd {
 
     private String suffix = null;
 
-    public HttpConvertTCmd(Client client, DSAddress dsAddr, boolean log) {
-        super(client, dsAddr, log);
+    public HttpConvertTCmd(Client client, DSAddress dsAddr, LogLevel logLevel) {
+        super(client, dsAddr, logLevel);
     }
 
     public void setResultData(long resultWriteCTM) {
@@ -25,27 +26,19 @@ public class HttpConvertTCmd extends ConvertTCmd {
         assert (resultWriteCTM == 0);
 
         if (suffix == null) {
-            suffix = "convertTCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + ((getLogger() != null) ? "?log=true" : "");
-
+            String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+            suffix = "convertTCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + ((logLevelParam != null) ? logLevelParam : "");
         }
 
         ConvertTCmdResult postResult = (ConvertTCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, ConvertTCmdResult.class);
 
         if (postResult.postError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(),  " postError:" + postResult.postError.name());
-            }
-
+            logErrorInternal(" postError:" + postResult.postError.name());
             return Result.communication_error;
         }
 
         if (postResult.controllerError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), " controllerError:" + postResult.controllerError);
-            }
-
+            logErrorInternal(" controllerError:" + postResult.controllerError);
             return Result.communication_error;
         }
 
@@ -59,11 +52,14 @@ public class HttpConvertTCmd extends ConvertTCmd {
             return result;
         }
         catch (IllegalArgumentException e) {
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), " bad result enum:" + postResult.result);
-            }
-
+            logErrorInternal(" bad result enum:" + postResult.result);
             return Result.communication_error;
+        }
+    }
+
+    private void logErrorInternal(String str) {
+        if ((getLogger() != null) && (getLogLevel().isLevelComm())) {
+            getLogger().logError(this.getClass().getSimpleName(), str);
         }
     }
 }

@@ -12,8 +12,8 @@ public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
 
     private String suffix = null;
 
-    public HttpReadScratchpadCmd(Client client, DSAddress dsAddr, short requestCount, boolean log) {
-        super(client, dsAddr, requestCount, log);
+    public HttpReadScratchpadCmd(Client client, DSAddress dsAddr, short requestCount, LogLevel logLevel) {
+        super(client, dsAddr, requestCount, logLevel);
     }
 
     public void setResultData(long resultWriteCTM, byte[] resultData, byte[] resultHexData) {
@@ -28,26 +28,19 @@ public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
         assert (resultWriteCTM == 0);
 
         if (suffix == null) {
-            suffix = "readScratchpadCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + "/" + requestByteCount + ((getLogger() != null) ? "?log=true" : "");
+            String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+            suffix = "readScratchpadCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + "/" + requestByteCount + ((logLevelParam != null) ? logLevelParam : "");
         }
 
         ReadScratchpadCmdResult postResult = (ReadScratchpadCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, ReadScratchpadCmdResult.class);
 
         if (postResult.postError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(),  " postError:" + postResult.postError.name());
-            }
-
+            logErrorInternal(" postError:" + postResult.postError.name());
             return Result.communication_error;
         }
 
         if (postResult.controllerError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), " controllerError:" + postResult.controllerError);
-            }
-
+            logErrorInternal(" controllerError:" + postResult.controllerError);
             return Result.communication_error;
         }
 
@@ -61,11 +54,14 @@ public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
             return result;
         }
         catch (IllegalArgumentException e) {
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), " bad result enum:" + postResult.result);
-            }
-
+            logErrorInternal(" bad result enum:" + postResult.result);
             return Result.communication_error;
+        }
+    }
+
+    private void logErrorInternal(String str) {
+        if ((getLogger() != null) && (getLogLevel().isLevelComm())) {
+            getLogger().logError(this.getClass().getSimpleName(), str);
         }
     }
 

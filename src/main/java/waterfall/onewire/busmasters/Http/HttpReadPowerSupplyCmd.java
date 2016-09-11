@@ -11,8 +11,8 @@ public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
     private String suffix = null;
 
-    public HttpReadPowerSupplyCmd(Client client, DSAddress dsAddr, boolean log) {
-        super(client, dsAddr, log);
+    public HttpReadPowerSupplyCmd(Client client, DSAddress dsAddr, LogLevel logLevel) {
+        super(client, dsAddr, logLevel);
     }
 
     public void setResultData(long resultWriteCTM, boolean isParasitic) {
@@ -26,26 +26,19 @@ public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
         assert (resultWriteCTM == 0);
 
         if (suffix == null) {
-            suffix = "readPowerSupplyCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + ((getLogger() != null) ? "?log=true" : "");
+            String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+            suffix = "readPowerSupplyCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + ((logLevelParam != null) ? logLevelParam : "");
         }
 
         ReadPowerSupplyCmdResult postResult = (ReadPowerSupplyCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, ReadPowerSupplyCmdResult.class);
 
         if (postResult.postError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(),  " postError:" + postResult.postError.name());
-            }
-
+            logErrorInternal(" postError:" + postResult.postError.name());
             return Result.communication_error;
         }
 
         if (postResult.controllerError != null) {
-
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), " controllerError:" + postResult.controllerError);
-            }
-
+            logErrorInternal(" controllerError:" + postResult.controllerError);
             return Result.communication_error;
         }
 
@@ -59,13 +52,15 @@ public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
             return result;
         }
         catch (IllegalArgumentException e) {
-            if (getLogger() != null) {
-                getLogger().logError(this.getClass().getSimpleName(), " bad result enum:" + postResult.result);
-            }
-
+            logErrorInternal(" bad result enum:" + postResult.result);
             return Result.communication_error;
         }
     }
 
+    private void logErrorInternal(String str) {
+        if ((getLogger() != null) && (getLogLevel().isLevelComm())) {
+            getLogger().logError(this.getClass().getSimpleName(), str);
+        }
+    }
 }
 
