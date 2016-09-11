@@ -55,15 +55,15 @@ public class Controller {
 
     @RequestMapping(value = "/bmList", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.ListBusMastersCmdResult listBusMasters(
-            @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+            @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
 
         boolean doLog;
-        if ("true".equals(parmLog)) {
-            doLog = true;
-        } else if ("false".equals(parmLog)) {
-            doLog = false;
-        } else {
-            return new waterfall.onewire.HttpClient.ListBusMastersCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        Logger.LogLevel logLevel = null;
+        if (parmLogLevel != null) {
+            logLevel = logLevelFromLogParam(parmLogLevel);
+            if (logLevel == null) {
+                return new waterfall.onewire.HttpClient.ListBusMastersCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
+            }
         }
 
         return new waterfall.onewire.HttpClient.ListBusMastersCmdResult(getBusMasterIdents(), null);
@@ -88,7 +88,7 @@ public class Controller {
     @RequestMapping(value = "/startBusCmd/{bmIdent}", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.StartBusCmdResult startBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
                                                                       @PathVariable(value = "bmIdent") String bmIdent,
-                                                                      @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                      @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm;
@@ -96,16 +96,15 @@ public class Controller {
             return new waterfall.onewire.HttpClient.StartBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
-        boolean doLog;
-        if ("true".equals(parmLog)) {
-            doLog = true;
-        } else if ("false".equals(parmLog)) {
-            doLog = false;
-        } else {
-            return new waterfall.onewire.HttpClient.StartBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        Logger.LogLevel logLevel = null;
+        if (parmLogLevel != null) {
+            logLevel = logLevelFromLogParam(parmLogLevel);
+            if (logLevel == null) {
+                return new waterfall.onewire.HttpClient.StartBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
+            }
         }
 
-        StartBusCmd cmd = bm.queryStartBusCmd(doLog);
+        StartBusCmd cmd = bm.queryStartBusCmd(logLevel);
         cmd.execute();
 
         return new waterfall.onewire.HttpClient.StartBusCmdResult(cmd);
@@ -114,7 +113,7 @@ public class Controller {
     @RequestMapping(value = "/stopBusCmd/{bmIdent}", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.StopBusCmdResult stopBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
                                                                     @PathVariable(value = "bmIdent") String bmIdent,
-                                                                    @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                    @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm;
@@ -122,16 +121,15 @@ public class Controller {
             return new waterfall.onewire.HttpClient.StopBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
-        boolean log;
-        if ("true".equals(parmLog)) {
-            log = true;
-        } else if ("false".equals(parmLog)) {
-            log = false;
-        } else {
-            return new waterfall.onewire.HttpClient.StopBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        Logger.LogLevel logLevel = null;
+        if (parmLogLevel != null) {
+            logLevel = logLevelFromLogParam(parmLogLevel);
+            if (logLevel == null) {
+                return new waterfall.onewire.HttpClient.StopBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
+            }
         }
 
-        StopBusCmd cmd = bm.queryStopBusCmd(log);
+        StopBusCmd cmd = bm.queryStopBusCmd(logLevel);
         cmd.execute();
 
         return new waterfall.onewire.HttpClient.StopBusCmdResult(cmd);
@@ -142,7 +140,7 @@ public class Controller {
                                                                         @PathVariable(value = "bmIdent") String bmIdent,
                                                                         @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
                                                                         @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
-                                                                        @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                        @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm;
@@ -150,13 +148,12 @@ public class Controller {
             return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
-        boolean doLog;
-        if ("true".equals(parmLog)) {
-            doLog = true;
-        } else if ("false".equals(parmLog)) {
-            doLog = false;
-        } else {
-            return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        Logger.LogLevel logLevel = null;
+        if (parmLogLevel != null) {
+            logLevel = logLevelFromLogParam(parmLogLevel);
+            if (logLevel == null) {
+                return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
+            }
         }
 
         SearchBusCmd cmd = null;
@@ -181,11 +178,11 @@ public class Controller {
                 return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byFamilyCode_must_be_unsigned_byte);
             }
 
-            cmd = bm.querySearchBusByFamilyCmd(familyCode, doLog);
+            cmd = bm.querySearchBusByFamilyCmd(familyCode, logLevel);
         } else if ((parmByAlarm == null) || ("false".equals(parmByAlarm))) {
-            cmd = bm.querySearchBusCmd(doLog);
+            cmd = bm.querySearchBusCmd(logLevel);
         } else if ("true".equals(parmByAlarm)) {
-            cmd = bm.querySearchBusByAlarmCmd(doLog);
+            cmd = bm.querySearchBusByAlarmCmd(logLevel);
         } else {
             return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byAlarm_not_true_false);
         }
@@ -199,7 +196,7 @@ public class Controller {
     public waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult readPowerSupplyCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
                                                                                     @PathVariable(value = "bmIdent") String bmIdent,
                                                                                     @PathVariable(value = "dsAddr") String dsAddr,
-                                                                                    @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                                    @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm;
@@ -211,16 +208,15 @@ public class Controller {
             return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
         }
 
-        boolean log;
-        if ("true".equals(parmLog)) {
-            log = true;
-        } else if ("false".equals(parmLog)) {
-            log = false;
-        } else {
-            return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        Logger.LogLevel logLevel = null;
+        if (parmLogLevel != null) {
+            logLevel = logLevelFromLogParam(parmLogLevel);
+            if (logLevel == null) {
+                return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
+            }
         }
 
-        ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(new DSAddress(dsAddr), log);
+        ReadPowerSupplyCmd cmd = bm.queryReadPowerSupplyCmd(new DSAddress(dsAddr), logLevel);
         cmd.execute();
 
         return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(cmd);
@@ -231,7 +227,7 @@ public class Controller {
                                                                                   @PathVariable(value = "bmIdent") String bmIdent,
                                                                                   @PathVariable(value = "dsAddr") String dsAddr,
                                                                                   @PathVariable(value = "rCount") Long rCount,
-                                                                                  @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                                  @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm;
@@ -247,16 +243,15 @@ public class Controller {
             return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Invalid_rCount);
         }
 
-        boolean doLog;
-        if ("true".equals(parmLog)) {
-            doLog = true;
-        } else if ("false".equals(parmLog)) {
-            doLog = false;
-        } else {
-            return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        Logger.LogLevel logLevel = null;
+        if (parmLogLevel != null) {
+            logLevel = logLevelFromLogParam(parmLogLevel);
+            if (logLevel == null) {
+                return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
+            }
         }
 
-        ReadScratchpadCmd cmd = bm.queryReadScratchpadCmd(new DSAddress(dsAddr), rCount.shortValue(), doLog);
+        ReadScratchpadCmd cmd = bm.queryReadScratchpadCmd(new DSAddress(dsAddr), rCount.shortValue(), logLevel);
         cmd.execute();
 
         if (cmd.getResult() == ReadScratchpadCmd.Result.success) {
@@ -280,7 +275,7 @@ public class Controller {
     public waterfall.onewire.HttpClient.ConvertTCmdResult convertTCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
                                                                       @PathVariable(value = "bmIdent") String bmIdent,
                                                                       @PathVariable(value = "dsAddr") String dsAddr,
-                                                                      @RequestParam(value = "log", required = false, defaultValue = "false") String parmLog) {
+                                                                      @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
         checkAuthenticationHeader(authorization);
 
         BusMaster bm;
@@ -292,16 +287,15 @@ public class Controller {
             return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.Invalid_dsAddr);
         }
 
-        boolean log;
-        if ("true".equals(parmLog)) {
-            log = true;
-        } else if ("false".equals(parmLog)) {
-            log = false;
-        } else {
-            return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_log_not_true_or_false);
+        Logger.LogLevel logLevel = null;
+        if (parmLogLevel != null) {
+            logLevel = logLevelFromLogParam(parmLogLevel);
+            if (logLevel == null) {
+                return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
+            }
         }
 
-        ConvertTCmd cmd = bm.queryConvertTCmd(new DSAddress(dsAddr), log);
+        ConvertTCmd cmd = bm.queryConvertTCmd(new DSAddress(dsAddr), logLevel);
         cmd.execute();
 
         return new waterfall.onewire.HttpClient.ConvertTCmdResult(cmd);
@@ -361,6 +355,36 @@ public class Controller {
             throw new AuthException();
         }
     }
+
+    private Logger.LogLevel logLevelFromLogParam(String logLevelParam) {
+        Logger.LogLevel l = new Logger.LogLevel();
+
+        String[] levels = logLevelParam.split(",");
+
+        for (String level : levels) {
+            if ("device".equals(level)) {
+                if (l.isLevelDevice()) {
+                    return null;
+                }
+                l.setLevelDevice();
+            }
+            if ("cmd".equals(level)) {
+                if (l.isLevelCmd()) {
+                    return null;
+                }
+                l.setLevelCmd();
+            }
+            if ("comm".equals(level)) {
+                if (l.isLevelComm()) {
+                    return null;
+                }
+                l.setLevelComm();
+            }
+        }
+
+        return l;
+    }
+
 
 }
 
