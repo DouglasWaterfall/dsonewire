@@ -24,7 +24,7 @@ public class BaseCmdResult {
     public enum ControllerErrors {
         Unknown_bmIdent,
         BM_not_started,
-        Bad_parm_log_not_true_or_false,
+        Bad_parm_logLevel,
         Bad_parm_byAlarm_not_true_false,
         Bad_parm_only_one_byAlarm_or_byFamilyCode_allowed,
         Bad_parm_byFamilyCode_not_a_number,

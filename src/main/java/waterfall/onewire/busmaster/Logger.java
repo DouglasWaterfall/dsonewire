@@ -8,7 +8,70 @@ import java.util.Iterator;
  */
 public interface Logger {
 
-    public void logDebug(String context, String str);
+    public class LogLevel {
+        public boolean device;
+        public boolean cmd;
+        public boolean comm;
+        // public boolean app;
+
+        public LogLevel() {
+            this.device = false;
+            this.cmd = false;
+            this.comm = false;
+        }
+
+        public LogLevel(boolean device, boolean cmd, boolean comm) {
+            this.device = device;
+            this.cmd = cmd;
+            this.comm = comm;
+        }
+
+        public boolean isLevelDevice() {
+            return device;
+        }
+
+        public LogLevel setLevelDevice() {
+            this.device = true;
+            return this;
+        }
+
+        public boolean isLevelCmd() {
+            return cmd;
+        }
+
+        public LogLevel setLevelCmd() {
+            this.cmd = true;
+            return this;
+        }
+
+        public boolean isLevelComm() {
+            return comm;
+        }
+
+        public LogLevel setLevelComm() {
+            this.comm = true;
+            return this;
+        }
+
+        public boolean isAnyLevelSet() {
+            return ((device != false) || (cmd != false) || (comm != false));
+        }
+
+        public static LogLevel DeviceOnlyLevel() {
+            return new LogLevel(true, false, false);
+        }
+
+        public static LogLevel CmdOnlyLevel() {
+            return new LogLevel(false, true, false);
+        }
+
+        public static LogLevel CommOnlyLevel() {
+            return new LogLevel(false, false, true);
+        }
+
+    }
+
+    public LogLevel getLogLevel();
 
     public void logInfo(String context, String str);
 

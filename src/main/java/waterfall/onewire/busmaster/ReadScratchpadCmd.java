@@ -124,8 +124,8 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected ReadScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, short requestByteCount, boolean doLog) {
-        super(busMaster, dsAddr, doLog);
+    protected ReadScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, short requestByteCount, LogLevel logLevel) {
+        super(busMaster, dsAddr, logLevel);
         assert (requestByteCount >= 1);
         this.requestByteCount = requestByteCount;
     }

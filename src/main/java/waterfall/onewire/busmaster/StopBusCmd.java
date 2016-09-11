@@ -63,10 +63,10 @@ public abstract class StopBusCmd extends BaseCmd {
     /**
      *
      * @param busMaster
-     * @param log
+     * @param logLevel
      */
-    protected StopBusCmd(BusMaster busMaster, boolean log) {
-        super(busMaster, log);
+    protected StopBusCmd(BusMaster busMaster, LogLevel logLevel) {
+        super(busMaster, logLevel);
     }
 
     /**

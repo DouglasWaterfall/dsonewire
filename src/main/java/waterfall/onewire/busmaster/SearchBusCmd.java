@@ -115,8 +115,8 @@ public abstract class SearchBusCmd extends BaseCmd {
     /**
      * Protected Constructors and Methods
      */
-    protected SearchBusCmd(BusMaster busMaster, boolean byAlarm, boolean log) {
-        super(busMaster, log);
+    protected SearchBusCmd(BusMaster busMaster, boolean byAlarm, LogLevel logLevel) {
+        super(busMaster, logLevel);
         this.familyCode = null;
         if (byAlarm) {
             this.byAlarm = new Boolean(byAlarm);
@@ -133,8 +133,8 @@ public abstract class SearchBusCmd extends BaseCmd {
      * @param busMaster
      * @param familyCode
      */
-    protected SearchBusCmd(BusMaster busMaster, short familyCode, boolean log) {
-        super(busMaster, log);
+    protected SearchBusCmd(BusMaster busMaster, short familyCode, LogLevel logLevel) {
+        super(busMaster, logLevel);
         this.familyCode = new Short(familyCode);
         this.byAlarm = null;
     }

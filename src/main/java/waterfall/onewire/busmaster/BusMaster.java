@@ -2,8 +2,8 @@ package waterfall.onewire.busmaster;
 
 import waterfall.onewire.DSAddress;
 
-
 public interface BusMaster {
+
     /**
      * returns the human readable name of the bus
      *
@@ -26,57 +26,57 @@ public interface BusMaster {
     public boolean getIsStarted();
 
     /**
-     * @param doLog
+     * @param logLevel may be null for no logging
      * @return
      */
-    public StartBusCmd queryStartBusCmd(boolean doLog);
+    public StartBusCmd queryStartBusCmd(Logger.LogLevel logLevel);
 
     /**
-     * @param doLog
+     * @param logLevel may be null for no logging
      * @return
      */
-    public StopBusCmd queryStopBusCmd(boolean doLog);
+    public StopBusCmd queryStopBusCmd(Logger.LogLevel logLevel);
 
     /**
-     * @param doLog
+     * @param logLevel may be null for no logging
      * @return
      */
-    public SearchBusCmd querySearchBusCmd(boolean doLog);
+    public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel);
 
     /**
      * @param familyCode
-     * @param doLog
+     * @param logLevel may be null for no logging
      * @return
      */
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, boolean doLog);
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel);
 
     /**
-     * @param doLog
+     * @param logLevel
      * @return
      */
-    public SearchBusCmd querySearchBusByAlarmCmd(boolean doLog);
-
-    /**
-     * @param dsAddr
-     * @param doLog
-     * @return
-     */
-    public ConvertTCmd queryConvertTCmd(final DSAddress dsAddr, boolean doLog);
+    public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel);
 
     /**
      * @param dsAddr
-     * @param doLog
+     * @param logLevel may be null for no logging
      * @return
      */
-    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(final DSAddress dsAddr, boolean doLog);
+    public ConvertTCmd queryConvertTCmd(final DSAddress dsAddr, Logger.LogLevel logLevel);
+
+    /**
+     * @param dsAddr
+     * @param logLevel may be null for no logging
+     * @return
+     */
+    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(final DSAddress dsAddr, Logger.LogLevel logLevel);
 
     /**
      * @param dsAddr
      * @param requestByteCount
-     * @param doLog
+     * @param logLevel may be null for no logging
      * @return
      */
-    public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount, boolean doLog);
+    public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount, Logger.LogLevel logLevel);
 
     // ReadStatusCmd
     // AA {0000 index} FFFFFFFFFF00007F {EDC1 crc}, so write 1 + 2 + 8 + 2 = 13 = 0D

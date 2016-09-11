@@ -11,16 +11,19 @@ import java.util.Iterator;
 public class BaseCmd implements Logger {
     protected BusMaster busMaster;
     protected ArrayList<String> logger;
+    protected LogLevel logLevel;
     protected String logContext;
 
-    public BaseCmd(BusMaster busMaster, boolean doLog) {
+    public BaseCmd(BusMaster busMaster, LogLevel logLevel) {
         this.busMaster = busMaster;
-        if (doLog) {
+        if ((logLevel != null) && (logLevel.isAnyLevelSet())) {
             this.logger = new ArrayList<String>();
+            this.logLevel = logLevel;
             this.logContext = this.getClass().getSimpleName() + " ";
         }
         else {
             this.logger = null;
+            this.logLevel = null;
         }
     }
 
@@ -36,6 +39,12 @@ public class BaseCmd implements Logger {
      * @return
      */
     public Logger getLogger() { return this; }
+
+    /**
+     *
+     * @return
+     */
+    public LogLevel getLogLevel() { return logLevel; }
 
     /**
      *

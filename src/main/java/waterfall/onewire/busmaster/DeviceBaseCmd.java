@@ -25,8 +25,8 @@ public abstract class DeviceBaseCmd extends BaseCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected DeviceBaseCmd(BusMaster busMaster, DSAddress dsAddr, boolean doLog) {
-        super(busMaster, doLog);
+    protected DeviceBaseCmd(BusMaster busMaster, DSAddress dsAddr, Logger.LogLevel logLevel) {
+        super(busMaster, logLevel);
         assert (dsAddr != null);
         this.dsAddr = dsAddr;
     }
