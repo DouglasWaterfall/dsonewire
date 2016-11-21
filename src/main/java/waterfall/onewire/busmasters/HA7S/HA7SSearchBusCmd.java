@@ -90,6 +90,13 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
             }
 
             if (ret.readCount == 0) {
+                // the BusMaster may be Objects interested in the result of this search.
+                if (resultList.size() > 0) {
+                    // little hack, the result must be set for us to ask for the ResultData
+                    result = SearchBusCmd.Result.success;
+                    ((HA7S) busMaster).notifySearchSuccess(this);
+                }
+
                 return SearchBusCmd.Result.success;
             }
 
