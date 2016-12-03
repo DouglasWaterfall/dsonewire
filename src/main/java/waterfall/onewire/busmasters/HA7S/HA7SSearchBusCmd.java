@@ -33,8 +33,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
 
     protected SearchBusCmd.Result execute_internal() {
         assert (result == SearchBusCmd.Result.busy);
-        assert (resultList == null);
-        assert (resultWriteCTM == 0);
+        assert (resultData == null);
 
         ArrayList<String> resultList = new ArrayList<String>();
 
@@ -90,13 +89,6 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
             }
 
             if (ret.readCount == 0) {
-                // the BusMaster may be Objects interested in the result of this search.
-                if (resultList.size() > 0) {
-                    // little hack, the result must be set for us to ask for the ResultData
-                    result = SearchBusCmd.Result.success;
-                    ((HA7S) busMaster).notifySearchSuccess(this);
-                }
-
                 return SearchBusCmd.Result.success;
             }
 
@@ -106,8 +98,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
 
     public void setResultData(long resultWriteCTM, List<String> resultList) {
         assert (result == SearchBusCmd.Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-        this.resultList = resultList;
+        this.resultData = new SearchBusCmd.ResultData(resultList, resultWriteCTM);
     }
 
     private Logger getDeviceLevelLogger() {
