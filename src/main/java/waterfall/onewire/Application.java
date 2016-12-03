@@ -4,8 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.PropertySource;
+import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import waterfall.onewire.busmaster.*;
 import waterfall.onewire.busmasters.HA7S.HA7S;
+
+import java.util.List;
 
 /*
 import org.springframework.beans.BeansException;
@@ -20,25 +25,204 @@ public class Application {
     @Autowired
     Controller  controller;
 
-    public void start() {
-        System.out.println("starting dsonewireserver...");
+    final static long fifteen_seconds = (1000 * 15);
+    final static long thirty_seconds = (1000 * 30);
 
-        //
-        // This a hard wired device configuration.
-        //
-        controller.addBusMaster(new HA7S("/dev/ttyAMA0")); // or "/dev/ttyS0"
+    class mySearchBusNotify implements SearchBusCmdNotifyResult {
+        private int countToDeregister;
+        private long start;
+        private SearchBusCmd.ResultData resultData;
 
-        try {
-            Thread.sleep(1000 * 60 * 60 * 24 * 7);
-        } catch (InterruptedException e) {
-            System.out.println("Sleep interrupted");
+        public mySearchBusNotify(int countToDeregister) {
+            reset(countToDeregister);
+        }
+
+        public int getCountToDeregister() { return countToDeregister; }
+
+        public SearchBusCmd.ResultData getNotifyResultData() { return resultData; }
+
+        public void reset(int countToDeregister) {
+            this.countToDeregister = countToDeregister;
+            this.start = System.currentTimeMillis();
+            this.resultData = null;
+        }
+
+        @Override
+        public void notify(final BusMaster bm, final SearchBusCmd.ResultData resultData) {
+            System.out.println("Notify! delta:" + (System.currentTimeMillis() - start) + " devices:" + resultData.getList().size());
+
+            this.resultData = resultData;
+
+            if (--countToDeregister <= 0) {
+                if (!bm.cancelSearchNotifyFor(this)) {
+                    System.err.println("mySearchBusNotify - cancel failed!");
+                }
+                else {
+                    System.err.println("mySearchBusNotify - cancelled");
+                }
+            }
         }
     }
 
+    private static boolean startBM(BusMaster busmaster, Logger.LogLevel logLevel) {
+        if (busmaster.getIsStarted()) {
+            System.out.println("start(" + busmaster.getName() + "): already started");
+            return true;
+        }
+
+        StartBusCmd startCmd = busmaster.queryStartBusCmd(logLevel);
+        StartBusCmd.Result startResult = startCmd.execute();
+
+        // dumpLog(startCmd.getLogger());
+
+        if ((startResult == StartBusCmd.Result.started) || (startResult == StartBusCmd.Result.already_started)) {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    public void start(String ha7sTTY) {
+        System.out.println("Starting dsonewire-busmasterserver on " + ha7sTTY);
+
+        HA7S bm = new HA7S(ha7sTTY);
+
+        controller.addBusMaster(bm);
+
+        // 1. Try to register with a negative time period
+        System.out.println("test 1");
+        mySearchBusNotify t1 = new mySearchBusNotify(1);
+        BusMaster.ScheduleSearchResult result = bm.scheduleSearchNotifyFor(t1, -1);
+        if (result != BusMaster.ScheduleSearchResult.SSR_MinPeriodInvalid) {
+            System.err.println("wrong error:" + result.name());
+            return;
+        }
+
+        // 2. Try to register with a zero time period
+        System.out.println("test 2");
+        result = bm.scheduleSearchNotifyFor(t1, 0);
+        if (result != BusMaster.ScheduleSearchResult.SSR_MinPeriodInvalid) {
+            System.err.println("wrong error:" + result.name());
+            return;
+        }
+
+        // 3. Try to register with a null Notify Object
+        System.out.println("test 3");
+        result = bm.scheduleSearchNotifyFor(null, thirty_seconds);
+        if (result != BusMaster.ScheduleSearchResult.SSR_NotifyObjNull) {
+            System.err.println("wrong error:" + result.name());
+            return;
+        }
+
+        // 4. Try to register without the BM being started
+        System.out.println("test 4");
+        result = bm.scheduleSearchNotifyFor(t1, thirty_seconds);
+        if (result != BusMaster.ScheduleSearchResult.SSR_BusMasterNotStarted) {
+            System.err.println("wrong error:" + result.name());
+            return;
+        }
+
+        System.out.println("starting bm");
+        if (!startBM(bm, Logger.LogLevel.CmdOnlyLevel())) {
+            System.err.println(bm.getName() + " failed to start");
+            return;
+        }
+
+        // 5. Try to register same object more than once
+        System.out.println("test 5");
+        result = bm.scheduleSearchNotifyFor(t1, thirty_seconds);
+        if (result != BusMaster.ScheduleSearchResult.SSR_Success) {
+            System.err.println("5a:wrong error:" + result.name());
+            return;
+        }
+        result = bm.scheduleSearchNotifyFor(t1, fifteen_seconds);
+        if (result != BusMaster.ScheduleSearchResult.SSR_NotifyObjAlreadyScheduled) {
+            System.err.println("5b:wrong error:" + result.name());
+            return;
+        }
+        // we will get one event and then it will deregister.
+        int timeoutCount = 10;
+        while (t1.getCountToDeregister() > 0) {
+            if (--timeoutCount == 0) {
+                System.err.println("5:gave up waiting for notify");
+                return;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                ;
+            }
+        }
+
+        // 6. See that a later request will re-use the same data if it is in the time period
+        System.out.println("test 6");
+        long saveWriteCTM = t1.getNotifyResultData().getWriteCTM();
+        t1.reset(1);
+        result = bm.scheduleSearchNotifyFor(t1, thirty_seconds);
+        if (result != BusMaster.ScheduleSearchResult.SSR_Success) {
+            System.err.println("6a: wrong error:" + result.name());
+            return;
+        }
+        // we will get one event and then it will deregister.
+        timeoutCount = 10;
+        while (t1.getCountToDeregister() > 0) {
+            if (--timeoutCount == 0) {
+                System.err.println("6:gave up waiting for notify");
+                return;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                ;
+            }
+        }
+        if (t1.getNotifyResultData().getWriteCTM() != saveWriteCTM) {
+            System.err.println("6: Result writeCTM did not match");
+            return;
+        }
+
+        System.out.println("Done");
+    }
+
+    /*
+     * Some ideas for Tests:
+     * Negative Tests:
+     *
+     * Positive Tests
+     * Start the BM.
+     * 1. Register a NotifyObject with time period of 1 minute
+     *      expect a call back in less than a minute (expected started right away)
+     *      deregister the NotifyObject immediately (so before the 1 minute repeated)
+     *      wait for 30 seconds
+     *      register and expect a call back immediately with the same writeCTM as before.
+     *      deregister the NotifyObject immediately.
+     *      wait for 90 seconds
+     *      register and expect a call back with writeCTM after our register (so no using the old data)
+     *      deregister the NotifyObject immediately.
+     *
+     * - test rate changes
+     * - test removing someone and rate changes
+     * - test removing someone and the rate continues.
+     * - test a search which occurs by an outside agent leads to a callback
+     */
+
+
+
     public static void main(String[] args) {
+        PropertySource ps = new SimpleCommandLinePropertySource(args);
+        String ha7sTTY = (String)ps.getProperty("ha7sTTY");
+        if ((ha7sTTY == null) || ("".equals(ha7sTTY))) {
+            // such as /dev/ttyAMA0 or /dev/ttyS0
+            System.err.println("Error, must specify --ha7sTTY={path_to_serial_port}");
+            System.exit(1);
+        }
+
         ApplicationContext ctx = SpringApplication.run(Application.class, args);
         Application app = (Application) ctx.getBean(Application.class);
-        app.start();
+        app.start(ha7sTTY);
+
+
     }
 
 }
