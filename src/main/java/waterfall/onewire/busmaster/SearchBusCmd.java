@@ -1,6 +1,7 @@
 package waterfall.onewire.busmaster;
 
 import java.util.List;
+import java.util.zip.CRC32;
 
 /**
  * Created by dwaterfa on 6/9/16.
@@ -11,8 +12,7 @@ public abstract class SearchBusCmd extends BaseCmd {
     protected final Boolean byAlarm;
 
     protected Result result = null;
-    protected List<String> resultList;
-    protected long resultWriteCTM;
+    protected ResultData resultData;
 
     /**
      * @return
@@ -51,8 +51,7 @@ public abstract class SearchBusCmd extends BaseCmd {
             }
 
             result = Result.busy;
-            resultList = null;
-            resultWriteCTM = 0;
+            resultData = null;
         }
 
         if (!getBusMaster().getIsStarted()) {
@@ -70,6 +69,10 @@ public abstract class SearchBusCmd extends BaseCmd {
             }
         }
 
+        if (result == Result.success) {
+            getBusMaster().searchBusCmdExecuteCallback(this);
+        }
+
         return result;
     }
 
@@ -83,33 +86,76 @@ public abstract class SearchBusCmd extends BaseCmd {
     }
 
     /**
-     * @return List of devices Addresses.
-     * @throws NoResultException if the current result is not success.
+     * Class to effectively contain the results of the operation when the result is success.
      */
-    public List<String> getResultList() throws NoResultException, NoResultDataException {
-        if (result != Result.success) {
-            throw new NoResultDataException();
-        }
-        if (result != Result.success) {
-            throw new NoResultDataException();
+    public class ResultData {
+        private final List<String> list;
+        private long listCRC32;
+        private final long writeCTM;
+
+        public ResultData(final List<String> list, final long writeCTM) {
+            this.list = list;
+            this.writeCTM = writeCTM;
+            CRC32 crc = new CRC32();
+            for(String string : list) {
+                crc.update(string.getBytes());
+            }
+            this.listCRC32 = crc.getValue();
         }
 
-        return resultList;
+        /**
+         * Return list of devices Addresses.
+         */
+        public List<String> getList() { return list; }
+
+        /**
+         * Return CRC32 calcualation on the list of devices Addresses.
+         */
+        public long getListCRC32() { return listCRC32; }
+
+        /**
+         * This the closest value for System.getCurrentTimeMillis() on the physical bus controlling the device when
+         * the write for the bus command was executed.
+         */
+        public long getWriteCTM() { return writeCTM; }
+
     }
 
     /**
-     * This the closest value for System.getCurrentTimeMillis() on the physical bus controlling the device when
-     * the write for the bus command was executed.
      *
-     * @return system time in milliseconds
+     * @return result of the successful operation
+     * @throws NoResultDataException
+     */
+    public ResultData getResultData() throws NoResultDataException {
+        if (result != Result.success) {
+            throw new NoResultDataException();
+        }
+        return resultData;
+    }
+
+    /**
+     * @return List of devices Addresses.
+     * @throws NoResultException if the current result is not success.
+     */
+    public List<String> getResultList() throws NoResultDataException {
+        return getResultData().getList();
+    }
+
+    /**
+     *
+     * @return CRC32 of the list of device addresses
+     * @throws NoResultDataException
+     */
+    public long getResultListCRC32() throws NoResultDataException {
+        return getResultData().getListCRC32();
+    }
+
+    /**
+     * @return system time in milliseconds when the first write to the physical bus for the operation started.
      * @throws NoResultException if the current result is not done.
      */
     public long getResultWriteCTM() throws NoResultException {
-        if ((result == null) || (result == Result.busy)) {
-            throw new NoResultException();
-        }
-
-        return resultWriteCTM;
+        return getResultData().getWriteCTM();
     }
 
     /**

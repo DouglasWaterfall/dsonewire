@@ -44,22 +44,61 @@ public interface BusMaster {
     public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel);
 
     /**
-     * This method will ask the BusMaster to perform bus search cmds at the specified minimum time period. If another
-     * Object is registed with a shorter time period then the specified obj may be called back at a shorter rate than
-     * it asked for. Likewise if an independent SearchCmd is performed then there will be a callback too. The only
-     * guarantee is that the the caller will at least try to be called at the period specified.
-     * @param obj obj with XXX interface.
-     * @param minPeriodMs
-     * @return true if scheduled, false if not a valid Object, minPeriodMs is less than or equal to zero, or the Object already has a schedule.
+     *
      */
-    public boolean scheduleSearchNotifyFor(SearchBusNotify obj, long minPeriodMs);
+    public enum ScheduleSearchResult {
+        /**
+         * The obj specified to notify back on is null.
+         */
+        SSR_NotifyObjNull,
+
+        /**
+         * The value for minPeriodMSec is equal to or less than zero.
+         */
+        SSR_MinPeriodInvalid,
+
+        /**
+         * The obj specified to notify back on is already scheduled.
+         */
+        SSR_NotifyObjAlreadyScheduled,
+
+        /**
+         * The specified BusMaster is not started.
+         */
+        SSR_BusMasterNotStarted,
+
+        /**
+         * The obj has been scheduled for search callback.
+         */
+        SSR_Success
+    }
+
+    /**
+     * This method will ask the BusMaster to perform a bus search cmd at the specified minimum time period. If another
+     * Object is registered with a shorter time period then the an earlier search may be performed. Likewise if an
+     * independent SearchCmd is performed then there will be a callback opportunity too. The only guarantee is that the
+     * the BusMaster will generate a SearchCmd at the period specified.
+     * @param obj obj with SearchBusNotify interface. The obj will only be called back if the data is different since
+     *            the last time it was called back. The search itself will be performed but no callback will occur.
+     * @param minPeriodMSec
+     * @return ScheduleSearchResult
+     */
+    public ScheduleSearchResult scheduleSearchNotifyFor(SearchBusCmdNotifyResult obj, long minPeriodMSec);
 
     /**
      * Cancel a previously scheduled search notification.
      * @param obj Instance which had successfully called scheduleSearchNotify()
      * @return true if cancelled, false if unknown instance to the search scheduler.
      */
-    public boolean cancelSearchNotifyFor(SearchBusNotify obj);
+    public boolean cancelSearchNotifyFor(SearchBusCmdNotifyResult obj);
+
+    /**
+     * This method will be called by any instances of the SearchBusCmd and SearchBusByAlarmCmd generated from this
+     * BusMaster after they have executed with success and right before they return to the caller. The callback will
+     * be on the thread of whoever is executing the SearchCmd so minimize what you do there.
+     * @param cmd Command instance from this BusMaster with a successful result.
+     */
+    public void searchBusCmdExecuteCallback(SearchBusCmd cmd);
 
     /**
      * @param familyCode
@@ -75,22 +114,23 @@ public interface BusMaster {
     public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel);
 
     /**
-     * This method will ask the BusMaster to perform bus alarm search cmds at the specified minimum time period. If
-     * another Object is registed with a shorter time period then the specified obj may be called back at a shorter
-     * rate than it asked for. Likewise if an independent SearchCmd is performed then there will be a callback too.
-     * The only * guarantee is that the the caller will at least be called at the period specified.
-     * @param obj obj with XXX interface.
-     * @param minPeriodMs
-     * @return true if scheduled, false if not a valid Object, minPeriodMs is less than or equal to zero, or the Object already has a schedule.
+     * This method will ask the BusMaster to perform an bus alarm search cmd at the specified minimum time period. If
+     * another Object is registered with a shorter time period then the an earlier search may be performed. Likewise if
+     * an independent SearchByAlarmCmd is performed then there will be a callback opportunity too. The only guarantee
+     * is that the BusMaster will generate a SearchByAlarmCmd at the period specified.
+     * @param obj obj with SearchBusByAlarmNotify interface. The obj will only be called back if the data is different
+     *            since the last time it was called back. The search itself will be performed but no callback will occur.
+     * @param minPeriodMSec
+     * @return ScheduleSearchResult
      */
-    public boolean scheduleAlarmSearchNotifyFor(SearchBusByAlarmNotify obj, long minPeriodMs);
+    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj, long minPeriodMSec);
 
     /**
      * Cancel a previously scheduled alarm search notification.
      * @param obj Instance which had successfully called scheduleAlarmSearchNotify()
      * @return true if cancelled, false if unknown instance to the alarm search scheduler.
      */
-    public boolean cancelAlarmSearchNotifyFor(SearchBusByAlarmNotify obj);
+    public boolean cancelAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj);
 
     /**
      * @param dsAddr
