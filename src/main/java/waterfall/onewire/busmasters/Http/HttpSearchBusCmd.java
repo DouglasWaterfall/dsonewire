@@ -13,18 +13,17 @@ public class HttpSearchBusCmd extends SearchBusCmd {
 
     public HttpSearchBusCmd(Client client, boolean byAlarm, LogLevel logLevel) {
         super(client, byAlarm, logLevel);
-        this.resultList = null;
+        this.resultData = null;
     }
 
     public HttpSearchBusCmd(Client client, short familyCode, LogLevel logLevel) {
         super(client, familyCode, logLevel);
-        this.resultList = null;
+        this.resultData = null;
     }
 
     protected Result execute_internal() {
         assert (result == Result.busy);
-        assert (resultList == null);
-        assert (resultWriteCTM == 0);
+        assert (resultData == null);
 
         String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
         final String suffix = "searchBusCmd/" + ((Client)busMaster).getBmIdent() + ((logLevelParam != null) ? logLevelParam : "");
@@ -58,8 +57,7 @@ public class HttpSearchBusCmd extends SearchBusCmd {
 
     public void setResultData(long resultWriteCTM, List<String> resultList) {
         assert (result == Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-        this.resultList = resultList;
+        this.resultData = new ResultData(resultList, resultWriteCTM);
     }
 
     private void logErrorInternal(String str) {

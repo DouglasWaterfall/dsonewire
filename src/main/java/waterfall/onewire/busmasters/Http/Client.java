@@ -25,6 +25,9 @@ public class Client implements BusMaster {
     private final String endpoint;
     private final String bmIdent;
 
+    private SearchBusNotifyHelper searchHelper = null;
+    private SearchBusNotifyHelper searchByAlarmHelper = null;
+
     private boolean started;
     private long remoteTimeDiffMSec;
 
@@ -34,6 +37,10 @@ public class Client implements BusMaster {
     public Client(String endpoint, String bmIdent) {
         this.endpoint = endpoint;
         this.bmIdent = bmIdent;
+
+        this.searchHelper = new SearchBusNotifyHelper(this, false);
+        this.searchByAlarmHelper = new SearchBusNotifyHelper(this, true);
+
         this.started = false;
         this.bmName = null;
         this.remoteTimeDiffMSec = 0;
@@ -78,12 +85,39 @@ public class Client implements BusMaster {
         return new HttpSearchBusCmd(this, false, logLevel);
     }
 
+    public ScheduleSearchResult scheduleSearchNotifyFor(SearchBusCmdNotifyResult obj, long minPeriodMSec) {
+        return searchHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
+    }
+
+    public boolean cancelSearchNotifyFor(SearchBusCmdNotifyResult obj) {
+        return searchHelper.cancelSearchNotifyFor(obj);
+    }
+
+    public void searchBusCmdExecuteCallback(SearchBusCmd cmd) {
+        if ((cmd.getBusMaster() == this) && (cmd.getResult() == SearchBusCmd.Result.success)) {
+            if (cmd.isByAlarm()) {
+                searchByAlarmHelper.notifySearchResult(cmd.getResultData());
+            }
+            else if (!cmd.isByFamilyCode()) {
+                searchHelper.notifySearchResult(cmd.getResultData());
+            }
+        }
+    }
+
     public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel) {
         return new HttpSearchBusCmd(this, familyCode, logLevel);
     }
 
     public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel) {
         return new HttpSearchBusCmd(this, true, logLevel);
+    }
+
+    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj, long minPeriodMSec) {
+        return searchByAlarmHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
+    }
+
+    public boolean cancelAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj) {
+        return searchByAlarmHelper.cancelSearchNotifyFor(obj);
     }
 
     public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
