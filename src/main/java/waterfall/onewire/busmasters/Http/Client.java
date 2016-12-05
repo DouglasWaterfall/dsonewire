@@ -34,36 +34,37 @@ public class Client implements BusMaster {
     private String bmName;
     private String authorization;
 
-    public Client(String endpoint, String bmIdent) {
+    public Client(String endpoint, StatusCmdResult statusCmdResult) {
         this.endpoint = endpoint;
-        this.bmIdent = bmIdent;
+        this.bmIdent = statusCmdResult.ident;
+        {
+            StringBuffer sb = new StringBuffer();
+            sb.append(this.getClass().getSimpleName());
+            sb.append(" [");
+            if (endpoint != null) {
+                sb.append(endpoint);
+            }
+            if (statusCmdResult.name != null) {
+                sb.append("/" + statusCmdResult.name);
+            }
+            sb.append("]");
+            this.bmName = sb.toString();
+        }
+        this.authorization = statusCmdResult.authorization;
 
         this.searchHelper = new SearchBusNotifyHelper(this, false);
         this.searchByAlarmHelper = new SearchBusNotifyHelper(this, true);
 
         this.started = false;
-        this.bmName = null;
         this.remoteTimeDiffMSec = 0;
+
+        if (statusCmdResult.started) {
+            started = true;
+            remoteTimeDiffMSec = calculateTimeDiff(null);
+        }
     }
 
-    public String getName() {
-        StringBuffer sb = new StringBuffer();
-
-        sb.append(this.getClass().getSimpleName());
-        sb.append(" [");
-        if (endpoint != null) {
-            sb.append(endpoint);
-        }
-        if (bmIdent != null) {
-            sb.append("/" + bmIdent);
-        }
-        if (bmName != null) {
-            sb.append("/" + bmName);
-        }
-        sb.append("]");
-
-        return sb.toString();
-    }
+    public String getName() { return bmName; }
 
     public long getCurrentTimeMillis() {
         return System.currentTimeMillis() + remoteTimeDiffMSec;
@@ -97,8 +98,7 @@ public class Client implements BusMaster {
         if ((cmd.getBusMaster() == this) && (cmd.getResult() == SearchBusCmd.Result.success)) {
             if (cmd.isByAlarm()) {
                 searchByAlarmHelper.notifySearchResult(cmd.getResultData());
-            }
-            else if (!cmd.isByFamilyCode()) {
+            } else if (!cmd.isByFamilyCode()) {
                 searchHelper.notifySearchResult(cmd.getResultData());
             }
         }
@@ -145,34 +145,6 @@ public class Client implements BusMaster {
         }
 
         final String logContext = (optLogger != null) ? this.getClass().getSimpleName() + ".StartBusCmd bmIdent:" + bmIdent + " " : "";
-        final String statusSuffix = "busStatusCmd/" + bmIdent;
-
-        StatusCmdResult statusPostResult = (StatusCmdResult) postURLDataNoAuthorization(statusSuffix, StatusCmdResult.class);
-
-        if (statusPostResult.postError != null) {
-            logErrorCommLevel(optLogger, logContext, " status postError:" + statusPostResult.postError.name());
-            return StartBusCmd.Result.communication_error;
-        }
-
-        if (statusPostResult.controllerError != null) {
-            logErrorCommLevel(optLogger, logContext, " status controllerError:" + statusPostResult.controllerError);
-            return StartBusCmd.Result.communication_error;
-        }
-
-        bmName = statusPostResult.name;
-
-        authorization = statusPostResult.authorization;
-
-        logErrorCommLevel(optLogger, logContext, " status name:" + bmName + " authorization:" + authorization);
-
-        if (statusPostResult.started) {
-            logErrorCommLevel(optLogger, logContext, " status already started");
-            started = true;
-
-            remoteTimeDiffMSec = calculateTimeDiff(optLogger);
-
-            return StartBusCmd.Result.started;
-        }
 
         // Try to start the remote busmaster.
         String logLevelParam = computeLogLevelParam(optLogger);
@@ -273,6 +245,22 @@ public class Client implements BusMaster {
         }
 
         return listBMSPostResult;
+    }
+
+    public static StatusCmdResult BusMasterStatusCmd(String endpoint, String bmIdent, Logger optLogger) {
+
+        final String logContext = (optLogger != null) ? Client.class.getSimpleName() + ".BusMasterStatusCmd bmIdent:" + bmIdent + " " : "";
+        final String statusSuffix = "busStatusCmd/" + bmIdent;
+
+        StatusCmdResult statusPostResult = (StatusCmdResult) postURLDataNoAuthorization(endpoint, statusSuffix, StatusCmdResult.class);
+
+        if (statusPostResult.postError != null) {
+            logErrorCommLevel(optLogger, logContext, " postError:" + statusPostResult.postError.name());
+        } else if (statusPostResult.controllerError != null) {
+            logErrorCommLevel(optLogger, logContext, " controllerError:" + statusPostResult.controllerError);
+        }
+
+        return statusPostResult;
     }
 
     private long calculateTimeDiff(Logger optLogger) {
