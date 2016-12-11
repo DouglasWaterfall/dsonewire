@@ -1,6 +1,7 @@
 package waterfall.onewire;
 
 import com.dalsemi.onewire.utils.Convert;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,32 +19,23 @@ import java.util.*;
  */
 @RestController
 @RequestMapping(value = "/httpbusmaster")
-public class Controller {
-    HashMap<String, BusMaster> bmMap;
-    String currentAuthenticationValue;
+public class Controller implements Observer {
 
-    public Controller() {
+    private final BusMasterRegistry bmRegistry;
+    private final HashMap<String, BusMaster> bmMap;
+    private final Base64.Encoder encoder;
+    private String currentAuthenticationValue;
+
+    @Autowired
+    public Controller(BusMasterRegistry bmRegistry) {
+        this.bmRegistry = bmRegistry;
         this.bmMap = new HashMap<String, BusMaster>();
+        this.encoder = Base64.getUrlEncoder();
         this.currentAuthenticationValue = null;
+        // This is how we find out about BusMasters which we will export
+        bmRegistry.addObserver(this);
     }
 
-    public void addBusMaster(BusMaster bm) {
-        Base64.Encoder encoder = Base64.getUrlEncoder();
-
-        String bmIdent = encoder.encodeToString(bm.getName().getBytes());
-
-        if (!bmMap.containsKey(bmIdent)) {
-            System.out.println("Adding busMaster" + bm.getName());
-            bmMap.put(bmIdent, bm);
-        }
-        else if (bmMap.get(bmIdent) == bm) {
-            System.err.println("Duplicate add of busMaster" + bm.getName());
-        }
-        else {
-            System.err.println("name encoding collision of busMaster:" + bm.getName() + " and " + bmMap.get(bmIdent).getName());
-        }
-    }
-    
     /*
     @RequestMapping(value = "",
                     method = RequestMethod.POST,
@@ -335,6 +327,32 @@ public class Controller {
         }
 
         return list;
+    }
+
+    // Called from the BusMasterRegistry when a new BusMaster is found. Observable will be the BusMasterRegistry
+    // and the arg will be the new BusMaster
+    @Override
+    public void update(Observable o, Object arg) {
+        if ((o instanceof BusMasterRegistry) &&
+            (arg instanceof BusMaster)) {
+            BusMaster bm = (BusMaster)arg;
+            String bmIdent = getIdentFor(bm);
+
+            if (!bmMap.containsKey(bmIdent)) {
+                System.out.println("Adding busMaster" + bm.getName());
+                bmMap.put(bmIdent, bm);
+            }
+            else if (bmMap.get(bmIdent) == bm) {
+                System.err.println("Duplicate add of busMaster" + bm.getName());
+            }
+            else {
+                System.err.println("name encoding collision of busMaster:" + bm.getName() + " and " + bmMap.get(bmIdent).getName());
+            }
+        }
+    }
+
+    private String getIdentFor(final BusMaster bm) {
+        return encoder.encodeToString(bm.getName().getBytes());
     }
 
     public class AuthException extends RuntimeException {
