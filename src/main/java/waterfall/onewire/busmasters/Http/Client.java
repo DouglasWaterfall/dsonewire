@@ -112,11 +112,11 @@ public class Client implements BusMaster {
         return new HttpSearchBusCmd(this, true, logLevel);
     }
 
-    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj, long minPeriodMSec) {
+    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj, long minPeriodMSec) {
         return searchByAlarmHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
     }
 
-    public boolean cancelAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj) {
+    public boolean cancelAlarmSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj) {
         return searchByAlarmHelper.cancelSearchNotifyFor(obj);
     }
 
@@ -229,14 +229,14 @@ public class Client implements BusMaster {
         return remoteTimeDiffMSec;
     }
 
-    public static ListBusMastersCmdResult ListBusMastersCmd(String endpoint, Logger optLogger) {
+    public static WaitForEventResult ListBusMastersCmd(String endpoint, Logger optLogger) {
         final String logContext = (optLogger != null) ? Client.class.getSimpleName() + ".ListBusMastersCmd: " : "";
 
         // Try to list the remote busmasters.
         String logLevelParam = computeLogLevelParam(optLogger);
         final String suffix = "bmList/" + ((logLevelParam != null) ? logLevelParam : "");
 
-        ListBusMastersCmdResult listBMSPostResult = (ListBusMastersCmdResult) postURLDataNoAuthorization(endpoint, suffix, ListBusMastersCmdResult.class);
+        WaitForEventResult listBMSPostResult = (WaitForEventResult) postURLDataNoAuthorization(endpoint, suffix, WaitForEventResult.class);
 
         if (listBMSPostResult.postError != null) {
             logErrorCommLevel(optLogger, logContext, " postError:" + listBMSPostResult.postError.name());
@@ -332,16 +332,16 @@ public class Client implements BusMaster {
             int result = httpClient.executeMethod(httppost);
 
             if (result == HttpStatus.SC_METHOD_NOT_ALLOWED) {
-                return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, BaseCmdResult.PostErrors.MethodNotAllowed));
+                return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, PostErrors.MethodNotAllowed));
             }
 
             if (result == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
-                return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, BaseCmdResult.PostErrors.ServerError));
+                return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, PostErrors.ServerError));
             }
 
             if (result != HttpStatus.SC_OK) {
                 System.err.println("Status:" + result);
-                return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, BaseCmdResult.PostErrors.UnknownError));
+                return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, PostErrors.UnknownError));
             }
 
             InputStream stream = httppost.getResponseBodyAsStream();
@@ -349,12 +349,12 @@ public class Client implements BusMaster {
             return (BaseCmdResult) new ObjectMapper().readValue(httppost.getResponseBodyAsStream(), respClass);
 
         } catch (ConnectException e) {
-            return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, BaseCmdResult.PostErrors.ConnectException));
+            return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, PostErrors.ConnectException));
         } catch (SocketTimeoutException e) {
-            return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, BaseCmdResult.PostErrors.ReadTimeout));
+            return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, PostErrors.ReadTimeout));
         } catch (IOException e) {
             System.out.println(e);
-            return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, BaseCmdResult.PostErrors.UnknownError));
+            return (BaseCmdResult) respClass.cast(createPostErrorCmdResult(respClass, PostErrors.UnknownError));
         } finally {
             if (httppost != null) {
                 httppost.releaseConnection();
@@ -362,9 +362,9 @@ public class Client implements BusMaster {
         }
     }
 
-    private static Object createPostErrorCmdResult(Class clz, BaseCmdResult.PostErrors pe) {
+    private static Object createPostErrorCmdResult(Class clz, PostErrors pe) {
         try {
-            return clz.getConstructor(BaseCmdResult.PostErrors.class).newInstance(pe);
+            return clz.getConstructor(PostErrors.class).newInstance(pe);
         } catch (NoSuchMethodException e) {
             return null;
         } catch (IllegalAccessException e) {
