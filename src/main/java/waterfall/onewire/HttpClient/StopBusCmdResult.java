@@ -2,7 +2,6 @@ package waterfall.onewire.HttpClient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.StopBusCmd;
 
 /**

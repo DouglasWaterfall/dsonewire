@@ -16,28 +16,23 @@ public class StatusCmdResult extends BaseCmdResult {
     public StatusCmdResult(PostErrors e) {
         super(e);
         this.ident = null;
-        this.authorization = null;
     }
 
     public StatusCmdResult(ControllerErrors e) {
         super(e);
         this.ident = null;
-        this.authorization = null;
     }
 
-    public StatusCmdResult(String bmIdent, BusMaster bm, String authorization) {
+    public StatusCmdResult(String bmIdent, BusMaster bm) {
         super();
 
         assert (bmIdent != null);
         assert (!bmIdent.isEmpty());
         assert (bm != null);
-        assert (authorization != null);
-        assert (!authorization.isEmpty());
 
         this.ident = bmIdent;
         this.name = bm.getName();
         this.started = bm.getIsStarted();
-        this.authorization = authorization;
     }
 
     @JsonProperty("ident")
@@ -48,9 +43,6 @@ public class StatusCmdResult extends BaseCmdResult {
 
     @JsonProperty("started")
     public Boolean started;
-
-    @JsonProperty("authorization")
-    public String authorization;
 
     @JsonIgnore
     public String toString() {
@@ -66,10 +58,6 @@ public class StatusCmdResult extends BaseCmdResult {
 
         if (started != null) {
             sb.append("started:" + started);
-        }
-
-        if (authorization != null) {
-            sb.append("authorization:" + authorization);
         }
 
         return sb.toString();

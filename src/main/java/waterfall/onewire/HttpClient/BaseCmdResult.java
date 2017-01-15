@@ -4,22 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import waterfall.onewire.busmaster.Logger;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
  * Created by dwaterfa on 8/6/16.
  */
 public class BaseCmdResult {
-
-    public enum PostErrors {
-        ConnectException,
-        MethodNotAllowed,
-        ReadTimeout,
-        ParseException,
-        ServerError, // 500
-        UnknownError
-    }
 
     public enum ControllerErrors {
         Unknown_bmIdent,

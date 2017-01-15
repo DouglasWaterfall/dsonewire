@@ -26,7 +26,7 @@ public class SearchBusNotifyHelper {
         return scheduleSearchNotifyForInternal(obj, minPeriodMSec);
     }
 
-    public BusMaster.ScheduleSearchResult scheduleSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj, long minPeriodMSec) {
+    public BusMaster.ScheduleSearchResult scheduleSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj, long minPeriodMSec) {
         return scheduleSearchNotifyForInternal(obj, minPeriodMSec);
     }
 
@@ -34,7 +34,7 @@ public class SearchBusNotifyHelper {
         return cancelSearchNotifyForInternal(obj);
     }
 
-    public synchronized boolean cancelSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj) {
+    public synchronized boolean cancelSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj) {
         return cancelSearchNotifyForInternal(obj);
     }
 
@@ -215,7 +215,7 @@ public class SearchBusNotifyHelper {
             for (Object obj : objs) {
                 try {
                     if (isAlarmSearch) {
-                        SearchBusByAlarmCmdNotifyResult.class.cast(obj).notify(bm, searchResultData);
+                        AlarmSearchBusCmdNotifyResult.class.cast(obj).notify(bm, searchResultData);
                     } else {
                         SearchBusCmdNotifyResult.class.cast(obj).notify(bm, searchResultData);
                     }

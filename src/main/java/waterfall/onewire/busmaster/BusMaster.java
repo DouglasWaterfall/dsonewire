@@ -123,14 +123,14 @@ public interface BusMaster {
      * @param minPeriodMSec
      * @return ScheduleSearchResult
      */
-    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj, long minPeriodMSec);
+    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj, long minPeriodMSec);
 
     /**
      * Cancel a previously scheduled alarm search notification.
      * @param obj Instance which had successfully called scheduleAlarmSearchNotify()
      * @return true if cancelled, false if unknown instance to the alarm search scheduler.
      */
-    public boolean cancelAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj);
+    public boolean cancelAlarmSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj);
 
     /**
      * @param dsAddr

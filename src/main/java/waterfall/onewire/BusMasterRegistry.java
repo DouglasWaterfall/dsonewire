@@ -1,9 +1,7 @@
 package waterfall.onewire;
 
 import java.util.*;
-import java.util.regex.Pattern;
 
-import org.springframework.context.annotation.Configuration;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.SearchBusCmd;
 import waterfall.onewire.busmaster.SearchBusCmdNotifyResult;
