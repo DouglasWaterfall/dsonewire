@@ -1,4 +1,4 @@
-package waterfall.onewire;
+package waterfall.onewire.httpserver;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import waterfall.onewire.BusMasterRegistry;
+import waterfall.onewire.HA7SBusMasterManager;
 import waterfall.onewire.busmaster.*;
 
 

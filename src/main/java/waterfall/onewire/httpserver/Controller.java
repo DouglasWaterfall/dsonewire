@@ -1,39 +1,29 @@
-package waterfall.onewire;
+package waterfall.onewire.httpserver;
 
 import com.dalsemi.onewire.utils.Convert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import waterfall.onewire.HttpClient.BaseCmdResult;
-import waterfall.onewire.HttpClient.StatusCmdResult;
-import waterfall.onewire.HttpClient.TimeDiffResult;
+import waterfall.onewire.DSAddress;
+import waterfall.onewire.HttpClient.*;
 import waterfall.onewire.busmaster.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.*;
 
 /**
  * Created by dwaterfa on 6/12/16.
  */
 @RestController
 @RequestMapping(value = "/httpbusmaster")
-public class Controller implements Observer {
+public class Controller {
 
-    private final BusMasterRegistry bmRegistry;
-    private final HashMap<String, BusMaster> bmMap;
-    private final Base64.Encoder encoder;
-    private String currentAuthenticationValue;
+    private Model model;
 
     @Autowired
-    public Controller(BusMasterRegistry bmRegistry) {
-        this.bmRegistry = bmRegistry;
-        this.bmMap = new HashMap<String, BusMaster>();
-        this.encoder = Base64.getUrlEncoder();
-        this.currentAuthenticationValue = null;
-        // This is how we find out about BusMasters which we will export
-        bmRegistry.addObserver(this);
+    public Controller(Model model) {
+        this.model = model;
     }
 
     /*
@@ -45,46 +35,41 @@ public class Controller implements Observer {
         ...
     */
 
-    @RequestMapping(value = "/bmList", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.ListBusMastersCmdResult listBusMasters(
-            @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
+    // temporary hack until we can sort out how the client can authentication itself and establish control
+    @RequestMapping(value = "/login", method = RequestMethod.POST)
+    public String login() {
+        return model.getCurrentAuthenticationValue();
+    }
 
-        boolean doLog;
-        Logger.LogLevel logLevel = null;
-        if (parmLogLevel != null) {
-            logLevel = logLevelFromLogParam(parmLogLevel);
-            if (logLevel == null) {
-                return new waterfall.onewire.HttpClient.ListBusMastersCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_logLevel);
-            }
-        }
+    @RequestMapping(value = "/waitForEvent", method = RequestMethod.POST)
+    public WaitForEventResult waitforEvent(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                           @RequestBody WaitForEventCmd cmd) {
+        model.checkAuthenticationHeader(authorization);
 
-        return new waterfall.onewire.HttpClient.ListBusMastersCmdResult(getBusMasterIdents(), null);
+        return model.waitForEvent(cmd);
     }
 
     @RequestMapping(value = "/busStatusCmd/{bmIdent}", method = RequestMethod.POST)
-    public waterfall.onewire.HttpClient.StatusCmdResult busStatusCmd(@PathVariable String bmIdent) {
+    public waterfall.onewire.HttpClient.StatusCmdResult busStatusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                                     @PathVariable String bmIdent) {
+        model.checkAuthenticationHeader(authorization);
 
         BusMaster bm;
-        if ((bmIdent == null) || ((bm = getBusMasterByIdent(bmIdent)) == null)) {
+        if ((bmIdent == null) || ((bm = model.getBusMasterByIdent(bmIdent)) == null)) {
             return new waterfall.onewire.HttpClient.StatusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
-        if (currentAuthenticationValue == null) {
-            currentAuthenticationValue = Base64.getUrlEncoder().encodeToString(new Date(System.currentTimeMillis()).toString().getBytes());
-            System.out.println("status " + bmIdent + " currentAuthenticationValue:" + currentAuthenticationValue);
-        }
-
-        return new StatusCmdResult(bmIdent, bm, currentAuthenticationValue);
+        return new StatusCmdResult(bmIdent, bm);
     }
 
     @RequestMapping(value = "/startBusCmd/{bmIdent}", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.StartBusCmdResult startBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
                                                                       @PathVariable(value = "bmIdent") String bmIdent,
                                                                       @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
-        checkAuthenticationHeader(authorization);
+        model.checkAuthenticationHeader(authorization);
 
         BusMaster bm;
-        if ((bmIdent == null) || ((bm = getBusMasterByIdent(bmIdent)) == null)) {
+        if ((bmIdent == null) || ((bm = model.getBusMasterByIdent(bmIdent)) == null)) {
             return new waterfall.onewire.HttpClient.StartBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
@@ -106,10 +91,10 @@ public class Controller implements Observer {
     public waterfall.onewire.HttpClient.StopBusCmdResult stopBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
                                                                     @PathVariable(value = "bmIdent") String bmIdent,
                                                                     @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
-        checkAuthenticationHeader(authorization);
+        model.checkAuthenticationHeader(authorization);
 
         BusMaster bm;
-        if ((bmIdent == null) || ((bm = getBusMasterByIdent(bmIdent)) == null)) {
+        if ((bmIdent == null) || ((bm = model.getBusMasterByIdent(bmIdent)) == null)) {
             return new waterfall.onewire.HttpClient.StopBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
@@ -133,10 +118,10 @@ public class Controller implements Observer {
                                                                         @RequestParam(value = "byAlarm", required = false) String parmByAlarm,
                                                                         @RequestParam(value = "byFamilyCode", required = false) String parmByFamilyCode,
                                                                         @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
-        checkAuthenticationHeader(authorization);
+        model.checkAuthenticationHeader(authorization);
 
         BusMaster bm;
-        if ((bmIdent == null) || ((bm = getBusMasterByIdent(bmIdent)) == null)) {
+        if ((bmIdent == null) || ((bm = model.getBusMasterByIdent(bmIdent)) == null)) {
             return new waterfall.onewire.HttpClient.SearchBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
@@ -189,10 +174,10 @@ public class Controller implements Observer {
                                                                                     @PathVariable(value = "bmIdent") String bmIdent,
                                                                                     @PathVariable(value = "dsAddr") String dsAddr,
                                                                                     @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
-        checkAuthenticationHeader(authorization);
+        model.checkAuthenticationHeader(authorization);
 
         BusMaster bm;
-        if ((bmIdent == null) || ((bm = getBusMasterByIdent(bmIdent)) == null)) {
+        if ((bmIdent == null) || ((bm = model.getBusMasterByIdent(bmIdent)) == null)) {
             return new waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
@@ -220,10 +205,10 @@ public class Controller implements Observer {
                                                                                   @PathVariable(value = "dsAddr") String dsAddr,
                                                                                   @PathVariable(value = "rCount") Long rCount,
                                                                                   @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
-        checkAuthenticationHeader(authorization);
+        model.checkAuthenticationHeader(authorization);
 
         BusMaster bm;
-        if ((bmIdent == null) || ((bm = getBusMasterByIdent(bmIdent)) == null)) {
+        if ((bmIdent == null) || ((bm = model.getBusMasterByIdent(bmIdent)) == null)) {
             return new waterfall.onewire.HttpClient.ReadScratchpadCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
@@ -268,10 +253,10 @@ public class Controller implements Observer {
                                                                       @PathVariable(value = "bmIdent") String bmIdent,
                                                                       @PathVariable(value = "dsAddr") String dsAddr,
                                                                       @RequestParam(value = "logLevel", required = false) String parmLogLevel) {
-        checkAuthenticationHeader(authorization);
+        model.checkAuthenticationHeader(authorization);
 
         BusMaster bm;
-        if ((bmIdent == null) || ((bm = getBusMasterByIdent(bmIdent)) == null)) {
+        if ((bmIdent == null) || ((bm = model.getBusMasterByIdent(bmIdent)) == null)) {
             return new waterfall.onewire.HttpClient.ConvertTCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
         }
 
@@ -298,7 +283,7 @@ public class Controller implements Observer {
                                    @PathVariable(value = "clientSentTimeMSec") String clientSentTimeMSec) {
         long serverReceivedTimeMSec = System.currentTimeMillis();
 
-        checkAuthenticationHeader(authorization);
+        model.checkAuthenticationHeader(authorization);
 
         Long t;
 
@@ -315,63 +300,9 @@ public class Controller implements Observer {
         return new TimeDiffResult(t, serverReceivedTimeMSec);
     }
 
-    private BusMaster getBusMasterByIdent(String bmIdent) {
-        return bmMap.get(bmIdent);
-    }
-
-    private ArrayList<String> getBusMasterIdents() {
-        ArrayList<String> list = new ArrayList<String>();
-
-        for (Iterator<String> iter = bmMap.keySet().iterator(); iter.hasNext(); ) {
-            list.add(iter.next());
-        }
-
-        return list;
-    }
-
-    // Called from the BusMasterRegistry when a new BusMaster is found. Observable will be the BusMasterRegistry
-    // and the arg will be the new BusMaster
-    @Override
-    public void update(Observable o, Object arg) {
-        if ((o instanceof BusMasterRegistry) &&
-            (arg instanceof BusMaster)) {
-            BusMaster bm = (BusMaster)arg;
-            String bmIdent = getIdentFor(bm);
-
-            if (!bmMap.containsKey(bmIdent)) {
-                System.out.println("Adding busMaster" + bm.getName());
-                bmMap.put(bmIdent, bm);
-            }
-            else if (bmMap.get(bmIdent) == bm) {
-                System.err.println("Duplicate add of busMaster" + bm.getName());
-            }
-            else {
-                System.err.println("name encoding collision of busMaster:" + bm.getName() + " and " + bmMap.get(bmIdent).getName());
-            }
-        }
-    }
-
-    private String getIdentFor(final BusMaster bm) {
-        return encoder.encodeToString(bm.getName().getBytes());
-    }
-
-    public class AuthException extends RuntimeException {
-        public AuthException() {
-            super();
-        }
-    }
-
-    @ExceptionHandler(AuthException.class)
+    @ExceptionHandler(Model.AuthException.class)
     void handleBadRequests(HttpServletResponse response) throws IOException {
         response.sendError(HttpStatus.GONE.value(), "Authorization header mismatch");
-    }
-
-    private void checkAuthenticationHeader(String authentication) throws AuthException {
-        if ((authentication == null) ||
-                (currentAuthenticationValue == null) ||
-                (!authentication.equals(currentAuthenticationValue))) {
-            throw new AuthException();
-        }
     }
 
     private Logger.LogLevel logLevelFromLogParam(String logLevelParam) {
