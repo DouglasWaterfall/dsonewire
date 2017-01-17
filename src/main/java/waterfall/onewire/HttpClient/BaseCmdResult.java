@@ -21,7 +21,8 @@ public class BaseCmdResult {
         Bad_parm_byFamilyCode_must_be_unsigned_byte,
         Bad_parm_clientSentTimeMSec,
         Invalid_dsAddr,
-        Invalid_rCount
+        Invalid_rCount,
+        Invalid_minPeriodMSec
     }
 
     protected BaseCmdResult() {

@@ -44,63 +44,6 @@ public interface BusMaster {
     public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel);
 
     /**
-     *
-     */
-    public enum ScheduleSearchResult {
-        /**
-         * The obj specified to notify back on is null.
-         */
-        SSR_NotifyObjNull,
-
-        /**
-         * The value for minPeriodMSec is equal to or less than zero.
-         */
-        SSR_MinPeriodInvalid,
-
-        /**
-         * The obj specified to notify back on is already scheduled.
-         */
-        SSR_NotifyObjAlreadyScheduled,
-
-        /**
-         * The specified BusMaster is not started.
-         */
-        SSR_BusMasterNotStarted,
-
-        /**
-         * The obj has been scheduled for search callback.
-         */
-        SSR_Success
-    }
-
-    /**
-     * This method will ask the BusMaster to perform a bus search cmd at the specified minimum time period. If another
-     * Object is registered with a shorter time period then the an earlier search may be performed. Likewise if an
-     * independent SearchCmd is performed then there will be a callback opportunity too. The only guarantee is that the
-     * the BusMaster will generate a SearchCmd at the period specified.
-     * @param obj obj with SearchBusNotify interface. The obj will only be called back if the data is different since
-     *            the last time it was called back. The search itself will be performed but no callback will occur.
-     * @param minPeriodMSec
-     * @return ScheduleSearchResult
-     */
-    public ScheduleSearchResult scheduleSearchNotifyFor(SearchBusCmdNotifyResult obj, long minPeriodMSec);
-
-    /**
-     * Cancel a previously scheduled search notification.
-     * @param obj Instance which had successfully called scheduleSearchNotify()
-     * @return true if cancelled, false if unknown instance to the search scheduler.
-     */
-    public boolean cancelSearchNotifyFor(SearchBusCmdNotifyResult obj);
-
-    /**
-     * This method will be called by any instances of the SearchBusCmd and SearchBusByAlarmCmd generated from this
-     * BusMaster after they have executed with success and right before they return to the caller. The callback will
-     * be on the thread of whoever is executing the SearchCmd so minimize what you do there.
-     * @param cmd Command instance from this BusMaster with a successful result.
-     */
-    public void searchBusCmdExecuteCallback(SearchBusCmd cmd);
-
-    /**
      * @param familyCode
      * @param logLevel may be null for no logging
      * @return
@@ -114,23 +57,116 @@ public interface BusMaster {
     public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel);
 
     /**
-     * This method will ask the BusMaster to perform an bus alarm search cmd at the specified minimum time period. If
-     * another Object is registered with a shorter time period then the an earlier search may be performed. Likewise if
-     * an independent SearchByAlarmCmd is performed then there will be a callback opportunity too. The only guarantee
-     * is that the BusMaster will generate a SearchByAlarmCmd at the period specified.
-     * @param obj obj with SearchBusByAlarmNotify interface. The obj will only be called back if the data is different
-     *            since the last time it was called back. The search itself will be performed but no callback will occur.
-     * @param minPeriodMSec
-     * @return ScheduleSearchResult
+     *
      */
-    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj, long minPeriodMSec);
+    public enum ScheduleNotifySearchBusCmdResult {
+        /**
+         * The obj specified to notify back on is null.
+         */
+        SNSBCR_NotifyObjNull,
+
+        /**
+         * The value for minPeriodMSec is equal to or less than zero.
+         */
+        SNSBCR_MinPeriodInvalid,
+
+        /**
+         * The obj specified to notify back on is already scheduled.
+         */
+        SNSBCR_NotifyObjAlreadyScheduled,
+
+        /**
+         * The specified BusMaster is not started.
+         */
+        SNSBCR_BusMasterNotStarted,
+
+        /**
+         * The obj has been scheduled for search callback.
+         */
+        SNSBCR_Success
+    }
 
     /**
-     * Cancel a previously scheduled alarm search notification.
-     * @param obj Instance which had successfully called scheduleAlarmSearchNotify()
-     * @return true if cancelled, false if unknown instance to the alarm search scheduler.
+     * This method will ask the BusMaster to perform a bus search cmd at the specified minimum time period. If another
+     * Object is registered with a shorter time period then the an earlier search may be performed. Likewise if an
+     * independent SearchCmd is performed then there will be a callback opportunity too. The only guarantee is that the
+     * the BusMaster will generate a SearchCmd at the period specified.
+     * @param obj obj with SearchBusNotify interface. The obj will only be called back if the data is different since
+     *            the last time it was called back. The search itself will be performed but no callback will occur.
+     * @param typeByAlarm true if the search should be by active alarms, otherwise it will be a general bus search
+     * @param minPeriodMSec
+     * @return ScheduleNotifySearchBusCmdResult
      */
-    public boolean cancelAlarmSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj);
+    public ScheduleNotifySearchBusCmdResult scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec);
+
+    /**
+     *
+     */
+    public enum UpdateScheduledNotifySearchBusCmdResult {
+        /**
+         * The obj specified to notify back on has not been previously scheduled for the specified search type.
+         */
+        USNSBC_NotifyObjNotAlreadyScheduled,
+
+        /**
+         * The value for minPeriodMSec is equal to or less than zero.
+         */
+        USNSBC_MinPeriodInvalid,
+
+        /**
+         * The value for minPeriodMSec is equal to the currently period for this object.
+         */
+        USNSBC_MinPeriodUnchanged,
+
+        /**
+         * The scheduled search callback period has been updated with the new period.
+         */
+        USNSBC_Success;
+    }
+
+    /**
+     * This method will ask the BusMaster to update previously scheduled search bus with a new specified minimum time
+     * period. If another Object is registered with a shorter time period then the an earlier search may be performed.
+     * Likewise if an independent SearchCmd is performed then there will be a callback opportunity too. The only
+     * guarantee is that the the BusMaster will generate a SearchCmd at the period specified.
+     * @param obj obj with SearchBusNotify interface. The obj will only be called back if the data is different since
+     *            the last time it was called back. The search itself will be performed but no callback will occur.
+     * @param typeByAlarm true if the search was active alarms, otherwise general bus search
+     * @param minPeriodMSec
+     * @return UpdateScheduledSearchBusCmdResult
+     */
+    public UpdateScheduledNotifySearchBusCmdResult updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec);
+
+    /**
+     *
+     */
+    public enum CancelScheduledNotifySearchBusCmdResult {
+        /**
+         * The obj specified to notify back on has not been previously scheduled for the specified search type.
+         */
+        CSNSBC_NotifyObjNotAlreadyScheduled,
+
+        /**
+         * The scheduled search callback period has been cancelled.
+         */
+        CSNSBC_Success
+    }
+
+    /**
+     * Cancel a previously scheduled search notification.
+     * @param obj Instance which had successfully called scheduleSearchNotify()
+     * @param typeByAlarm true if the search was active alarms, otherwise general bus search
+     * @return CancelScheduleSearchBusCmdResult
+     */
+    public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm);
+
+    /**
+     * This method will be called by any instances of the SearchBusCmd and SearchBusByAlarmCmd generated from this
+     * BusMaster after they have executed with success and right before they return to the caller. The callback will
+     * be on the thread of whoever is executing the SearchCmd so minimize what you do there.
+     * @param cmd Command instance from this BusMaster with a successful result.
+     */
+    public void searchBusCmdExecuteCallback(SearchBusCmd cmd);
 
     /**
      * @param dsAddr

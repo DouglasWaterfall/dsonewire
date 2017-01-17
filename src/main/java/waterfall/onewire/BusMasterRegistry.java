@@ -4,7 +4,7 @@ import java.util.*;
 
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.SearchBusCmd;
-import waterfall.onewire.busmaster.SearchBusCmdNotifyResult;
+import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 
 /**
  * This class is simply a registry of BusMasters which have been started.
@@ -82,7 +82,7 @@ public class BusMasterRegistry extends Observable {
     /**
      * Implements the waiting for Address scheme.
      */
-    private class WaitForDeviceByAddress implements Observer,SearchBusCmdNotifyResult {
+    private class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResult {
         private final String address;
         private final long bmSearchPeriodMSec;
         private final ArrayList<BusMaster> bmList;
@@ -119,24 +119,24 @@ public class BusMasterRegistry extends Observable {
 
             if (added) {
                 try {
-                    ((BusMaster) arg).scheduleSearchNotifyFor(this, bmSearchPeriodMSec);
+                    ((BusMaster) arg).scheduleNotifySearchBusCmd(this, false, bmSearchPeriodMSec);
                 }
                 catch (Exception e) {
-                    System.err.println("WaitForDeviceAddress(" + address + ") scheduleSearchNotifyFor:" + e);
+                    System.err.println("WaitForDeviceAddress(" + address + ") scheduleNotifySearchBusCmd:" + e);
                 }
             }
         }
 
-        // Called from SearchBusCmdNotifyResult with the results of any searches. If we find the Address we want then
+        // Called from NotifySearchBusCmdResult with the results of any searches. If we find the Address we want then
         // we know which BusMaster and we can deregister everything.
-        @Override // SearchBusCmdNotifyResult
-        public synchronized void notify(BusMaster bm, SearchBusCmd.ResultData searchResultData) {
+        @Override // NotifySearchBusCmdResult
+        public synchronized void notify(BusMaster bm, boolean byAlarm, SearchBusCmd.ResultData searchResultData) {
             if (this.foundBM == null) {
                 for (String addr: searchResultData.getList()) {
                     if (addr.equals(address)) {
                         this.foundBM = bm;
                         for (BusMaster t_bm: bmList) {
-                            t_bm.cancelSearchNotifyFor(this);
+                            t_bm.cancelScheduledNotifySearchBusCmd(this, byAlarm);
                         }
                         bmList.clear();
                         BusMasterRegistry.this.deleteObserver(this);

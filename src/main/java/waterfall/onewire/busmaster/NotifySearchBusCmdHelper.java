@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * Created by dwaterfa on 11/30/16.
  */
-public class SearchBusNotifyHelper {
+public class NotifySearchBusCmdHelper {
 
     private BusMaster bm;
     private final boolean isAlarmSearch;
@@ -14,7 +14,7 @@ public class SearchBusNotifyHelper {
 
     private SearchBusCmd.ResultData lastNotifySearchResultData;
 
-    public SearchBusNotifyHelper(BusMaster bm, boolean isAlarmSearch) {
+    public NotifySearchBusCmdHelper(BusMaster bm, boolean isAlarmSearch) {
         this.bm = bm;
         this.isAlarmSearch = isAlarmSearch;
         searchPusher = newSearchPusher();
@@ -22,61 +22,24 @@ public class SearchBusNotifyHelper {
         lastNotifySearchResultData = null;
     }
 
-    public BusMaster.ScheduleSearchResult scheduleSearchNotifyFor(SearchBusCmdNotifyResult obj, long minPeriodMSec) {
-        return scheduleSearchNotifyForInternal(obj, minPeriodMSec);
-    }
-
-    public BusMaster.ScheduleSearchResult scheduleSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj, long minPeriodMSec) {
-        return scheduleSearchNotifyForInternal(obj, minPeriodMSec);
-    }
-
-    public synchronized boolean cancelSearchNotifyFor(SearchBusCmdNotifyResult obj) {
-        return cancelSearchNotifyForInternal(obj);
-    }
-
-    public synchronized boolean cancelSearchNotifyFor(AlarmSearchBusCmdNotifyResult obj) {
-        return cancelSearchNotifyForInternal(obj);
-    }
-
-    /**
-     * This method is called from the owning BusMaster when the SearchCmd successfully completes.
-     *
-     * @param searchResultData
-     */
-    public synchronized void notifySearchResult(final SearchBusCmd.ResultData searchResultData) {
-        boolean crc32Changed = ((lastNotifySearchResultData == null) ||
-                (searchResultData.getListCRC32() != lastNotifySearchResultData.getListCRC32()));
-
-        lastNotifySearchResultData = searchResultData;
-
-        if ((notifyMap.size() > 0) && (crc32Changed)) {
-            // this will occur on a new thread
-            NotifyHelper notifyHelper = new NotifyHelper(bm, notifyMap, searchResultData);
-        }
-    }
-
     /**
      * Called from the owning BusMaster to schedule a search push.
-     *
-     * @param obj
-     * @param minPeriodMSec
-     * @return
      */
-    private synchronized BusMaster.ScheduleSearchResult scheduleSearchNotifyForInternal(Object obj, long minPeriodMSec) {
+    public synchronized BusMaster.ScheduleNotifySearchBusCmdResult scheduleSearchNotifyFor(NotifySearchBusCmdResult obj, long minPeriodMSec) {
         if (obj == null) {
-            return BusMaster.ScheduleSearchResult.SSR_NotifyObjNull;
+            return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull;
         }
 
         if (minPeriodMSec <= 0) {
-            return BusMaster.ScheduleSearchResult.SSR_MinPeriodInvalid;
+            return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid;
         }
 
         if ((notifyMap != null) && (notifyMap.get(obj) != null)) {
-            return BusMaster.ScheduleSearchResult.SSR_NotifyObjAlreadyScheduled;
+            return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled;
         }
 
         if (!bm.getIsStarted()) {
-            return BusMaster.ScheduleSearchResult.SSR_BusMasterNotStarted;
+            return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted;
         }
 
         if (notifyMap == null) {
@@ -104,17 +67,45 @@ public class SearchBusNotifyHelper {
             NotifyHelper notifyHelper = new NotifyHelper(bm, obj, lastNotifySearchResultData);
         }
 
-        return BusMaster.ScheduleSearchResult.SSR_Success;
+        return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success;
+    }
+
+    /**
+     * Called from the owning BusMaster to update the period of an existing search push.
+     */
+    public synchronized BusMaster.UpdateScheduledNotifySearchBusCmdResult updateScheduledSearchNotifyFor(NotifySearchBusCmdResult obj, long minPeriodMSec) {
+
+        if (minPeriodMSec <= 0) {
+            return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodInvalid;
+        }
+
+        if ((obj == null) || (notifyMap != null) && (notifyMap.get(obj) == null)) {
+            return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_NotifyObjNotAlreadyScheduled;
+        }
+
+        Long currentMinPeriodMSec = notifyMap.get(obj);
+        if (currentMinPeriodMSec == minPeriodMSec) {
+            return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodUnchanged;
+        }
+
+        notifyMap.put(obj, minPeriodMSec);
+
+        searchPusher.adjustPeriod(calculateMinPeriodMSecFromMap(notifyMap));
+
+        return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_Success;
     }
 
     /**
      * Called from the owning BusMaster to cancel an existing search push.
      */
-    private synchronized boolean cancelSearchNotifyForInternal(Object obj) {
-        Long minPeriodMSec;
+    public synchronized BusMaster.CancelScheduledNotifySearchBusCmdResult cancelScheduledSearchNotifyFor(NotifySearchBusCmdResult obj) {
 
-        if ((obj == null) || ((minPeriodMSec = notifyMap.get(obj)) == null)) {
-            return false;
+        if (obj == null) {
+            return BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled;
+        }
+
+        if ((notifyMap != null) && (notifyMap.get(obj) == null)) {
+            return BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled;
         }
 
         notifyMap.remove(obj);
@@ -126,9 +117,31 @@ public class SearchBusNotifyHelper {
             searchPusher.adjustPeriod(calculateMinPeriodMSecFromMap(notifyMap));
         }
 
-        return true;
+        return BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success;
     }
 
+    /**
+     * This method is called from the owning BusMaster when the SearchCmd successfully completes.
+     *
+     * @param searchResultData
+     */
+    public synchronized void notifySearchResult(final SearchBusCmd.ResultData searchResultData) {
+        boolean crc32Changed = ((lastNotifySearchResultData == null) ||
+                (searchResultData.getListCRC32() != lastNotifySearchResultData.getListCRC32()));
+
+        lastNotifySearchResultData = searchResultData;
+
+        if ((notifyMap.size() > 0) && (crc32Changed)) {
+            // this will occur on a new thread
+            NotifyHelper notifyHelper = new NotifyHelper(bm, notifyMap, searchResultData);
+        }
+    }
+
+    /**
+     * Calculates the current min period from the specified map.
+     * @param notifyMap
+     * @return
+     */
     private static long calculateMinPeriodMSecFromMap(Map<Object, Long> notifyMap) {
         // Calculate what the new period needs to be.
         long newMinPeriodMSec = Long.MAX_VALUE;
@@ -147,11 +160,11 @@ public class SearchBusNotifyHelper {
      * <p>
      * How it does this is why it is abstract.
      * <p>
-     * The caller of these methods will be the SearchBusNotifyHelper and will always be done with a lock held on it so
+     * The caller of these methods will be the NotifySearchBusCmdHelper and will always be done with a lock held on it so
      * it is important to avoid situations where we deadlock. One way to avoid that is to ensure that all actual push
      * operations are done on a different thread and these methods simply manage the lifetime of that thread.
      * <p>
-     * This is a nested class so the members of the SearchBusNotifyHelper are available to us here.
+     * This is a nested class so the members of the NotifySearchBusCmdHelper are available to us here.
      */
     protected abstract class SearchPusher {
 
@@ -214,11 +227,7 @@ public class SearchBusNotifyHelper {
         public void run() {
             for (Object obj : objs) {
                 try {
-                    if (isAlarmSearch) {
-                        AlarmSearchBusCmdNotifyResult.class.cast(obj).notify(bm, searchResultData);
-                    } else {
-                        SearchBusCmdNotifyResult.class.cast(obj).notify(bm, searchResultData);
-                    }
+                    NotifySearchBusCmdResult.class.cast(obj).notify(bm, isAlarmSearch, searchResultData);
                 } catch (Exception e) {
                     ;
                 }
@@ -305,9 +314,9 @@ public class SearchBusNotifyHelper {
                 // now that ourselves are marked as the search thread, we can get on with it
                 try {
                     if (SearchPusherByBusCmd.this.searchBusCmd == null) {
-                        SearchPusherByBusCmd.this.searchBusCmd = (SearchBusNotifyHelper.this.isAlarmSearch ?
-                                SearchBusNotifyHelper.this.bm.querySearchBusByAlarmCmd(Logger.LogLevel.CmdOnlyLevel())
-                                : SearchBusNotifyHelper.this.bm.querySearchBusCmd(Logger.LogLevel.CmdOnlyLevel()));
+                        SearchPusherByBusCmd.this.searchBusCmd = (NotifySearchBusCmdHelper.this.isAlarmSearch ?
+                                NotifySearchBusCmdHelper.this.bm.querySearchBusByAlarmCmd(Logger.LogLevel.CmdOnlyLevel())
+                                : NotifySearchBusCmdHelper.this.bm.querySearchBusCmd(Logger.LogLevel.CmdOnlyLevel()));
                     }
 
                     // The command will internally call back to this class when it is successful, so
