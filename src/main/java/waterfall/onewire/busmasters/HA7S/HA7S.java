@@ -13,41 +13,79 @@ public class HA7S implements BusMaster {
     private Boolean started = null;
     private HA7SSerial serialPort = null;
 
-    private SearchBusNotifyHelper searchHelper = null;
-    private SearchBusNotifyHelper searchByAlarmHelper = null;
+    private NotifySearchBusCmdHelper searchHelper = null;
+    private NotifySearchBusCmdHelper searchByAlarmHelper = null;
 
     private static final long defaultTimeoutMSec = 5000;
 
+    @Override
     public String getName() {
         return "HA7S on " + ((portDevName != null) ? portDevName : "no device");
     }
 
+    @Override
     public long getCurrentTimeMillis() {
         return System.currentTimeMillis();
     }
 
+    @Override
     public boolean getIsStarted() {
         return ((started != null) && started.booleanValue());
     }
 
+    @Override
     public StartBusCmd queryStartBusCmd(Logger.LogLevel logLevel) {
         return new HA7SStartBusCmd(this, logLevel);
     }
 
+    @Override
     public StopBusCmd queryStopBusCmd(Logger.LogLevel logLevel) {
         return new HA7SStopBusCmd(this, logLevel);
     }
 
+    @Override
     public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel) {
         return new HA7SSearchBusCmd(this, false, logLevel);
     }
 
-    public ScheduleSearchResult scheduleSearchNotifyFor(SearchBusCmdNotifyResult obj, long minPeriodMSec) {
-        return searchHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
+    @Override
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel) {
+        return new HA7SSearchBusCmd(this, familyCode, logLevel);
     }
 
-    public boolean cancelSearchNotifyFor(SearchBusCmdNotifyResult obj) {
-        return searchHelper.cancelSearchNotifyFor(obj);
+    @Override
+    public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel) {
+        return new HA7SSearchBusCmd(this, true, logLevel);
+    }
+
+    @Override
+    public ScheduleNotifySearchBusCmdResult scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec) {
+        if (!typeByAlarm) {
+            return searchHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
+        }
+        else {
+            return searchByAlarmHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
+        }
+    }
+
+    @Override
+    public UpdateScheduledNotifySearchBusCmdResult updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec) {
+        if (!typeByAlarm) {
+            return searchHelper.updateScheduledSearchNotifyFor(obj, minPeriodMSec);
+        }
+        else {
+            return searchByAlarmHelper.updateScheduledSearchNotifyFor(obj, minPeriodMSec);
+        }
+    }
+
+    @Override
+    public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm) {
+        if (!typeByAlarm) {
+            return searchHelper.cancelScheduledSearchNotifyFor(obj);
+        }
+        else {
+            return searchByAlarmHelper.cancelScheduledSearchNotifyFor(obj);
+        }
     }
 
     public void searchBusCmdExecuteCallback(SearchBusCmd cmd) {
@@ -61,30 +99,17 @@ public class HA7S implements BusMaster {
         }
     }
 
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel) {
-        return new HA7SSearchBusCmd(this, familyCode, logLevel);
-    }
-
-    public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel) {
-        return new HA7SSearchBusCmd(this, true, logLevel);
-    }
-
-    public ScheduleSearchResult scheduleAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj, long minPeriodMSec) {
-        return searchByAlarmHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
-    }
-
-    public boolean cancelAlarmSearchNotifyFor(SearchBusByAlarmCmdNotifyResult obj) {
-        return searchByAlarmHelper.cancelSearchNotifyFor(obj);
-    }
-
+    @Override
     public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
         return new HA7SReadPowerSupplyCmd(this, dsAddr, logLevel);
     }
 
+    @Override
     public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
         return new HA7SConvertTCmd(this, dsAddr, logLevel);
     }
 
+    @Override
     public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, Logger.LogLevel logLevel) {
         return new HA7SReadScratchpadCmd(this, dsAddr, requestByteCount, logLevel);
     }
@@ -94,8 +119,8 @@ public class HA7S implements BusMaster {
     */
     public HA7S(String portDevName) {
         this.portDevName = portDevName;
-        searchHelper = new SearchBusNotifyHelper(this, false);
-        searchByAlarmHelper = new SearchBusNotifyHelper(this, true);
+        searchHelper = new NotifySearchBusCmdHelper(this, false);
+        searchByAlarmHelper = new NotifySearchBusCmdHelper(this, true);
     }
 
     public synchronized StartBusCmd.Result executeStartBusCmd(HA7SStartBusCmd cmd) {
