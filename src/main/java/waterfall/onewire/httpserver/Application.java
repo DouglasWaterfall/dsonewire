@@ -68,7 +68,7 @@ public class Application {
     final static long fifteen_seconds = (1000 * 15);
     final static long thirty_seconds = (1000 * 30);
 
-    class mySearchBusNotify implements SearchBusCmdNotifyResult {
+    class mySearchBusNotify implements NotifySearchBusCmdResult {
         private int countToDeregister;
         private long start;
         private SearchBusCmd.ResultData resultData;
@@ -126,32 +126,32 @@ public class Application {
 // 1. Try to register with a negative time period
 System.out.println("test 1");
         mySearchBusNotify t1 = new mySearchBusNotify(1);
-        BusMaster.ScheduleSearchResult result = bm.scheduleSearchNotifyFor(t1, -1);
-        if (result != BusMaster.ScheduleSearchResult.SSR_MinPeriodInvalid) {
+        BusMaster.ScheduleNotifySearchBusCmdResult result = bm.scheduleNotifySearchBusCmd(t1, -1);
+        if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid) {
         System.err.println("wrong error:" + result.name());
         return;
         }
 
         // 2. Try to register with a zero time period
         System.out.println("test 2");
-        result = bm.scheduleSearchNotifyFor(t1, 0);
-        if (result != BusMaster.ScheduleSearchResult.SSR_MinPeriodInvalid) {
+        result = bm.scheduleNotifySearchBusCmd(t1, 0);
+        if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid) {
         System.err.println("wrong error:" + result.name());
         return;
         }
 
         // 3. Try to register with a null Notify Object
         System.out.println("test 3");
-        result = bm.scheduleSearchNotifyFor(null, thirty_seconds);
-        if (result != BusMaster.ScheduleSearchResult.SSR_NotifyObjNull) {
+        result = bm.scheduleNotifySearchBusCmd(null, thirty_seconds);
+        if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull) {
         System.err.println("wrong error:" + result.name());
         return;
         }
 
         // 4. Try to register without the BM being started
         System.out.println("test 4");
-        result = bm.scheduleSearchNotifyFor(t1, thirty_seconds);
-        if (result != BusMaster.ScheduleSearchResult.SSR_BusMasterNotStarted) {
+        result = bm.scheduleNotifySearchBusCmd(t1, thirty_seconds);
+        if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted) {
         System.err.println("wrong error:" + result.name());
         return;
         }
@@ -164,13 +164,13 @@ System.out.println("test 1");
 
         // 5. Try to register same object more than once
         System.out.println("test 5");
-        result = bm.scheduleSearchNotifyFor(t1, thirty_seconds);
-        if (result != BusMaster.ScheduleSearchResult.SSR_Success) {
+        result = bm.scheduleNotifySearchBusCmd(t1, thirty_seconds);
+        if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
         System.err.println("5a:wrong error:" + result.name());
         return;
         }
-        result = bm.scheduleSearchNotifyFor(t1, fifteen_seconds);
-        if (result != BusMaster.ScheduleSearchResult.SSR_NotifyObjAlreadyScheduled) {
+        result = bm.scheduleNotifySearchBusCmd(t1, fifteen_seconds);
+        if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled) {
         System.err.println("5b:wrong error:" + result.name());
         return;
         }
@@ -192,8 +192,8 @@ System.out.println("test 1");
         System.out.println("test 6");
         long saveWriteCTM = t1.getNotifyResultData().getWriteCTM();
         t1.reset(1);
-        result = bm.scheduleSearchNotifyFor(t1, thirty_seconds);
-        if (result != BusMaster.ScheduleSearchResult.SSR_Success) {
+        result = bm.scheduleNotifySearchBusCmd(t1, thirty_seconds);
+        if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
         System.err.println("6a: wrong error:" + result.name());
         return;
         }

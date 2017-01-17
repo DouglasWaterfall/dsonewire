@@ -169,6 +169,100 @@ public class Controller {
         return new waterfall.onewire.HttpClient.SearchBusCmdResult(cmd);
     }
 
+    @RequestMapping(value = "/scheduleNotifySearchBusCmd/{bmIdent}/{byAlarm}/{minPeriodMSec}", method = RequestMethod.POST)
+    public ScheduleSearchBusCmdResult scheduleSearchBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                            @PathVariable(value = "bmIdent") String bmIdent,
+                                                           @PathVariable(value = "byAlarm") String byAlarm,
+                                                           @PathVariable(value = "minPeriodMSec") String minPeriodMSec) {
+        model.checkAuthenticationHeader(authorization);
+
+        if (!model.isBMIdentValid(bmIdent)) {
+            return new waterfall.onewire.HttpClient.ScheduleSearchBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
+        }
+
+        boolean t_byAlarm;
+        if ("false".equals(byAlarm)) {
+            t_byAlarm = false;
+        }
+        else if ("true".equals(byAlarm)) {
+            t_byAlarm = true;
+        }
+        else {
+            return new waterfall.onewire.HttpClient.ScheduleSearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byAlarm_not_true_false);
+        }
+
+        Long l = null;
+        try {
+            l = Long.valueOf(minPeriodMSec);
+        }
+        catch (NumberFormatException e) {
+        }
+        if (l == null) {
+            return new waterfall.onewire.HttpClient.ScheduleSearchBusCmdResult(BaseCmdResult.ControllerErrors.Invalid_minPeriodMSec);
+        }
+
+        return new waterfall.onewire.HttpClient.ScheduleSearchBusCmdResult(model.scheduleSearch(bmIdent, t_byAlarm, l));
+    }
+
+    @RequestMapping(value = "/updateScheduledNotifySearchBusCmd/{bmIdent}/{byAlarm}/{minPeriodMSec}", method = RequestMethod.POST)
+    public UpdateScheduledSearchBusCmdResult updateScheduledNotifySearchBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                           @PathVariable(value = "bmIdent") String bmIdent,
+                                                           @PathVariable(value = "byAlarm") String byAlarm,
+                                                           @PathVariable(value = "minPeriodMSec") String minPeriodMSec) {
+        model.checkAuthenticationHeader(authorization);
+
+        if (!model.isBMIdentValid(bmIdent)) {
+            return new waterfall.onewire.HttpClient.UpdateScheduledSearchBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
+        }
+
+        boolean t_byAlarm;
+        if ("false".equals(byAlarm)) {
+            t_byAlarm = false;
+        }
+        else if ("true".equals(byAlarm)) {
+            t_byAlarm = true;
+        }
+        else {
+            return new waterfall.onewire.HttpClient.UpdateScheduledSearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byAlarm_not_true_false);
+        }
+
+        Long l = null;
+        try {
+            l = Long.valueOf(minPeriodMSec);
+        }
+        catch (NumberFormatException e) {
+        }
+        if (l == null) {
+            return new waterfall.onewire.HttpClient.UpdateScheduledSearchBusCmdResult(BaseCmdResult.ControllerErrors.Invalid_minPeriodMSec);
+        }
+
+        return new waterfall.onewire.HttpClient.UpdateScheduledSearchBusCmdResult(model.updateScheduledSearch(bmIdent, t_byAlarm, l));
+    }
+
+    @RequestMapping(value = "/cancelScheduledNotifySearchBusCmd/{bmIdent}/{byAlarm}", method = RequestMethod.POST)
+    public CancelScheduledSearchBusCmdResult cancelScheduledNotifySearchBusCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                                           @PathVariable(value = "bmIdent") String bmIdent,
+                                                            @PathVariable(value = "byAlarm") String byAlarm) {
+        model.checkAuthenticationHeader(authorization);
+
+        if (!model.isBMIdentValid(bmIdent)) {
+            return new waterfall.onewire.HttpClient.CancelScheduledSearchBusCmdResult(BaseCmdResult.ControllerErrors.Unknown_bmIdent);
+        }
+
+        boolean t_byAlarm;
+        if ("false".equals(byAlarm)) {
+            t_byAlarm = false;
+        }
+        else if ("true".equals(byAlarm)) {
+            t_byAlarm = true;
+        }
+        else {
+            return new waterfall.onewire.HttpClient.CancelScheduledSearchBusCmdResult(BaseCmdResult.ControllerErrors.Bad_parm_byAlarm_not_true_false);
+        }
+
+        return new waterfall.onewire.HttpClient.CancelScheduledSearchBusCmdResult(model.cancelScheduledSearch(bmIdent, t_byAlarm));
+    }
+
     @RequestMapping(value = "/readPowerSupplyCmd/{bmIdent}/{dsAddr}", method = RequestMethod.POST)
     public waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult readPowerSupplyCmd(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
                                                                                     @PathVariable(value = "bmIdent") String bmIdent,
