@@ -32,8 +32,12 @@ public class Application {
 
     // We just need to start the HA7S manager with the arguments from the command line who will register any that it
     // finds with the BusMasterRegistry.
-    private void start(String ha7sTTY) {
-        ha7sBMManager.start(ha7sTTY, Logger.LogLevel.CmdOnlyLevel());
+    private void startTTY(String ha7sTTY) {
+        ha7sBMManager.startTTY(ha7sTTY, Logger.LogLevel.CmdOnlyLevel());
+    }
+
+    private void startDummy() {
+        ha7sBMManager.startDummy(Logger.LogLevel.CmdOnlyLevel());
     }
 
     @Bean
@@ -57,7 +61,12 @@ public class Application {
 
         ApplicationContext ctx = SpringApplication.run(Application.class, args);
         Application app = (Application) ctx.getBean(Application.class);
-        app.start(ha7sTTY);
+        if (false) {
+            app.startTTY(ha7sTTY);
+        }
+        else {
+            app.startDummy();
+        }
 
         // It does not matter if the this thread exists, the other threads created by the various Objects will continue.
     }
