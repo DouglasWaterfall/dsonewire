@@ -9,7 +9,6 @@ import java.util.*;
 
 public class HA7S implements BusMaster {
 
-    private String portDevName;
     private Boolean started = null;
     private HA7SSerial serialPort = null;
 
@@ -20,7 +19,7 @@ public class HA7S implements BusMaster {
 
     @Override
     public String getName() {
-        return "HA7S on " + ((portDevName != null) ? portDevName : "no device");
+        return "HA7S on " + serialPort.getPortName();
     }
 
     @Override
@@ -117,10 +116,10 @@ public class HA7S implements BusMaster {
     /*
     * Begin HA7S specific methods
     */
-    public HA7S(String portDevName) {
-        this.portDevName = portDevName;
+    public HA7S(HA7SSerial serial) {
         searchHelper = new NotifySearchBusCmdHelper(this, false);
         searchByAlarmHelper = new NotifySearchBusCmdHelper(this, true);
+        serialPort = serial;
     }
 
     public synchronized StartBusCmd.Result executeStartBusCmd(HA7SStartBusCmd cmd) {
@@ -131,10 +130,6 @@ public class HA7S implements BusMaster {
         if (started != null) {
             result = StartBusCmd.Result.already_started;
             return result;
-        }
-
-        if (serialPort == null) {
-            serialPort = new JSSC(portDevName);
         }
 
         HA7SSerial.StartResult startResult = serialPort.start(cmd.getDeviceLevelLogger());

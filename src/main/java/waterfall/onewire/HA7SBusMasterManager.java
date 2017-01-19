@@ -3,6 +3,8 @@ package waterfall.onewire;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.StartBusCmd;
 import waterfall.onewire.busmasters.HA7S.HA7S;
+import waterfall.onewire.busmasters.HA7S.HA7SSerialDummy;
+import waterfall.onewire.busmasters.HA7S.JSSC;
 
 import java.util.ArrayList;
 
@@ -17,25 +19,35 @@ public class HA7SBusMasterManager {
         this.bmRegistry = bmRegistry;
     }
 
-    public void start(String ha7sTTYArg, Logger.LogLevel logLevel) {
+    public void startTTY(String ha7sTTYArg, Logger.LogLevel logLevel) {
         String[] bmPaths = ha7sTTYArg.split(",");
 
         for (String s : bmPaths) {
-            HA7S bm = new HA7S(s);
+            HA7S ha7s = new HA7S(new JSSC(s));
 
-            System.out.println("Starting dsonewire-busmasterserver on " + s);
+            startAndRegister(ha7s, logLevel);
+        }
+    }
 
-            StartBusCmd startCmd = bm.queryStartBusCmd(logLevel);
-            StartBusCmd.Result startResult = startCmd.execute();
+    public void startDummy(Logger.LogLevel logLevel) {
+        HA7S ha7s = new HA7S(new HA7SSerialDummy());
 
-            // dumpLog(startCmd.getLogger());
+        startAndRegister(ha7s, logLevel);
+    }
 
-            if (startResult == StartBusCmd.Result.started) {
-                bmRegistry.addBusMaster(bm);
-            }
-            else {
-                System.out.println("Failed on " + s + ": " + startResult.name());
-            }
+    private void startAndRegister(HA7S ha7s, Logger.LogLevel logLevel) {
+        System.out.println("Starting dsonewire-busmasterserver on " + ha7s.getName());
+
+        StartBusCmd startCmd = ha7s.queryStartBusCmd(logLevel);
+        StartBusCmd.Result startResult = startCmd.execute();
+
+        // dumpLog(startCmd.getLogger());
+
+        if (startResult == StartBusCmd.Result.started) {
+            bmRegistry.addBusMaster(ha7s);
+        }
+        else {
+            System.out.println("Failed on " + ha7s.getName() + ": " + startResult.name());
         }
     }
 }
