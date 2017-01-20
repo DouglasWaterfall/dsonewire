@@ -1,5 +1,6 @@
 package waterfall.onewire.HttpClient;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -15,6 +16,14 @@ public class WaitForEventCmd {
     private Map<String, Long> bmSearchNotifyTimestampMSec;
 
     private Map<String, Long> bmAlarmSearchNotifyTimestampMSec;
+
+    public WaitForEventCmd() {
+        this.waitTimeoutMSec = 0;
+        this.serverTimestampMSec = 0;
+        this.bmListChangedNotifyTimestampMSec = 0;
+        this.bmSearchNotifyTimestampMSec = new HashMap<String, Long>();
+        this.bmAlarmSearchNotifyTimestampMSec = new HashMap<String, Long>();
+    }
 
     public WaitForEventCmd(long waitTimeoutMSec,
                            long serverTimestampMSec, long bmListChangedNotifyTimestampMSec,
