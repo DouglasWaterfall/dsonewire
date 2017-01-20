@@ -13,6 +13,7 @@ import java.util.*;
 /**
  * Created by dwaterfa on 1/12/17.
  */
+
 public class Model {
 
     private final BusMasterRegistry bmRegistry;
@@ -29,6 +30,75 @@ public class Model {
     // this value be provided in the rest calls.
     private String currentAuthenticationValue;
 
+    public class WaitingThreadData {
+        private Thread thread;
+        private long waitEndTimeMSec;
+        private Timer deadManTimer = null;
+        private TimerTask deadManTimerTask = null;
+
+        public WaitingThreadData() {
+            thread = null;
+            deadManTimer = null;
+        }
+
+        public boolean hasWaitingThread() {
+            return (thread != null);
+        }
+
+        public void setWaitingThread(WaitForEventCmd cmd) {
+            cancelDeadManTimerTask();
+            thread = Thread.currentThread();
+            waitEndTimeMSec = System.currentTimeMillis() + cmd.getWaitTimeoutMSec();
+        }
+
+        // returns true if at the start of the call the current time exceeds the timeout end point.
+        public boolean waitUntilTimeout() {
+            long timeRemainingMSec = (waitEndTimeMSec - System.currentTimeMillis());
+
+            if (timeRemainingMSec <= 0) {
+                return true;
+            }
+
+            try {
+                Model.this.wait(timeRemainingMSec);
+            } catch (InterruptedException e) {
+                // we have woken up due to the timeout or because someone has notified us.
+            }
+
+            return false;
+        }
+
+        public void notifyWaitingThreadIfPresent() {
+            if (thread != null) {
+                Model.this.notify();
+            }
+        }
+
+        public void clearWaitingThread() {
+            thread = null;
+        }
+
+        private final static long fifteen_seconds_in_msec = (1000 * 15);
+
+        public void scheduleDeadManTimerTask(TimerTask task) {
+            deadManTimer = new Timer();
+            deadManTimerTask = task;
+            deadManTimer.schedule(deadManTimerTask, fifteen_seconds_in_msec);
+        }
+
+        public boolean isCurrentDeadManTimerTask(TimerTask task) {
+            return ((task != null) && (deadManTimerTask == task));
+        }
+
+        public void cancelDeadManTimerTask() {
+            if (deadManTimer != null) {
+                deadManTimerTask = null;
+                deadManTimer.cancel();
+                deadManTimer = null;
+            }
+        }
+    }
+
     // The current thread which is sitting in waitForEvent()
     private WaitingThreadData waitingThreadData;
 
@@ -41,6 +111,7 @@ public class Model {
         this.encoder = Base64.getUrlEncoder();
         this.startTimestampMSec = System.currentTimeMillis();
         this.currentAuthenticationValue = Base64.getUrlEncoder().encodeToString(new Date(startTimestampMSec).toString().getBytes());
+        this.waitingThreadData = new WaitingThreadData();
 
         // we want to find out about BusMasters added to the BusMasterRegistry.
         bmRegistry.addObserver(new myBMSearchResult());
@@ -99,12 +170,12 @@ public class Model {
      * Schedule a search bus using the specified interval for the given bus
      *
      * @param bmIdent
-     * @param byAlarm true if this for Alarm searches, false if general search
+     * @param byAlarm       true if this for Alarm searches, false if general search
      * @param minPeriodMSec
      * @return BusMaster.ScheduleNotifySearchBusCmdResult
      */
     public synchronized BusMaster.ScheduleNotifySearchBusCmdResult scheduleSearch(String bmIdent, boolean byAlarm, long minPeriodMSec) {
-        BusMaster.ScheduleNotifySearchBusCmdResult result = bmUpdateData.getBusMasterDataByIdent(bmIdent).scheduleSearch(new myNotifySearchBusCmdResult(), byAlarm, minPeriodMSec);
+        BusMaster.ScheduleNotifySearchBusCmdResult result = bmUpdateData.getBusMasterDataByIdent(bmIdent).scheduleSearch(new myNotifySearchBusCmdResult(), byAlarm ? BusMasterData.SearchType.ByAlarm : BusMasterData.SearchType.General, minPeriodMSec);
         if (result == BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
             if (!waitingThreadData.hasWaitingThread()) {
                 waitingThreadData.scheduleDeadManTimerTask(new DeadManTimerTask());
@@ -117,12 +188,12 @@ public class Model {
      * Update a scheduled notify search bus using the specified interval for the given bus
      *
      * @param bmIdent
-     * @param byAlarm true if this for Alarm searches, false if general search
+     * @param byAlarm       true if this for Alarm searches, false if general search
      * @param minPeriodMSec
      * @return UpdateScheduledNotifySearchBusCmdResult
      */
     public synchronized BusMaster.UpdateScheduledNotifySearchBusCmdResult updateScheduledSearch(String bmIdent, boolean byAlarm, long minPeriodMSec) {
-        return bmUpdateData.getBusMasterDataByIdent(bmIdent).updateScheduledSearch(byAlarm, minPeriodMSec);
+        return bmUpdateData.getBusMasterDataByIdent(bmIdent).updateScheduledSearch(byAlarm ? BusMasterData.SearchType.ByAlarm : BusMasterData.SearchType.General, minPeriodMSec);
     }
 
     /**
@@ -133,7 +204,7 @@ public class Model {
      * @return true if a search existed and was cancelled, false otherwise
      */
     public synchronized BusMaster.CancelScheduledNotifySearchBusCmdResult cancelScheduledSearch(String bmIdent, boolean byAlarm) {
-        return bmUpdateData.getBusMasterDataByIdent(bmIdent).cancelScheduledSearch(byAlarm);
+        return bmUpdateData.getBusMasterDataByIdent(bmIdent).cancelScheduledSearch(byAlarm ? BusMasterData.SearchType.ByAlarm : BusMasterData.SearchType.General);
     }
 
     /**
@@ -152,13 +223,14 @@ public class Model {
 
             if (cmd.getServerTimestampMSec() != startTimestampMSec) {
                 bmUpdateData.cancelAllSearches();
-                return new WaitForEventBMChanged(new WaitForEventResult.BMListChangedData(startTimestampMSec, bmUpdateTimestampMSec, bmUpdateList));
+                return new WaitForEventBMChanged(bmUpdateData.getBMListChangedData(startTimestampMSec));
             }
 
             while (true) {
                 // make sure the bmlists are in sync
-                if ((bmUpdateList != null) && (cmd.getBMListChangedNotifyTimestampMSec() != bmUpdateTimestampMSec)) {
-                    return new WaitForEventBMChanged(new WaitForEventResult.BMListChangedData(startTimestampMSec, bmUpdateTimestampMSec, bmUpdateList));
+                WaitForEventResult.BMListChangedData changedData = bmUpdateData.getBMListChangedDataRelativeTo(startTimestampMSec, cmd.getBMListChangedNotifyTimestampMSec());
+                if (changedData != null) {
+                    return new WaitForEventBMChanged(changedData);
                 }
 
                 // We only do this once after we are sure that the bm lists are at least in sync. There are race
@@ -170,7 +242,7 @@ public class Model {
 
                     if (((controllerError = bmUpdateData.validateSearchTimestamps(cmd.getBMSearchNotifyTimestampMSec())) != null) ||
                             ((controllerError = bmUpdateData.validateSearchTimestamps(cmd.getBMAlarmSearchNotifyTimestampMSec())) != null)) {
-                      return new WaitForEventControllerError(controllerError);
+                        return new WaitForEventControllerError(controllerError);
                     }
 
                     checkedSearchArgsValid = true;
@@ -259,7 +331,7 @@ public class Model {
                                               SearchBusCmd.ResultData searchResultData) {
         BusMasterData bmData = bmUpdateData.findBusMasterDataFor(bm);
         // be cautious
-        if ((bmData != null) && (bmData.updateSearchData(notifyResult, byAlarm, searchResultData))) {
+        if ((bmData != null) && (bmData.updateSearchData(notifyResult, byAlarm ? BusMasterData.SearchType.ByAlarm : BusMasterData.SearchType.General, searchResultData))) {
             waitingThreadData.notifyWaitingThreadIfPresent();
         }
     }

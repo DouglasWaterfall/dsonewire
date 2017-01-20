@@ -21,6 +21,11 @@ public class BusMasterData {
 
     public boolean searchCancelled;
 
+    public enum SearchType {
+        General,
+        ByAlarm
+    }
+
     public class SearchData {
         NotifySearchBusCmdResult notifyObj;
 
@@ -84,14 +89,14 @@ public class BusMasterData {
         this.searchData[1] = new SearchData();
     }
 
-    public BusMaster.ScheduleNotifySearchBusCmdResult scheduleSearch(NotifySearchBusCmdResult notifyResult, boolean byAlarm, long minPeriodMSec) {
-        SearchData sData = searchData[byAlarm ? 1 : 0];
+    public BusMaster.ScheduleNotifySearchBusCmdResult scheduleSearch(NotifySearchBusCmdResult notifyResult, SearchType sType, long minPeriodMSec) {
+        SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
 
         if (sData.notifyObj != null) {
             return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled;
         }
 
-        BusMaster.ScheduleNotifySearchBusCmdResult result = bm.scheduleNotifySearchBusCmd(notifyResult, byAlarm, minPeriodMSec);
+        BusMaster.ScheduleNotifySearchBusCmdResult result = bm.scheduleNotifySearchBusCmd(notifyResult, (sType == SearchType.ByAlarm), minPeriodMSec);
         if (result == BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
             searchCancelled = false;
             sData.notifyObj = notifyResult;
@@ -101,30 +106,30 @@ public class BusMasterData {
         return result;
     }
 
-    public BusMaster.UpdateScheduledNotifySearchBusCmdResult updateScheduledSearch(boolean byAlarm, long minPeriodMSec) {
-        SearchData sData = searchData[byAlarm ? 1 : 0];
-        return bm.updateScheduledNotifySearchBusCmd(sData.notifyObj, byAlarm, minPeriodMSec);
+    public BusMaster.UpdateScheduledNotifySearchBusCmdResult updateScheduledSearch(SearchType sType, long minPeriodMSec) {
+        SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
+        return bm.updateScheduledNotifySearchBusCmd(sData.notifyObj, (sType == SearchType.ByAlarm), minPeriodMSec);
     }
 
-    public boolean updateSearchData(NotifySearchBusCmdResult notifyResult, boolean byAlarm, SearchBusCmd.ResultData searchResultData) {
-        SearchData sData = searchData[byAlarm ? 1 : 0];
+    public boolean updateSearchData(NotifySearchBusCmdResult notifyResult, SearchType sType, SearchBusCmd.ResultData searchResultData) {
+        SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
 
         return sData.updateResultData(notifyResult, searchResultData);
     }
 
-    public WaitForEventResult.BMSearchData getSearchDataRelativeTo(boolean byAlarm, Long lastSearchNotifyTimestampMSec) {
-        SearchData sData = searchData[byAlarm ? 1 : 0];
+    public WaitForEventResult.BMSearchData getSearchDataRelativeTo(SearchType sType, Long lastSearchNotifyTimestampMSec) {
+        SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
 
         return sData.getResultDataRelativeTo(lastSearchNotifyTimestampMSec);
     }
 
-    public BusMaster.CancelScheduledNotifySearchBusCmdResult cancelScheduledSearch(boolean byAlarm) {
-        SearchData sData = searchData[byAlarm ? 1 : 0];
+    public BusMaster.CancelScheduledNotifySearchBusCmdResult cancelScheduledSearch(SearchType sType) {
+        SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
 
-        BusMaster.CancelScheduledNotifySearchBusCmdResult result = bm.cancelScheduledNotifySearchBusCmd((NotifySearchBusCmdResult)sData.notifyObj, byAlarm);
+        BusMaster.CancelScheduledNotifySearchBusCmdResult result = bm.cancelScheduledNotifySearchBusCmd((NotifySearchBusCmdResult)sData.notifyObj, (sType == SearchType.ByAlarm));
         if (sData.notifyObj != null) {
-            searchData[0].notifyObj = null;
-            searchData[0].resultData = null;
+            sData.notifyObj = null;
+            sData.resultData = null;
         }
 
         return result;

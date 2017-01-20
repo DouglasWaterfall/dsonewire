@@ -1,5 +1,6 @@
 package waterfall.onewire.httpserver;
 
+import waterfall.onewire.HttpClient.WaitForEventBMChanged;
 import waterfall.onewire.HttpClient.WaitForEventResult;
 import waterfall.onewire.busmaster.BusMaster;
 
@@ -17,6 +18,17 @@ public class BusMasterTracker {
     public BusMasterTracker() {
         this.timestampMSec = 0;
         this.bmIdentMap = new HashMap<String, BusMasterData>();
+    }
+
+    public WaitForEventResult.BMListChangedData getBMListChangedData(long startTimestampMSec) {
+        return new WaitForEventResult.BMListChangedData(startTimestampMSec, timestampMSec, bmIdentMap.keySet().toArray(new String[bmIdentMap.size()]));
+    }
+
+    public WaitForEventResult.BMListChangedData getBMListChangedDataRelativeTo(long startTimestampMSec, long lastNotifiedTimestampMSec) {
+        if ((timestampMSec != 0) && (lastNotifiedTimestampMSec != timestampMSec)) {
+            return getBMListChangedData(startTimestampMSec);
+        }
+        return null;
     }
 
     public BusMaster getBusMasterByIdent(String bmIdent) {
@@ -89,7 +101,7 @@ public class BusMasterTracker {
 
             WaitForEventResult.BMSearchData bmSearchData = null;
 
-            if ((bmSearchData = bmData.getSearchDataRelativeTo(byAlarm, searchNotifyTimestampMSec.get(bmData.bmIdent))) != null) {
+            if ((bmSearchData = bmData.getSearchDataRelativeTo(byAlarm ? BusMasterData.SearchType.ByAlarm : BusMasterData.SearchType.General, searchNotifyTimestampMSec.get(bmData.bmIdent))) != null) {
                 if (list == null) {
                     list = new ArrayList<>();
                 }
@@ -117,8 +129,8 @@ public class BusMasterTracker {
     public void cancelAllSearches() {
         for (BusMasterData bmData : bmIdentMap.values()) {
             if (bmData.hasActiveSearches()) {
-                bmData.cancelSearch(false);
-                bmData.cancelSearch(true);
+                bmData.cancelScheduledSearch(BusMasterData.SearchType.General);
+                bmData.cancelScheduledSearch(BusMasterData.SearchType.ByAlarm);
                 bmData.searchCancelled = true;
             }
         }

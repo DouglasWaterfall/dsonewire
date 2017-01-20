@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import waterfall.onewire.BusMasterRegistry;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HttpClient.*;
 import waterfall.onewire.busmaster.*;
@@ -22,8 +23,8 @@ public class Controller {
     private Model model;
 
     @Autowired
-    public Controller(Model model) {
-        this.model = model;
+    public Controller(BusMasterRegistry busMasterRegistry) {
+        model = new Model(busMasterRegistry);
     }
 
     /*
