@@ -63,6 +63,7 @@ public class HA7SSerialDummy implements HA7SSerial  {
 
                 if (wEnd == wStart) {
                     if (readResult.error == null) {
+                        readResult.error = ReadResult.ErrorCode.RR_Success;
                         readResult.postWriteCTM = System.currentTimeMillis();
                     }
                     return readResult;
@@ -75,6 +76,11 @@ public class HA7SSerialDummy implements HA7SSerial  {
 
                     case 's':
                         search(wBuf, wStart, wEnd, rBuf, optLogger, readResult, ++searchIndex);
+                        break;
+
+                    case 'R':
+                        searchIndex = 0;
+                        reset(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
                         break;
 
                     case 'F':
@@ -93,6 +99,8 @@ public class HA7SSerialDummy implements HA7SSerial  {
                         }
                         return new ReadResult(ReadResult.ErrorCode.RR_Error);
                 }
+
+                wStart = wEnd;
             }
         }
         catch (IllegalArgumentException e) {
@@ -129,10 +137,19 @@ public class HA7SSerialDummy implements HA7SSerial  {
         rBuf[readResult.readCount++] = '\r';
     }
 
+    private void reset(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger, ReadResult readResult) throws IllegalArgumentException {
+        if ((wEnd - wStart) != 1) {
+            throw new IllegalArgumentException("Reset not single cmd char");
+        }
+
+        // leave readCount alone
+    }
+
     // Even values are the char code, odd values are the expected total chars for the command data, -1 means terminated
     // with CR.
     private static final byte cmdLen[] = new byte[] {
             '\r', 1,
+            'R', 1,
             'S', 1,
             's', 1,
             'F', 3,
@@ -181,8 +198,10 @@ public class HA7SSerialDummy implements HA7SSerial  {
         if (wEnd == wBuf.length) {
             throw new IllegalArgumentException("cmd byte underrun:" + (char) wBuf[wStart] + " CR not found");
         }
-
-        return wEnd;
+        else {
+            // we want to be PAST the CR.
+            return (wEnd + 1);
+        }
     }
 
 }
