@@ -1,7 +1,6 @@
 package waterfall.onewire.httpserver;
 
-import waterfall.onewire.HttpClient.WaitForEventResult;
-import waterfall.onewire.busmaster.AlarmSearchBusCmdNotifyResult;
+import waterfall.onewire.HttpClient.WaitForEventCmdResult;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
@@ -40,10 +39,10 @@ public class BusMasterData {
                 notifyDSListCRC32 = dsListCRC32;
             }
 
-            public WaitForEventResult.BMSearchData getBMSearchDataFor(Long lastSearchNotifyTimestampMSec) {
+            public WaitForEventCmdResult.BMSearchData getBMSearchDataFor(Long lastSearchNotifyTimestampMSec) {
                 if ((lastSearchNotifyTimestampMSec == null) ||
                         (lastSearchNotifyTimestampMSec < notifyTimestampMSec)) {
-                    return new WaitForEventResult.BMSearchData(BusMasterData.this.bmIdent, notifyTimestampMSec, notifyDSList, notifyDSListCRC32);
+                    return new WaitForEventCmdResult.BMSearchData(BusMasterData.this.bmIdent, notifyTimestampMSec, notifyDSList, notifyDSListCRC32);
                 }
 
                 return null;
@@ -67,7 +66,7 @@ public class BusMasterData {
             return false;
         }
 
-        public WaitForEventResult.BMSearchData getResultDataRelativeTo(Long lastSearchNotifyTimestampMSec) {
+        public WaitForEventCmdResult.BMSearchData getResultDataRelativeTo(Long lastSearchNotifyTimestampMSec) {
             if (resultData != null) {
                 return resultData.getBMSearchDataFor(lastSearchNotifyTimestampMSec);
             }
@@ -117,7 +116,7 @@ public class BusMasterData {
         return sData.updateResultData(notifyResult, searchResultData);
     }
 
-    public WaitForEventResult.BMSearchData getSearchDataRelativeTo(SearchType sType, Long lastSearchNotifyTimestampMSec) {
+    public WaitForEventCmdResult.BMSearchData getSearchDataRelativeTo(SearchType sType, Long lastSearchNotifyTimestampMSec) {
         SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
 
         return sData.getResultDataRelativeTo(lastSearchNotifyTimestampMSec);

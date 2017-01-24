@@ -1,6 +1,6 @@
 package waterfall.onewire.httpserver;
 
-import waterfall.onewire.HttpClient.WaitForEventCmd;
+import waterfall.onewire.HttpClient.WaitForEventCmdData;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -23,7 +23,7 @@ public class WaitingThreadData {
         return (thread != null);
     }
 
-    public void setWaitingThread(WaitForEventCmd cmd) {
+    public void setWaitingThread(WaitForEventCmdData cmd) {
         cancelDeadManTimerTask();
         thread = Thread.currentThread();
         waitEndTimeMSec = System.currentTimeMillis() + cmd.getWaitTimeoutMSec();

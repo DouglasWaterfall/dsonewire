@@ -43,8 +43,8 @@ public class Controller {
     }
 
     @RequestMapping(value = "/waitForEvent", method = RequestMethod.POST)
-    public WaitForEventResult waitforEvent(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
-                                           @RequestBody WaitForEventCmd cmd) {
+    public WaitForEventCmdResult waitforEvent(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+                                              @RequestBody WaitForEventCmdData cmd) {
         model.checkAuthenticationHeader(authorization);
 
         return model.waitForEvent(cmd);

@@ -1,7 +1,6 @@
 package waterfall.onewire.httpserver;
 
-import waterfall.onewire.HttpClient.WaitForEventBMChanged;
-import waterfall.onewire.HttpClient.WaitForEventResult;
+import waterfall.onewire.HttpClient.WaitForEventCmdResult;
 import waterfall.onewire.busmaster.BusMaster;
 
 import java.util.ArrayList;
@@ -20,11 +19,11 @@ public class BusMasterTracker {
         this.bmIdentMap = new HashMap<String, BusMasterData>();
     }
 
-    public WaitForEventResult.BMListChangedData getBMListChangedData(long startTimestampMSec) {
-        return new WaitForEventResult.BMListChangedData(startTimestampMSec, timestampMSec, bmIdentMap.keySet().toArray(new String[bmIdentMap.size()]));
+    public WaitForEventCmdResult.BMListChangedData getBMListChangedData(long startTimestampMSec) {
+        return new WaitForEventCmdResult.BMListChangedData(startTimestampMSec, timestampMSec, bmIdentMap.keySet().toArray(new String[bmIdentMap.size()]));
     }
 
-    public WaitForEventResult.BMListChangedData getBMListChangedDataRelativeTo(long startTimestampMSec, long lastNotifiedTimestampMSec) {
+    public WaitForEventCmdResult.BMListChangedData getBMListChangedDataRelativeTo(long startTimestampMSec, long lastNotifiedTimestampMSec) {
         if ((timestampMSec != 0) && (lastNotifiedTimestampMSec != timestampMSec)) {
             return getBMListChangedData(startTimestampMSec);
         }
@@ -76,14 +75,14 @@ public class BusMasterTracker {
 
     // returns an Error enum if the notifyTimestamps are for BusMasters which are not known of the searches have
     // been cancelled for the BusMaster
-    public WaitForEventResult.ControllerErrors validateSearchTimestamps(Map<String, Long> searchNotifyTimestampMSec) {
+    public WaitForEventCmdResult.ControllerErrors validateSearchTimestamps(Map<String, Long> searchNotifyTimestampMSec) {
         if (searchNotifyTimestampMSec != null) {
             for (String dsAddr : searchNotifyTimestampMSec.keySet()) {
                 BusMasterData bmData = bmIdentMap.get(dsAddr);
                 if (bmData == null) {
-                    return WaitForEventResult.ControllerErrors.SearchBMIdentUnknown;
+                    return WaitForEventCmdResult.ControllerErrors.SearchBMIdentUnknown;
                 } else if (bmData.searchCancelled) {
-                    return WaitForEventResult.ControllerErrors.SearchesCancelled;
+                    return WaitForEventCmdResult.ControllerErrors.SearchesCancelled;
                 }
             }
         }
@@ -91,15 +90,15 @@ public class BusMasterTracker {
         return null;
     }
 
-    public ArrayList<WaitForEventResult.BMSearchData> getSearchDataRelativeTo(boolean byAlarm, Map<String, Long> searchNotifyTimestampMSec) {
-        ArrayList<WaitForEventResult.BMSearchData> list = null;
+    public ArrayList<WaitForEventCmdResult.BMSearchData> getSearchDataRelativeTo(boolean byAlarm, Map<String, Long> searchNotifyTimestampMSec) {
+        ArrayList<WaitForEventCmdResult.BMSearchData> list = null;
 
         for (BusMasterData bmData : bmIdentMap.values()) {
             // The event thready may not know about searches which have been scheduled after it went to sleep
             // so finding an empty reference in the command data is equivalent to never having seen the current
             // search result.
 
-            WaitForEventResult.BMSearchData bmSearchData = null;
+            WaitForEventCmdResult.BMSearchData bmSearchData = null;
 
             if ((bmSearchData = bmData.getSearchDataRelativeTo(byAlarm ? BusMasterData.SearchType.ByAlarm : BusMasterData.SearchType.General, searchNotifyTimestampMSec.get(bmData.bmIdent))) != null) {
                 if (list == null) {

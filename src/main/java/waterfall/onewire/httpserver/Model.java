@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import waterfall.onewire.BusMasterRegistry;
 import waterfall.onewire.HttpClient.*;
 import waterfall.onewire.busmaster.BusMaster;
-import waterfall.onewire.busmaster.AlarmSearchBusCmdNotifyResult;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
@@ -45,7 +44,7 @@ public class Model {
             return (thread != null);
         }
 
-        public void setWaitingThread(WaitForEventCmd cmd) {
+        public void setWaitingThread(WaitForEventCmdData cmd) {
             cancelDeadManTimerTask();
             thread = Thread.currentThread();
             waitEndTimeMSec = System.currentTimeMillis() + cmd.getWaitTimeoutMSec();
@@ -211,9 +210,9 @@ public class Model {
      * @param cmd
      * @return
      */
-    public synchronized WaitForEventResult waitForEvent(WaitForEventCmd cmd) {
+    public synchronized WaitForEventCmdResult waitForEvent(WaitForEventCmdData cmd) {
         if (waitingThreadData.hasWaitingThread()) {
-            return new WaitForEventControllerError(WaitForEventResult.ControllerErrors.InternalError_ThreadAlreadyWaiting);
+            return new WaitForEventCmdResult(WaitForEventCmdResult.ControllerErrors.InternalError_ThreadAlreadyWaiting);
         }
 
         boolean checkedSearchArgsValid = false;
@@ -223,14 +222,14 @@ public class Model {
 
             if (cmd.getServerTimestampMSec() != startTimestampMSec) {
                 bmUpdateData.cancelAllSearches();
-                return new WaitForEventBMChanged(bmUpdateData.getBMListChangedData(startTimestampMSec));
+                return new WaitForEventCmdResult(bmUpdateData.getBMListChangedData(startTimestampMSec));
             }
 
             while (true) {
                 // make sure the bmlists are in sync
-                WaitForEventResult.BMListChangedData changedData = bmUpdateData.getBMListChangedDataRelativeTo(startTimestampMSec, cmd.getBMListChangedNotifyTimestampMSec());
+                WaitForEventCmdResult.BMListChangedData changedData = bmUpdateData.getBMListChangedDataRelativeTo(startTimestampMSec, cmd.getBMListChangedNotifyTimestampMSec());
                 if (changedData != null) {
-                    return new WaitForEventBMChanged(changedData);
+                    return new WaitForEventCmdResult(changedData);
                 }
 
                 // We only do this once after we are sure that the bm lists are at least in sync. There are race
@@ -238,30 +237,30 @@ public class Model {
                 // difficult for us to really validate the data other than making sure we are not asking about a bm
                 // which does not exist.
                 if (!checkedSearchArgsValid) {
-                    WaitForEventResult.ControllerErrors controllerError = null;
+                    WaitForEventCmdResult.ControllerErrors controllerError = null;
 
                     if (((controllerError = bmUpdateData.validateSearchTimestamps(cmd.getBMSearchNotifyTimestampMSec())) != null) ||
                             ((controllerError = bmUpdateData.validateSearchTimestamps(cmd.getBMAlarmSearchNotifyTimestampMSec())) != null)) {
-                        return new WaitForEventControllerError(controllerError);
+                        return new WaitForEventCmdResult(controllerError);
                     }
 
                     checkedSearchArgsValid = true;
                 }
 
-                ArrayList<WaitForEventResult.BMSearchData> bmSearchDataList = bmUpdateData.getSearchDataRelativeTo(false, cmd.getBMSearchNotifyTimestampMSec());
+                ArrayList<WaitForEventCmdResult.BMSearchData> bmSearchDataList = bmUpdateData.getSearchDataRelativeTo(false, cmd.getBMSearchNotifyTimestampMSec());
 
-                ArrayList<WaitForEventResult.BMSearchData> bmAlarmSearchDataList = bmUpdateData.getSearchDataRelativeTo(true, cmd.getBMAlarmSearchNotifyTimestampMSec());
+                ArrayList<WaitForEventCmdResult.BMSearchData> bmAlarmSearchDataList = bmUpdateData.getSearchDataRelativeTo(true, cmd.getBMAlarmSearchNotifyTimestampMSec());
 
                 if ((bmSearchDataList != null) || (bmAlarmSearchDataList != null)) {
-                    return new WaitForEventSearchNotify(bmSearchDataList != null ? bmSearchDataList.toArray(new WaitForEventResult.BMSearchData[bmSearchDataList.size()]) : null,
-                            bmAlarmSearchDataList != null ? bmAlarmSearchDataList.toArray(new WaitForEventResult.BMSearchData[bmAlarmSearchDataList.size()]) : null);
+                    return new WaitForEventCmdResult(bmSearchDataList != null ? bmSearchDataList.toArray(new WaitForEventCmdResult.BMSearchData[bmSearchDataList.size()]) : null,
+                            bmAlarmSearchDataList != null ? bmAlarmSearchDataList.toArray(new WaitForEventCmdResult.BMSearchData[bmAlarmSearchDataList.size()]) : null);
                 }
 
                 // if the timeout time has passed at the start of this method then it returns true and we can return.
                 // otherwise we woke up either due to a notify or a timeout so loop around to see if there is an event
                 // to pickup and we will return back here and detect the timeout case then.
                 if (waitingThreadData.waitUntilTimeout()) {
-                    return new WaitForEventControllerError(WaitForEventResult.ControllerErrors.WaitTimeout);
+                    return new WaitForEventCmdResult(WaitForEventCmdResult.ControllerErrors.WaitTimeout);
                 }
             }
         } finally {
