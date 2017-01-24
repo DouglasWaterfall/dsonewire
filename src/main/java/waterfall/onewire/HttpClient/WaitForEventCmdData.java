@@ -6,8 +6,8 @@ import java.util.Map;
 /**
  * Created by dwaterfa on 1/14/17.
  */
-public class WaitForEventCmd {
-    private long waitTimeoutMSec;
+public class WaitForEventCmdData {
+    private int waitTimeoutMSec;
 
     private long serverTimestampMSec;
 
@@ -17,7 +17,7 @@ public class WaitForEventCmd {
 
     private Map<String, Long> bmAlarmSearchNotifyTimestampMSec;
 
-    public WaitForEventCmd() {
+    public WaitForEventCmdData() {
         this.waitTimeoutMSec = 0;
         this.serverTimestampMSec = 0;
         this.bmListChangedNotifyTimestampMSec = 0;
@@ -25,10 +25,10 @@ public class WaitForEventCmd {
         this.bmAlarmSearchNotifyTimestampMSec = new HashMap<String, Long>();
     }
 
-    public WaitForEventCmd(long waitTimeoutMSec,
-                           long serverTimestampMSec, long bmListChangedNotifyTimestampMSec,
-                           Map<String, Long> bmSearchNotifyTimestampMSec,
-                           Map<String, Long> bmAlarmSearchNotifyTimestampMSec) {
+    public WaitForEventCmdData(int waitTimeoutMSec,
+                               long serverTimestampMSec, long bmListChangedNotifyTimestampMSec,
+                               Map<String, Long> bmSearchNotifyTimestampMSec,
+                               Map<String, Long> bmAlarmSearchNotifyTimestampMSec) {
         this.waitTimeoutMSec = waitTimeoutMSec;
         this.serverTimestampMSec = serverTimestampMSec;
         this.bmListChangedNotifyTimestampMSec = bmListChangedNotifyTimestampMSec;
@@ -39,11 +39,11 @@ public class WaitForEventCmd {
     /**
      * @return
      */
-    public long getWaitTimeoutMSec() {
+    public int getWaitTimeoutMSec() {
         return waitTimeoutMSec;
     }
 
-    public void setWaitTimeoutMSec(long waitTimeoutMSec) {
+    public void setWaitTimeoutMSec(int waitTimeoutMSec) {
         this.waitTimeoutMSec = waitTimeoutMSec;
     }
 

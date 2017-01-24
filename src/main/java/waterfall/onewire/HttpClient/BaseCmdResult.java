@@ -9,7 +9,7 @@ import java.util.Iterator;
 /**
  * Created by dwaterfa on 8/6/16.
  */
-public class BaseCmdResult {
+public class BaseCmdResult extends BaseCmdPostResult {
 
     public enum ControllerErrors {
         Unknown_bmIdent,
@@ -26,38 +26,21 @@ public class BaseCmdResult {
     }
 
     protected BaseCmdResult() {
-        postError = null;
+        super();
         controllerError = null;
     }
 
     protected BaseCmdResult(PostErrors pe) {
-        postError = pe;
+        super(pe);
         controllerError = null;
     }
 
     protected BaseCmdResult(ControllerErrors ce) {
-        postError = null;
+        super();
         controllerError = (ce != null) ? ce.name() : null;
     }
 
-    @JsonIgnore
-    public PostErrors postError;
-
     @JsonProperty("controllerError")
     public String controllerError;
-
-    @JsonProperty("log")
-    public String[] log;
-
-    @JsonIgnore
-    protected void setLogger(Logger optLogger) {
-        if ((optLogger != null) && (optLogger.getLogSize() > 0)) {
-            log = new String[optLogger.getLogSize()];
-            int i = 0;
-            for (Iterator<String> iter = optLogger.getLogIter(); iter.hasNext(); ) {
-                log[i++] = iter.next();
-            }
-        }
-    }
 
 }

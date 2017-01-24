@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Created by dwaterfa on 8/23/16.
  */
-public interface WaitForEventResult {
+public class WaitForEventCmdResult extends BaseCmdPostResult {
 
     /**
      * The Errors possible from the controller for this call
@@ -45,6 +45,9 @@ public interface WaitForEventResult {
         WaitTimeout
     }
 
+    @JsonProperty("controllerError")
+    public ControllerErrors controllerError;
+
     /**
      * This class is valid when the serverTimestampMSec value passed into the waitForEvent() call does not match what the
      * server has or the BusMaster list held by the server has been changed since the last timestamp passed into the
@@ -62,6 +65,9 @@ public interface WaitForEventResult {
             this.bmIdents = bmIdents;
         }
     }
+
+    @JsonProperty("bmListChangedData")
+    private BMListChangedData bmListChangedData;
 
     /**
      * This class holds the notification information for an active search (whole buss or byAlarm only). This will be
@@ -81,25 +87,71 @@ public interface WaitForEventResult {
         }
     }
 
-    /**
-     * @return true if there was an error during the post to the server.
-     */
-    public boolean hasPostError();
+    private BMSearchData[] bmSearchData;
 
-    /**
-     * @return the PostError, or null if there was no error during the last post to the server.
-     */
-    public PostErrors getPostError();
+    private BMSearchData[] bmSearchByAlarmData;
+
+    public WaitForEventCmdResult() {
+        super();
+        controllerError = null;
+        this.bmListChangedData = null;
+        this.bmSearchData = null;
+        this.bmSearchByAlarmData = null;
+    }
+
+    public WaitForEventCmdResult(PostErrors pe) {
+        super(pe);
+        controllerError = null;
+        this.bmListChangedData = null;
+        this.bmSearchData = null;
+        this.bmSearchByAlarmData = null;
+    }
+
+    public WaitForEventCmdResult(ControllerErrors ce) {
+        super();
+        controllerError = ce;
+        this.bmListChangedData = null;
+        this.bmSearchData = null;
+        this.bmSearchByAlarmData = null;
+    }
+
+    public WaitForEventCmdResult(BMListChangedData data) {
+        super();
+        controllerError = null;
+        this.bmListChangedData = data;
+        this.bmSearchData = null;
+        this.bmSearchByAlarmData = null;
+    }
+
+    public WaitForEventCmdResult(BMSearchData[] bmSearchData, BMSearchData[] bmSearchByAlarmData) {
+        super();
+        controllerError = null;
+        this.bmListChangedData = null;
+        this.bmSearchData = bmSearchData;
+        this.bmSearchByAlarmData = bmSearchByAlarmData;
+    }
 
     /**
      * @return true if there was an error from the controller on the server.
      */
-    public boolean hasControllerError();
+    public boolean hasControllerError() {
+        return (controllerError != null);
+    }
 
     /**
      * @return the ControllerError, or null if there was no error from the controller on the server.
      */
-    public ControllerErrors getControllerError();
+    public ControllerErrors getControllerError() {
+        return controllerError;
+    }
+
+    /**
+     *
+     * @param controllerError
+     */
+    public void setControllerError(ControllerErrors controllerError) {
+        this.controllerError = controllerError;
+    }
 
     /**
      * A successful waitForEvent() call can return one or more of the below events in any combination. However, if
@@ -109,43 +161,69 @@ public interface WaitForEventResult {
      * @return true if there is a mismatched currentServerTimestampMSec or the BM list has changed since the last
      * timestamp provided in the waitForEvent()
      */
-    public boolean hasBMListChanged();
+    public boolean hasBMListChanged() {
+        return (bmListChangedData != null);
+    }
 
     /**
      * @return the event data, or null if there has been no change to the BMList for this event
      */
-    public BMListChangedData getBMListChangedData();
+    public BMListChangedData getBMListChangedData(){
+        return bmListChangedData;
+    }
+
+    /**
+     *
+     * @param data
+     */
+    public void setBMListChangedData(BMListChangedData data){
+        this.bmListChangedData = bmListChangedData;
+    }
 
     /**
      * @return true if one or more BMs had a (general bus) search notification relative to notifyTimestampMSec value for the BM(s).
      */
-    public boolean hasBMSearchData();
+    public boolean hasBMSearchData() {
+        return (bmSearchData != null);
+    }
 
     /**
      * @return BMSearchData if there is search notify data, otherwise null
      */
-    public BMSearchData[] getBMSearchData();
+    public BMSearchData[] getBMSearchData() {
+        return bmSearchData;
+    }
+
+    /**
+     *
+     * @param data
+     */
+    public void setBMSearchData(BMSearchData[] data) {
+        bmSearchData = data;
+    }
 
     /**
      * @return true if one or more BMs had a search by alarm notification relative to notifyTimestampMSec value for the BM(s).
      */
-    public boolean hasBMAlarmSearchData();
+    public boolean hasBMAlarmSearchData(){
+        return (bmSearchByAlarmData != null);
+    }
 
     /**
      * @return BMSearchData if there is search by alarm notify data, otherwise null
      */
-    public BMSearchData[] getBMAlarmSearchData();
+    public BMSearchData[] getBMAlarmSearchData() {
+        return bmSearchByAlarmData;
+    }
+
+    /**
+     *
+     * @param data
+     */
+    public void setBMSearchByAlarmData(BMSearchData[] data) {
+        bmSearchByAlarmData = data;
+    }
 
 }
 
-/*
- *  class WaitForEvent
- *
- *  String currentAuthenticationValue
- *
- *  long lastBMChangedTimestampMSec;
- *
- *  Map<String, Long> bmSearchNotifyTimestampsMSec;
- *
- *  Map<String, Long> bmSearchByAlarmNotifyTimestampsMSec;
- */
+
