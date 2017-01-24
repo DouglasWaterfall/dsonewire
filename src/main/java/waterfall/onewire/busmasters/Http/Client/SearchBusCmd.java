@@ -1,22 +1,22 @@
-package waterfall.onewire.busmasters.Http;
+package waterfall.onewire.busmasters.Http.Client;
 
 import waterfall.onewire.HttpClient.SearchBusCmdResult;
-import waterfall.onewire.busmaster.SearchBusCmd;
+import waterfall.onewire.busmasters.Util;
 
 import java.util.List;
 
 /**
  * Created by dwaterfa on 8/17/16.
  */
-public class HttpSearchBusCmd extends SearchBusCmd {
+public class SearchBusCmd extends waterfall.onewire.busmaster.SearchBusCmd {
     private String suffix = null;
 
-    public HttpSearchBusCmd(Client client, boolean byAlarm, LogLevel logLevel) {
+    public SearchBusCmd(Client client, boolean byAlarm, LogLevel logLevel) {
         super(client, byAlarm, logLevel);
         this.resultData = null;
     }
 
-    public HttpSearchBusCmd(Client client, short familyCode, LogLevel logLevel) {
+    public SearchBusCmd(Client client, short familyCode, LogLevel logLevel) {
         super(client, familyCode, logLevel);
         this.resultData = null;
     }
@@ -25,13 +25,13 @@ public class HttpSearchBusCmd extends SearchBusCmd {
         assert (result == Result.busy);
         assert (resultData == null);
 
-        String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+        String logLevelParam = Util.computeLogLevelParam(getLogger());
         final String suffix = "searchBusCmd/" + ((Client)busMaster).getBmIdent() + ((logLevelParam != null) ? logLevelParam : "");
 
         SearchBusCmdResult postResult = (SearchBusCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, SearchBusCmdResult.class);
 
-        if (postResult.postError != null) {
-            logErrorInternal("postError:" + postResult.postError.name());
+        if (postResult.hasPostError()) {
+            logErrorInternal("postError:" + postResult.getPostError().name());
             return Result.communication_error;
         }
 

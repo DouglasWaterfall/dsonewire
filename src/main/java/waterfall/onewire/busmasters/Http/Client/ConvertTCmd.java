@@ -1,18 +1,17 @@
-package waterfall.onewire.busmasters.Http;
+package waterfall.onewire.busmasters.Http.Client;
 
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HttpClient.ConvertTCmdResult;
-import waterfall.onewire.busmaster.ConvertTCmd;
-import waterfall.onewire.busmaster.Logger;
+import waterfall.onewire.busmasters.Util;
 
 /**
  * Created by dwaterfa on 8/7/16.
  */
-public class HttpConvertTCmd extends ConvertTCmd {
+public class ConvertTCmd extends waterfall.onewire.busmaster.ConvertTCmd {
 
     private String suffix = null;
 
-    public HttpConvertTCmd(Client client, DSAddress dsAddr, LogLevel logLevel) {
+    public ConvertTCmd(Client client, DSAddress dsAddr, LogLevel logLevel) {
         super(client, dsAddr, logLevel);
     }
 
@@ -26,14 +25,14 @@ public class HttpConvertTCmd extends ConvertTCmd {
         assert (resultWriteCTM == 0);
 
         if (suffix == null) {
-            String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+            String logLevelParam = Util.computeLogLevelParam(getLogger());
             suffix = "convertTCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + ((logLevelParam != null) ? logLevelParam : "");
         }
 
         ConvertTCmdResult postResult = (ConvertTCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, ConvertTCmdResult.class);
 
-        if (postResult.postError != null) {
-            logErrorInternal(" postError:" + postResult.postError.name());
+        if (postResult.hasPostError()) {
+            logErrorInternal(" postError:" + postResult.getPostError().name());
             return Result.communication_error;
         }
 

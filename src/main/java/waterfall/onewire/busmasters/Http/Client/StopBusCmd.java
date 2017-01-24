@@ -1,13 +1,11 @@
-package waterfall.onewire.busmasters.Http;
-
-import waterfall.onewire.busmaster.StopBusCmd;
+package waterfall.onewire.busmasters.Http.Client;
 
 /**
  * Created by dwaterfa on 8/8/16.
  */
-public class HttpStopBusCmd extends StopBusCmd {
+public class StopBusCmd extends waterfall.onewire.busmaster.StopBusCmd {
 
-    public HttpStopBusCmd(Client client, LogLevel logLevel) {
+    public StopBusCmd(Client client, LogLevel logLevel) {
         super(client, logLevel);
     }
 

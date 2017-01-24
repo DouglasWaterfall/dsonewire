@@ -1,13 +1,11 @@
-package waterfall.onewire.busmasters.Http;
-
-import waterfall.onewire.busmaster.StartBusCmd;
+package waterfall.onewire.busmasters.Http.Client;
 
 /**
  * Created by dwaterfa on 8/7/16.
  */
-public class HttpStartBusCmd extends StartBusCmd {
+public class StartBusCmd extends waterfall.onewire.busmaster.StartBusCmd {
 
-    public HttpStartBusCmd(Client client, LogLevel logLevel) {
+    public StartBusCmd(Client client, LogLevel logLevel) {
         super(client, logLevel);
     }
 

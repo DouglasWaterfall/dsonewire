@@ -1,18 +1,18 @@
-package waterfall.onewire.busmasters.Http;
+package waterfall.onewire.busmasters.Http.Client;
 
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HttpClient.ReadScratchpadCmdResult;
-import waterfall.onewire.busmaster.ReadScratchpadCmd;
+import waterfall.onewire.busmasters.Util;
 
 /**
  * Created by dwaterfa on 8/7/16.
  */
-public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
+public class ReadScratchpadCmd extends waterfall.onewire.busmaster.ReadScratchpadCmd {
 
     private String suffix = null;
 
-    public HttpReadScratchpadCmd(Client client, DSAddress dsAddr, short requestCount, LogLevel logLevel) {
+    public ReadScratchpadCmd(Client client, DSAddress dsAddr, short requestCount, LogLevel logLevel) {
         super(client, dsAddr, requestCount, logLevel);
     }
 
@@ -28,14 +28,14 @@ public class HttpReadScratchpadCmd extends ReadScratchpadCmd {
         assert (resultWriteCTM == 0);
 
         if (suffix == null) {
-            String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+            String logLevelParam = Util.computeLogLevelParam(getLogger());
             suffix = "readScratchpadCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + "/" + requestByteCount + ((logLevelParam != null) ? logLevelParam : "");
         }
 
         ReadScratchpadCmdResult postResult = (ReadScratchpadCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, ReadScratchpadCmdResult.class);
 
-        if (postResult.postError != null) {
-            logErrorInternal(" postError:" + postResult.postError.name());
+        if (postResult.hasPostError()) {
+            logErrorInternal(" postError:" + postResult.getPostError().name());
             return Result.communication_error;
         }
 

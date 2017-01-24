@@ -1,17 +1,17 @@
-package waterfall.onewire.busmasters.Http;
+package waterfall.onewire.busmasters.Http.Client;
 
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HttpClient.ReadPowerSupplyCmdResult;
-import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
+import waterfall.onewire.busmasters.Util;
 
 /**
  * Created by dwaterfa on 7/27/16.
  */
-public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
+public class ReadPowerSupplyCmd extends waterfall.onewire.busmaster.ReadPowerSupplyCmd {
 
     private String suffix = null;
 
-    public HttpReadPowerSupplyCmd(Client client, DSAddress dsAddr, LogLevel logLevel) {
+    public ReadPowerSupplyCmd(Client client, DSAddress dsAddr, LogLevel logLevel) {
         super(client, dsAddr, logLevel);
     }
 
@@ -26,14 +26,14 @@ public class HttpReadPowerSupplyCmd extends ReadPowerSupplyCmd {
         assert (resultWriteCTM == 0);
 
         if (suffix == null) {
-            String logLevelParam = ((Client)busMaster).computeLogLevelParam(getLogger());
+            String logLevelParam = Util.computeLogLevelParam(getLogger());
             suffix = "readPowerSupplyCmd/" + ((Client)busMaster).getBmIdent() + "/" + dsAddr.toString() + ((logLevelParam != null) ? logLevelParam : "");
         }
 
         ReadPowerSupplyCmdResult postResult = (ReadPowerSupplyCmdResult) ((Client) busMaster).postURLDataWithAuthorization(suffix, ReadPowerSupplyCmdResult.class);
 
-        if (postResult.postError != null) {
-            logErrorInternal(" postError:" + postResult.postError.name());
+        if (postResult.hasPostError()) {
+            logErrorInternal(" postError:" + postResult.getPostError().name());
             return Result.communication_error;
         }
 
