@@ -155,8 +155,8 @@ public class Client implements BusMaster {
 
             long clientReceivedTimeMSec = System.currentTimeMillis();
 
-            if (result.postError != null) {
-                Util.logErrorCommLevel(optLogger, logContext, " postError:" + result.postError.name());
+            if (result.hasPostError()) {
+                Util.logErrorCommLevel(optLogger, logContext, " postError:" + result.getPostError().name());
             } else if (result.controllerError != null) {
                 Util.logErrorCommLevel(optLogger, logContext, " controllerError:" + result.controllerError);
             } else {
@@ -183,11 +183,11 @@ public class Client implements BusMaster {
         return minDiff;
     }
 
-    public BaseCmdResult postURLDataNoAuthorization(String suffix, Class respClass) {
+    public BaseCmdPostResult postURLDataNoAuthorization(String suffix, Class respClass) {
         return Util.postURLData(endpoint, suffix, null, connectionTimeoutMSec, null, respClass);
     }
 
-    public BaseCmdResult postURLDataWithAuthorization(String suffix, Class respClass) {
+    public BaseCmdPostResult postURLDataWithAuthorization(String suffix, Class respClass) {
         return Util.postURLData(endpoint, suffix, authorization, connectionTimeoutMSec, null, respClass);
     }
 

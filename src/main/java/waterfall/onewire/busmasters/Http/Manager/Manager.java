@@ -314,6 +314,7 @@ public class Manager implements Runnable {
 
     // we need to be the one to coordinate with the remote
 
+    /*
     private void startAndRegister(HA7S ha7s, Logger.LogLevel logLevel) {
         System.out.println("Starting dsonewire-busmasterserver on " + ha7s.getName());
 
@@ -329,6 +330,7 @@ public class Manager implements Runnable {
             System.out.println("Failed on " + ha7s.getName() + ": " + startResult.name());
         }
     }
+    */
 
     public static WaitForEventCmdResult go(String endpoint,
                                            String authHeader,
