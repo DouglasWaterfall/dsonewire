@@ -29,7 +29,7 @@ public class HA7S implements BusMaster {
 
     @Override
     public boolean getIsStarted() {
-        return ((started != null) && started.booleanValue());
+        return ((started != null) && started);
     }
 
     @Override
@@ -117,6 +117,9 @@ public class HA7S implements BusMaster {
     * Begin HA7S specific methods
     */
     public HA7S(HA7SSerial serial) {
+        if (serial == null) {
+            throw new IllegalArgumentException("serial must non-null");
+        }
         searchHelper = new NotifySearchBusCmdHelper(this, false);
         searchByAlarmHelper = new NotifySearchBusCmdHelper(this, true);
         serialPort = serial;

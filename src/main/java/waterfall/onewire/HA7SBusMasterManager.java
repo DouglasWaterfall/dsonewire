@@ -3,9 +3,11 @@ package waterfall.onewire;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.StartBusCmd;
 import waterfall.onewire.busmasters.HA7S.HA7S;
-import waterfall.onewire.busmasters.HA7S.HA7SSerialDummy;
+import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 import waterfall.onewire.busmasters.HA7S.JSSC;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 /**
@@ -19,20 +21,37 @@ public class HA7SBusMasterManager {
         this.bmRegistry = bmRegistry;
     }
 
-    public void startTTY(String ha7sTTYArg, Logger.LogLevel logLevel) {
+    public void startTTY(String ha7sTTYArg, Class ttyClass, Logger.LogLevel logLevel) {
+        Constructor c = null;
+        try {
+            c = ttyClass.getConstructor(java.lang.String.class);
+        }
+        catch (NoSuchMethodException e) {
+            System.err.println("Class " + ttyClass.toString() + " does not have String constructor");
+            return;
+        }
+
         String[] bmPaths = ha7sTTYArg.split(",");
 
         for (String s : bmPaths) {
-            HA7S ha7s = new HA7S(new JSSC(s));
+            try {
+                HA7S ha7s = new HA7S((HA7SSerial)c.newInstance(s));
 
-            startAndRegister(ha7s, logLevel);
+                startAndRegister(ha7s, logLevel);
+            }
+            catch (IllegalAccessException e) {
+                System.err.println(e);
+                return;
+            }
+            catch (InstantiationException e) {
+                System.err.println(e);
+                return;
+            }
+            catch (InvocationTargetException e) {
+                System.err.println(e);
+                return;
+            }
         }
-    }
-
-    public void startDummy(Logger.LogLevel logLevel) {
-        HA7S ha7s = new HA7S(new HA7SSerialDummy());
-
-        startAndRegister(ha7s, logLevel);
     }
 
     private void startAndRegister(HA7S ha7s, Logger.LogLevel logLevel) {

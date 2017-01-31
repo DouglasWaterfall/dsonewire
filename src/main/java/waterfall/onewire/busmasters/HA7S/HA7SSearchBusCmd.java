@@ -36,6 +36,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
         assert (resultData == null);
 
         ArrayList<String> resultList = new ArrayList<String>();
+        long writeCTM = -1;
 
         byte[] rbuf = new byte[16];
 
@@ -84,11 +85,12 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
                     return SearchBusCmd.Result.communication_error;
             }
 
-            if (i == 0)  {
-                setResultData(ret.writeCTM, resultList);
+            if (i == 0) {
+                writeCTM = ret.writeCTM;
             }
 
             if (ret.readCount == 0) {
+                setResultData(writeCTM, resultList);
                 return SearchBusCmd.Result.success;
             }
 
