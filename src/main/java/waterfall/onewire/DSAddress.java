@@ -1,5 +1,7 @@
 package waterfall.onewire;
 
+import com.dalsemi.onewire.utils.Address;
+
 /**
  * Created by dwaterfa on 6/15/16.
  */
@@ -8,12 +10,12 @@ public class DSAddress {
     private final String addrAsHex;
 
     public DSAddress(String addr) {
-        if ((addr == null) || (addr.length() != 16) || (!addr.matches("[0-9A-F]*"))) {
+        if (addr == null) {
             addrAsHex = (INVALID_DSADDR + "null");
-        } else if ((addr.length() != 16) || (!addr.matches("[0-9A-F]*"))) {
+        } else if (!isValid(addr)) {
             addrAsHex = (INVALID_DSADDR + addr);
         } else {
-            addrAsHex = new String(addr);
+            addrAsHex = addr;
         }
     }
 
@@ -26,7 +28,10 @@ public class DSAddress {
     }
 
     public static boolean isValid(final String addr) {
-        return ((addr != null) && (addr.length() == 16) && (addr.matches("[0-9A-F]*")));
+        return ((addr != null) &&
+                (addr.length() == 16) &&
+                (addr.matches("[0-9A-F]*")) &&
+                (Address.isValid(addr)));
     }
 
     public boolean equals(Object other) {

@@ -16,7 +16,9 @@ public abstract class StopBusCmd extends BaseCmd {
         busy,
         communication_error,
         stopped
-    };
+    }
+
+    ;
 
     /**
      * The method to call to stop the bus. It is acceptable to re-execute the same command and the
@@ -33,19 +35,14 @@ public abstract class StopBusCmd extends BaseCmd {
             result = Result.busy;
         }
 
-        if (!getBusMaster().getIsStarted()) {
-            result = Result.stopped;
-        }
-        else {
-            try {
-                logInfo("execute()");
-                result = execute_internal();
-                logInfo("result:" + result.name());
+        try {
+            logInfo("execute()");
+            result = execute_internal();
+            logInfo("result:" + result.name());
 
-            } catch (Exception e) {
-                logError(e);
-                result = Result.communication_error;
-            }
+        } catch (Exception e) {
+            logError(e);
+            result = Result.communication_error;
         }
 
         return result;
@@ -61,7 +58,6 @@ public abstract class StopBusCmd extends BaseCmd {
     }
 
     /**
-     *
      * @param busMaster
      * @param logLevel
      */
@@ -70,7 +66,6 @@ public abstract class StopBusCmd extends BaseCmd {
     }
 
     /**
-     *
      * @return
      */
     protected abstract Result execute_internal();

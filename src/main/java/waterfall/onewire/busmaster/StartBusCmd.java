@@ -34,19 +34,14 @@ public abstract class StartBusCmd extends BaseCmd {
             result = Result.busy;
         }
 
-        if (getBusMaster().getIsStarted()) {
-            result = Result.started;
-        }
-        else {
-            try {
-                logInfo("execute()");
-                result = execute_internal();
-                logInfo("result:" + result.name());
+        try {
+            logInfo("execute()");
+            result = execute_internal();
+            logInfo("result:" + result.name());
 
-            } catch (Exception e) {
-                logError(e);
-                result = Result.communication_error;
-            }
+        } catch (Exception e) {
+            logError(e);
+            result = Result.communication_error;
         }
 
         return result;
@@ -62,7 +57,6 @@ public abstract class StartBusCmd extends BaseCmd {
     }
 
     /**
-     *
      * @param busMaster
      * @param logLevel
      */
@@ -71,7 +65,6 @@ public abstract class StartBusCmd extends BaseCmd {
     }
 
     /**
-     *
      * @return
      */
     protected abstract Result execute_internal();

@@ -88,11 +88,11 @@ public interface BusMaster {
 
     /**
      * This method will ask the BusMaster to perform a bus search cmd at the specified minimum time period. If another
-     * Object is registered with a shorter time period then the an earlier search may be performed. Likewise if an
-     * independent SearchCmd is performed then there will be a callback opportunity too. The only guarantee is that the
-     * the BusMaster will generate a SearchCmd at the period specified.
-     * @param obj obj with SearchBusNotify interface. The obj will only be called back if the data is different since
-     *            the last time it was called back. The search itself will be performed but no callback will occur.
+     * Object is registered with a shorter time period then an earlier search may be performed.
+     * Likewise if an independent SearchCmd is performed then there will be a callback opportunity too, the only
+     * guarantee is that the the BusMaster will generate a SearchCmd at the period specified.
+     * Callback objects will only be notified if the data from a search is different since the last time they were notified.
+     * @param obj obj with SearchBusNotify interface.
      * @param typeByAlarm true if the search should be by active alarms, otherwise it will be a general bus search
      * @param minPeriodMSec
      * @return ScheduleNotifySearchBusCmdResult
