@@ -121,6 +121,16 @@ public class NotifySearchBusCmdHelper {
     }
 
     /**
+     * Called from the owning BusMaster to cancel all searches.
+     */
+    public synchronized void cancelAllScheduledSearchNotifyFor() {
+        if ((notifyMap != null) && (notifyMap.size() > 0)) {
+            notifyMap.clear();
+            searchPusher.adjustPeriod(Long.MAX_VALUE);
+        }
+    }
+
+    /**
      * This method is called from the owning BusMaster when the SearchCmd successfully completes.
      *
      * @param searchResultData
@@ -272,12 +282,6 @@ public class NotifySearchBusCmdHelper {
                 return false;
             }
 
-            if (minPeriodMSec > currentPeriodMSec) {
-                // greater value but no infinite period - nothing to do.
-                return false;
-            }
-
-            // So now we have LESS of a period. We will need to make some adjustments.
             currentPeriodMSec = minPeriodMSec;
 
             if (timer != null) {

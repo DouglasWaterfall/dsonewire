@@ -119,6 +119,11 @@ public interface BusMaster {
         USNSBC_MinPeriodUnchanged,
 
         /**
+         * The specified BusMaster is not started.
+         */
+        USNSBC_BusMasterNotStarted,
+
+        /**
          * The scheduled search callback period has been updated with the new period.
          */
         USNSBC_Success;
@@ -145,6 +150,11 @@ public interface BusMaster {
          * The obj specified to notify back on has not been previously scheduled for the specified search type.
          */
         CSNSBC_NotifyObjNotAlreadyScheduled,
+
+        /**
+         * The specified BusMaster is not started.
+         */
+        CSNSBC_BusMasterNotStarted,
 
         /**
          * The scheduled search callback period has been cancelled.
