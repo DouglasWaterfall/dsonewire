@@ -1,16 +1,21 @@
 package waterfall.onewire.busmasters.HA7S;
 
-import javafx.scene.paint.Stop;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import waterfall.onewire.HttpClient.ScheduleSearchBusCmdResult;
 import waterfall.onewire.busmaster.*;
-
-import java.util.Iterator;
 
 /**
  * Created by dwaterfa on 1/29/17.
  */
 public class HA7STest {
+
+    public static final long periodNegativeOneMSec = -1;
+    public static final long periodZeroMSec = 0;
+    public static final long periodOneMSec = 1;
+    public static final long period250MSec = 250;
+    public static final long period500MSec = 500;
+    public static final long period750MSec = 750;
 
     @Test
     public void testConstructorNullSerial() {
@@ -577,14 +582,22 @@ public class HA7STest {
             return data;
         }
 
-        public boolean waitForNotifyChange(int afterNotifyCount) {
-            for (int i = 0; i < 5; i++) {
+        public boolean wait500MSecForNotifyChange(int afterNotifyCount) {
+            return internalWaitForNotifyChange(5, 100, afterNotifyCount);
+        }
+
+        public boolean wait1000MSecForNotifyChange(int afterNotifyCount) {
+            return internalWaitForNotifyChange(5, 200, afterNotifyCount);
+        }
+
+        private boolean internalWaitForNotifyChange(int count, long timeMSec, int afterNotifyCount) {
+            for (int i = 0; i < count; i++) {
                 Data t_data = getData();
                 if ((t_data != null) && (t_data.notifyCount != afterNotifyCount)) {
                     return true;
                 }
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(timeMSec);
                 } catch (InterruptedException e) {
 
                 }
@@ -621,20 +634,11 @@ public class HA7STest {
         HA7S ha7s = new HA7S(serialDummy);
         
         final boolean notByAlarm = false;
-        final long periodNegativeOneMSec = -1;
-        final long periodZeroMSec = 0;
-        final long periodOneMSec = 1;
-        final long period250MSec = 250;
+
+        BusMaster.CancelScheduledNotifySearchBusCmdResult cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(null, notByAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_BusMasterNotStarted);
 
         BusMaster.ScheduleNotifySearchBusCmdResult result = ha7s.scheduleNotifySearchBusCmd(null, notByAlarm, periodOneMSec);
-        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull);
-        
-        result = ha7s.scheduleNotifySearchBusCmd(new myNotifySearchBusCmdResult(), notByAlarm, periodNegativeOneMSec);
-        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid);
-        result = ha7s.scheduleNotifySearchBusCmd(new myNotifySearchBusCmdResult(), notByAlarm, periodZeroMSec);
-        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid);
-        
-        result = ha7s.scheduleNotifySearchBusCmd(new myNotifySearchBusCmdResult(), notByAlarm, period250MSec);
         Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted);
 
         {
@@ -651,6 +655,18 @@ public class HA7STest {
             Assert.assertTrue(ha7s.getIsStarted());
         }
 
+        cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(null, notByAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled);
+
+        result = ha7s.scheduleNotifySearchBusCmd(null, notByAlarm, periodOneMSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull);
+
+        result = ha7s.scheduleNotifySearchBusCmd(new myNotifySearchBusCmdResult(), notByAlarm, periodNegativeOneMSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid);
+
+        result = ha7s.scheduleNotifySearchBusCmd(new myNotifySearchBusCmdResult(), notByAlarm, periodZeroMSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid);
+
         myNotifySearchBusCmdResult callback = new myNotifySearchBusCmdResult();
         Assert.assertNull(callback.getData());
 
@@ -660,7 +676,7 @@ public class HA7STest {
         result = ha7s.scheduleNotifySearchBusCmd(callback, notByAlarm, period250MSec);
         Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled);
 
-        boolean waitResult = callback.waitForNotifyChange(-1);
+        boolean waitResult = callback.wait500MSecForNotifyChange(-1);
         Assert.assertTrue(waitResult);
 
         myNotifySearchBusCmdResult.Data notifyData = callback.getData();
@@ -674,7 +690,7 @@ public class HA7STest {
 
         // do it again - this is expected to FAIL the wait because we are not re-notified of the same
         // result based on the CRC of the last notify.
-        waitResult = callback.waitForNotifyChange(notifyData.notifyCount);
+        waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
         Assert.assertFalse(waitResult);
 
         // add a device to the bus
@@ -683,7 +699,7 @@ public class HA7STest {
         serialDummy.addDevice(dev_A, false);
 
         for (int i = 0; i < 2; i++) {
-            waitResult = callback.waitForNotifyChange(notifyData.notifyCount);
+            waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
             if (!waitResult) {
                 // We got some old data before new device was recognized, go wait again until the next notify
                 Assert.assertEquals(i, 0);
@@ -709,7 +725,7 @@ public class HA7STest {
         serialDummy.addDevice(dev_C, false);
 
         for (int i = 0; i < 2; i++) {
-            waitResult = callback.waitForNotifyChange(notifyData.notifyCount);
+            waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
             if (!waitResult) {
                 // We got some old data before new device was recognized, go wait again until the next notify
                 Assert.assertEquals(i, 0);
@@ -728,13 +744,481 @@ public class HA7STest {
         Assert.assertTrue(notifyData.searchResultData.getList().contains(dev_A) &&
                 notifyData.searchResultData.getList().contains(dev_B) &&
                 notifyData.searchResultData.getList().contains(dev_C));
+
+        // bit of a race condition, but I think we can cancel before the next callback at 250ms
+        cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(callback, notByAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+
+        for (int i = 0; i < 2; i++) {
+            waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
+            if (waitResult) {
+                Assert.fail("We should not get any more notifications");
+                break;
+            }
+        }
+        Assert.assertEquals(callback.getData().notifyCount, notifyData.notifyCount);
+    }
+    
+    @Test
+    public void testScheduleNotifySearchBusCmdTiming() {
+        internal_testScheduleNotifySearchBusCmdTiming(false);
+    }
+
+    /*
+        HA7SSerialDummy serialDummy = new HA7SSerialDummy();
+
+        HA7S ha7s = new HA7S(serialDummy);
+
+        final boolean notByAlarm = false;
+
+        {
+            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            Assert.assertNotNull(startCmd);
+
+            try {
+                StartBusCmd.Result startResult = startCmd.execute();
+                Assert.assertEquals(startResult, StartBusCmd.Result.started);
+            } catch (Exception e) {
+                Assert.fail("Unexpected exception");
+            }
+
+            Assert.assertTrue(ha7s.getIsStarted());
+        }
+
+        myNotifySearchBusCmdResult callback = new myNotifySearchBusCmdResult();
+        Assert.assertNull(callback.getData());
+
+        final String dev_A = "EE0000065BC0AE28";
+
+        // this will ensure that we get a callback on every search by adding/removing a device to the search list
+        callback.setAddRemoveEveryNotify(serialDummy, dev_A, notByAlarm);
+
+        BusMaster.ScheduleNotifySearchBusCmdResult scheduleResult = ha7s.scheduleNotifySearchBusCmd(callback, notByAlarm, period250MSec);
+        Assert.assertEquals(scheduleResult, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+
+        // wait for something to change
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait500MSecForNotifyChange(-1);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData = callback.getData();
+        Assert.assertNotNull(notifyData);
+        Assert.assertNotEquals(notifyData.notifyCount, -1);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData2 = callback.getData();
+        Assert.assertNotNull(notifyData2);
+        Assert.assertEquals((notifyData.notifyCount + 1), notifyData2.notifyCount);
+        long delta = (notifyData2.searchResultData.getWriteCTM() - notifyData.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period250MSec);
+        Assert.assertTrue(delta < period500MSec);
+
+        // let's change the rate to something slower
+        BusMaster.UpdateScheduledNotifySearchBusCmdResult updateResult = ha7s.updateScheduledNotifySearchBusCmd(callback, notByAlarm, period500MSec);
+        Assert.assertEquals(updateResult, BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_Success);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait1000MSecForNotifyChange(notifyData2.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData3 = callback.getData();
+        Assert.assertNotNull(notifyData3);
+        Assert.assertEquals((notifyData2.notifyCount + 1), notifyData3.notifyCount);
+        delta = (notifyData3.searchResultData.getWriteCTM() - notifyData2.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period500MSec);
+        Assert.assertTrue(delta < period750MSec);
+
+        // let's change the rate to something faster by adding another object waiting. We do not need
+        // to wait on it since its new rate will be effective for all waiters.
+        myNotifySearchBusCmdResult callback2 = new myNotifySearchBusCmdResult();
+        Assert.assertNull(callback2.getData());
+        scheduleResult = ha7s.scheduleNotifySearchBusCmd(callback2, notByAlarm, period250MSec);
+        Assert.assertEquals(scheduleResult, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait1000MSecForNotifyChange(notifyData3.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData4 = callback.getData();
+        Assert.assertNotNull(notifyData4);
+        Assert.assertEquals((notifyData3.notifyCount + 1), notifyData4.notifyCount);
+        delta = (notifyData4.searchResultData.getWriteCTM() - notifyData3.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period250MSec);
+        Assert.assertTrue(delta < period500MSec);
+
+        // cancel the new rate which will slow things back to the 500 rate
+        BusMaster.CancelScheduledNotifySearchBusCmdResult cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(callback2, notByAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait1000MSecForNotifyChange(notifyData4.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData5 = callback.getData();
+        Assert.assertNotNull(notifyData5);
+        Assert.assertEquals((notifyData4.notifyCount + 1), notifyData5.notifyCount);
+        delta = (notifyData5.searchResultData.getWriteCTM() - notifyData4.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period500MSec);
+        Assert.assertTrue(delta < period750MSec);
+
+        // Stop the busmaster to cancel everything.
+        {
+            StopBusCmd stopCmd = ha7s.queryStopBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            Assert.assertNotNull(stopCmd);
+
+            try {
+                StopBusCmd.Result startResult = stopCmd.execute();
+                Assert.assertEquals(startResult, StopBusCmd.Result.stopped);
+            } catch (Exception e) {
+                Assert.fail("Unexpected exception");
+            }
+
+            Assert.assertFalse(ha7s.getIsStarted());
+        }
+
+        // no more events expected
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait500MSecForNotifyChange(notifyData5.notifyCount);
+            if (waitResult) {
+                Assert.fail("We should not get any more notifications");
+                break;
+            }
+        }
+        Assert.assertEquals(callback.getData().notifyCount, notifyData5.notifyCount);
+
+        // cancelling our schedule will return a different error.
+        cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(callback, notByAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_BusMasterNotStarted);
+    }
+    */
+
+    @Test
+    public void testScheduleNotifySearchBusByAlarmCmd() {
+        HA7SSerialDummy serialDummy = new HA7SSerialDummy();
+
+        HA7S ha7s = new HA7S(serialDummy);
+
+        final boolean byAlarm = true;
+
+        BusMaster.CancelScheduledNotifySearchBusCmdResult cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(null, byAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_BusMasterNotStarted);
+
+        BusMaster.ScheduleNotifySearchBusCmdResult result = ha7s.scheduleNotifySearchBusCmd(null, byAlarm, periodOneMSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted);
+
+        {
+            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            Assert.assertNotNull(startCmd);
+
+            try {
+                StartBusCmd.Result startResult = startCmd.execute();
+                Assert.assertEquals(startResult, StartBusCmd.Result.started);
+            } catch (Exception e) {
+                Assert.fail("Unexpected exception");
+            }
+
+            Assert.assertTrue(ha7s.getIsStarted());
+        }
+
+        cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(null, byAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled);
+
+        result = ha7s.scheduleNotifySearchBusCmd(null, byAlarm, periodOneMSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull);
+
+        result = ha7s.scheduleNotifySearchBusCmd(new myNotifySearchBusCmdResult(), byAlarm, periodNegativeOneMSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid);
+
+        result = ha7s.scheduleNotifySearchBusCmd(new myNotifySearchBusCmdResult(), byAlarm, periodZeroMSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid);
+
+        myNotifySearchBusCmdResult callback = new myNotifySearchBusCmdResult();
+        Assert.assertNull(callback.getData());
+
+        result = ha7s.scheduleNotifySearchBusCmd(callback, byAlarm, period250MSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+
+        result = ha7s.scheduleNotifySearchBusCmd(callback, byAlarm, period250MSec);
+        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled);
+
+        boolean waitResult = callback.wait500MSecForNotifyChange(-1);
+        Assert.assertTrue(waitResult);
+
+        myNotifySearchBusCmdResult.Data notifyData = callback.getData();
+        Assert.assertNotNull(notifyData);
+        Assert.assertTrue(notifyData.notifyCount > -1);
+        Assert.assertEquals(notifyData.bm, ha7s);
+        Assert.assertTrue(notifyData.byAlarm);
+        Assert.assertNotNull(notifyData.searchResultData);
+        Assert.assertNotNull(notifyData.searchResultData.getList());
+        Assert.assertEquals(notifyData.searchResultData.getList().size(), 0);
+
+        // do it again - this is expected to FAIL the wait because we are not re-notified of the same
+        // result based on the CRC of the last notify.
+        waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
+        Assert.assertFalse(waitResult);
+
+        // add a device to the bus
+        final String dev_A = "EE0000065BC0AE28";
+
+        serialDummy.addDevice(dev_A, true);
+
+        for (int i = 0; i < 2; i++) {
+            waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            }
+            else {
+                break;
+            }
+        }
+        notifyData = callback.getData();
+        Assert.assertNotNull(notifyData);
+        Assert.assertEquals(notifyData.bm, ha7s);
+        Assert.assertTrue(notifyData.byAlarm);
+        Assert.assertNotNull(notifyData.searchResultData);
+        Assert.assertNotNull(notifyData.searchResultData.getList());
+        Assert.assertEquals(notifyData.searchResultData.getList().size(), 1);
+        Assert.assertTrue(notifyData.searchResultData.getList().contains(dev_A));
+
+        // add more devices to the bus
+        final String dev_B = "090000065BD53528";
+        final String dev_C = "5F0000065CCD1A28";
+
+        serialDummy.addDevice(dev_B, false);
+        serialDummy.addDevice(dev_C, true);
+
+        for (int i = 0; i < 2; i++) {
+            waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            }
+            else {
+                break;
+            }
+        }
+        notifyData = callback.getData();
+        Assert.assertNotNull(notifyData);
+        Assert.assertEquals(notifyData.bm, ha7s);
+        Assert.assertTrue(notifyData.byAlarm);
+        Assert.assertNotNull(notifyData.searchResultData);
+        Assert.assertNotNull(notifyData.searchResultData.getList());
+        Assert.assertEquals(notifyData.searchResultData.getList().size(), 2);
+        Assert.assertTrue(notifyData.searchResultData.getList().contains(dev_A) &&
+                notifyData.searchResultData.getList().contains(dev_C));
+
+        // bit of a race condition, but I think we can cancel before the next callback at 250ms
+        cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(callback, byAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+
+        for (int i = 0; i < 2; i++) {
+            waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
+            if (waitResult) {
+                Assert.fail("We should not get any more notifications");
+                break;
+            }
+        }
+        Assert.assertEquals(callback.getData().notifyCount, notifyData.notifyCount);
     }
 
     @Test
+    public void testScheduleNotifySearchBusByAlarmCmdTiming() {
+        internal_testScheduleNotifySearchBusCmdTiming(true);
+    }
+
+    private void internal_testScheduleNotifySearchBusCmdTiming(boolean byAlarm) {
+        HA7SSerialDummy serialDummy = new HA7SSerialDummy();
+
+        HA7S ha7s = new HA7S(serialDummy);
+
+        {
+            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            Assert.assertNotNull(startCmd);
+
+            try {
+                StartBusCmd.Result startResult = startCmd.execute();
+                Assert.assertEquals(startResult, StartBusCmd.Result.started);
+            } catch (Exception e) {
+                Assert.fail("Unexpected exception");
+            }
+
+            Assert.assertTrue(ha7s.getIsStarted());
+        }
+
+        myNotifySearchBusCmdResult callback = new myNotifySearchBusCmdResult();
+        Assert.assertNull(callback.getData());
+
+        final String dev_A = "EE0000065BC0AE28";
+
+        // this will ensure that we get a callback on every search by adding/removing a device to the search list
+        callback.setAddRemoveEveryNotify(serialDummy, dev_A, byAlarm);
+
+        BusMaster.ScheduleNotifySearchBusCmdResult scheduleResult = ha7s.scheduleNotifySearchBusCmd(callback, byAlarm, period250MSec);
+        Assert.assertEquals(scheduleResult, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+
+        // wait for something to change
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait500MSecForNotifyChange(-1);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData = callback.getData();
+        Assert.assertNotNull(notifyData);
+        Assert.assertNotEquals(notifyData.notifyCount, -1);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData2 = callback.getData();
+        Assert.assertNotNull(notifyData2);
+        Assert.assertEquals((notifyData.notifyCount + 1), notifyData2.notifyCount);
+        long delta = (notifyData2.searchResultData.getWriteCTM() - notifyData.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period250MSec);
+        Assert.assertTrue(delta < period500MSec);
+
+        // let's change the rate to something slower
+        BusMaster.UpdateScheduledNotifySearchBusCmdResult updateResult = ha7s.updateScheduledNotifySearchBusCmd(callback, byAlarm, period500MSec);
+        Assert.assertEquals(updateResult, BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_Success);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait1000MSecForNotifyChange(notifyData2.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData3 = callback.getData();
+        Assert.assertNotNull(notifyData3);
+        Assert.assertEquals((notifyData2.notifyCount + 1), notifyData3.notifyCount);
+        delta = (notifyData3.searchResultData.getWriteCTM() - notifyData2.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period500MSec);
+        Assert.assertTrue(delta < period750MSec);
+
+        // let's change the rate to something faster by adding another object waiting. We do not need
+        // to wait on it since its new rate will be effective for all waiters.
+        myNotifySearchBusCmdResult callback2 = new myNotifySearchBusCmdResult();
+        Assert.assertNull(callback2.getData());
+        scheduleResult = ha7s.scheduleNotifySearchBusCmd(callback2, byAlarm, period250MSec);
+        Assert.assertEquals(scheduleResult, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait1000MSecForNotifyChange(notifyData3.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData4 = callback.getData();
+        Assert.assertNotNull(notifyData4);
+        Assert.assertEquals((notifyData3.notifyCount + 1), notifyData4.notifyCount);
+        delta = (notifyData4.searchResultData.getWriteCTM() - notifyData3.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period250MSec);
+        Assert.assertTrue(delta < period500MSec);
+
+        // cancel the new rate which will slow things back to the 500 rate
+        BusMaster.CancelScheduledNotifySearchBusCmdResult cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(callback2, byAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+
+        // wait for something to change again
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait1000MSecForNotifyChange(notifyData4.notifyCount);
+            if (!waitResult) {
+                // We got some old data before new device was recognized, go wait again until the next notify
+                Assert.assertEquals(i, 0);
+            } else {
+                break;
+            }
+        }
+        myNotifySearchBusCmdResult.Data notifyData5 = callback.getData();
+        Assert.assertNotNull(notifyData5);
+        Assert.assertEquals((notifyData4.notifyCount + 1), notifyData5.notifyCount);
+        delta = (notifyData5.searchResultData.getWriteCTM() - notifyData4.searchResultData.getWriteCTM());
+        Assert.assertTrue(delta >= period500MSec);
+        Assert.assertTrue(delta < period750MSec);
+
+        // Stop the busmaster to cancel everything.
+        {
+            StopBusCmd stopCmd = ha7s.queryStopBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            Assert.assertNotNull(stopCmd);
+
+            try {
+                StopBusCmd.Result startResult = stopCmd.execute();
+                Assert.assertEquals(startResult, StopBusCmd.Result.stopped);
+            } catch (Exception e) {
+                Assert.fail("Unexpected exception");
+            }
+
+            Assert.assertFalse(ha7s.getIsStarted());
+        }
+
+        // no more events expected
+        for (int i = 0; i < 2; i++) {
+            boolean waitResult = callback.wait500MSecForNotifyChange(notifyData5.notifyCount);
+            if (waitResult) {
+                Assert.fail("We should not get any more notifications");
+                break;
+            }
+        }
+        Assert.assertEquals(callback.getData().notifyCount, notifyData5.notifyCount);
+
+        // cancelling our schedule will return a different error.
+        cancelResult = ha7s.cancelScheduledNotifySearchBusCmd(callback, byAlarm);
+        Assert.assertEquals(cancelResult, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_BusMasterNotStarted);
+    }
+
     public void testScheduleNotifySearchBusCmdTimer() {
         // We want to prove that the time period we are called back matches what we asked for
-        // we want to prove that cancelling will stop the notifications
-        // we want to prove that cancelling without actually scheduling returns the right error
         // We want to test updating the search period rate
         // We want to test update ...
 

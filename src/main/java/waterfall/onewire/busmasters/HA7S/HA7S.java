@@ -59,6 +59,9 @@ public class HA7S implements BusMaster {
 
     @Override
     public ScheduleNotifySearchBusCmdResult scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec) {
+        if (!getIsStarted()) {
+            return ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted;
+        }
         if (!typeByAlarm) {
             return searchHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
         }
@@ -69,6 +72,9 @@ public class HA7S implements BusMaster {
 
     @Override
     public UpdateScheduledNotifySearchBusCmdResult updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec) {
+        if (!getIsStarted()) {
+            return UpdateScheduledNotifySearchBusCmdResult.USNSBC_BusMasterNotStarted;
+        }
         if (!typeByAlarm) {
             return searchHelper.updateScheduledSearchNotifyFor(obj, minPeriodMSec);
         }
@@ -79,6 +85,9 @@ public class HA7S implements BusMaster {
 
     @Override
     public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm) {
+        if (!getIsStarted()) {
+            return CancelScheduledNotifySearchBusCmdResult.CSNSBC_BusMasterNotStarted;
+        }
         if (!typeByAlarm) {
             return searchHelper.cancelScheduledSearchNotifyFor(obj);
         }
@@ -184,6 +193,8 @@ public class HA7S implements BusMaster {
         }
 
         started = null;
+        searchHelper.cancelAllScheduledSearchNotifyFor();
+        searchByAlarmHelper.cancelAllScheduledSearchNotifyFor();
         return StopBusCmd.Result.stopped;
     }
 
