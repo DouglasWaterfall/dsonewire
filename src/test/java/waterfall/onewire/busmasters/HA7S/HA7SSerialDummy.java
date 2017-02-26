@@ -11,6 +11,8 @@ import java.util.concurrent.SynchronousQueue;
  */
 public class HA7SSerialDummy implements HA7SSerial  {
 
+    private String portName;
+
     public class DeviceData {
         public String dsAddr;
         public boolean alarm;
@@ -36,9 +38,13 @@ public class HA7SSerialDummy implements HA7SSerial  {
     private ActiveSearch searchType = null;
     private byte[] lastFamilySearchCode = null;
 
+    public HA7SSerialDummy(String portName) {
+        this.portName = portName;
+    }
+
     @Override
     public String getPortName() {
-        return "Dummy";
+        return portName;
     }
 
     @Override
