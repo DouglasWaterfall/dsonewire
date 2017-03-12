@@ -5,7 +5,6 @@ import waterfall.onewire.busmaster.StartBusCmd;
 import waterfall.onewire.busmaster.StopBusCmd;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial;
-import waterfall.onewire.busmasters.HA7S.JSSC;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

@@ -23,12 +23,6 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>waterfall.dsonewire</groupId>
-            <artifactId>ha7sserial-jssc</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
     </dependencies>
 
 </project>
