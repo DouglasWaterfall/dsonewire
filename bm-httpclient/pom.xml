@@ -4,8 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>waterfall</groupId>
-    <artifactId>dsonewire-httpbusmaster</artifactId>
+    <parent>
+        <groupId>waterfall.dsonewire</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.0</version>
+    </parent>
+
+    <groupId>waterfall.dsonewire</groupId>
+    <artifactId>httpbusmaster</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
@@ -24,8 +30,14 @@
         </dependency>
 
         <dependency>
-            <groupId>waterfall</groupId>
-            <artifactId>dsonewire-common</artifactId>
+            <groupId>waterfall.dsonewire</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>waterfall.dsonewire</groupId>
+            <artifactId>httpbusmastercommon</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 

@@ -2,7 +2,6 @@ package waterfall.onewire.busmasters.HA7S;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import waterfall.onewire.HttpClient.ScheduleSearchBusCmdResult;
 import waterfall.onewire.busmaster.*;
 
 /**

@@ -46,11 +46,11 @@ public class Manager {
         this.endpoint = endpoint;
 
         authorization = null;
-        currentServerTimestampMSec = 0;
+//        currentServerTimestampMSec = 0;
         bmUpdateTimestampMSec = 0;
         bmIdentClientMap = new HashMap<String, Client>();
 
-        waitForEventThread = new WaitForEventThread(endpoint);
+        waitForEventThread = new WaitForEventThread(this, endpoint);
         waitForEventThread.setDaemon(true);
         waitForEventThread.start();
     }
@@ -130,6 +130,10 @@ public class Manager {
        // public long currentServerTimestampMSec;
         //public long bmUpdateTimestampMSec;
         //public String[] bmIdents;
+
+    private void forgetClient(String bmIdent, Client bmClient) {
+
+    }
 
 }
 

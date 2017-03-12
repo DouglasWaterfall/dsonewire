@@ -4,43 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>waterfall</groupId>
-    <artifactId>dsonewire-busmasterserver</artifactId>
+    <parent>
+        <groupId>waterfall.dsonewire</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.0</version>
+    </parent>
+
+    <groupId>waterfall.dsonewire</groupId>
+    <artifactId>httpbusmastercontroller</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>dsonewire-busmasterserver</name>
-    <url>http://maven.apache.org</url>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java.version>1.8</java.version>
-    </properties>
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.3.0.RELEASE</version>
-    </parent>
-
-    <repositories>
-        <!--
-    <repository>
-        <id>snapshots</id>
-        <name>pihome-snapshot</name>
-        <url>scpexe://192.150.23.7/snapshot</url>
-        <snapshots>
-            <updatePolicy>always</updatePolicy>
-        </snapshots>
-    </repository>
-    -->
-    </repositories>
-    
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -49,71 +24,55 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.4.1</version>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>3.1</version>
         </dependency>
 
         <dependency>
-            <groupId>waterfall</groupId>
-            <artifactId>dsonewire-common</artifactId>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>4.2.3.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+            <version>2.5</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.8.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>waterfall.dsonewire</groupId>
+            <artifactId>common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>waterfall</groupId>
-            <artifactId>dsonewire-ha7s</artifactId>
+            <groupId>waterfall.dsonewire</groupId>
+            <artifactId>httpbusmastercommon</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>waterfall</groupId>
-            <artifactId>dsonewire-ha7sserial-jssc</artifactId>
+            <groupId>waterfall.dsonewire</groupId>
+            <artifactId>ha7s</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>waterfall.dsonewire</groupId>
+            <artifactId>ha7sserial-jssc</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
     </dependencies>
-
-    <!-- http://stackoverflow.com/questions/5819775/is-there-any-way-of-having-maven-scp-wagon-work-consistently-on-linux-mac-window -->
-
-    <!--
-    <distributionManagement>
-        <repository>
-            <id>ssh-repository</id>
-            <url>scp://pi/home/pi/repository/snapshot</url>
-            < ! - -
-            <name>homerepro</name>
-            <url>Host to Company Repository</url>
-            - - >
-        </repository>
-    </distributionManagement>
-    -->
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <!-- http://docs.spring.io/spring-boot/docs/current/reference/html/deployment-install.html
-                    <embeddedLaunchScriptProperties>
-                        <logFolder>foo</logFolder>
-                    </embeddedLaunchScriptProperties>
-                    -->
-                    <executable>true</executable>
-                </configuration>
-            </plugin>
-        </plugins>
-
-        <extensions>
-            <extension>
-                <groupId>org.apache.maven.wagon</groupId>
-                <artifactId>wagon-ssh</artifactId>
-                <version>2.10</version>
-            </extension>
-        </extensions>
-
-    </build>
 
 </project>
 

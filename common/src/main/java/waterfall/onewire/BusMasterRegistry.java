@@ -2,8 +2,6 @@ package waterfall.onewire;
 
 import java.util.*;
 
-import waterfall.onewire.HttpClient.WaitForEventCmdData;
-import waterfall.onewire.HttpClient.WaitForEventCmdResult;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.SearchBusCmd;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;

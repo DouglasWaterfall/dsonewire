@@ -54,7 +54,7 @@ public class WaitForEventCmdResult extends BaseCmdPostResult {
      * waitForEvent() call. The caller should be careful to check the currentServerTimestampMsec against what it thought
      * in order to detect when the server has been reset.
      */
-    public class BMListChangedData {
+    public static class BMListChangedData {
         public long currentServerTimestampMSec;
         public long bmUpdateTimestampMSec;
         public String[] bmIdents;
@@ -73,7 +73,7 @@ public class WaitForEventCmdResult extends BaseCmdPostResult {
      * This class holds the notification information for an active search (whole buss or byAlarm only). This will be
      * returned if
      */
-    public class BMSearchData {
+    public static class BMSearchData {
         public String bmIdent;
         public long notifyTimestampMSec;
         public List<String> dsList;
@@ -123,12 +123,12 @@ public class WaitForEventCmdResult extends BaseCmdPostResult {
         this.bmSearchByAlarmData = null;
     }
 
-    public WaitForEventCmdResult(BMSearchData[] bmSearchData, BMSearchData[] bmSearchByAlarmData) {
+    public WaitForEventCmdResult(BMSearchData[] data, BMSearchData[] alarmData) {
         super();
         controllerError = null;
         this.bmListChangedData = null;
-        this.bmSearchData = bmSearchData;
-        this.bmSearchByAlarmData = bmSearchByAlarmData;
+        this.bmSearchData = data;
+        this.bmSearchByAlarmData = alarmData;
     }
 
     /**

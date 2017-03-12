@@ -55,6 +55,7 @@ public class WaitForEventThread extends Thread {
 
     private State state;
     private String authorization;
+    private WaitForEventCmdResult.BMListChangedData bmListChangedData;
 
     // This keeps us synchronized with the server on a global level - if this changes then all our
     // prior state about it needs to be changed too. Zero means "I have no prior state" and will not
@@ -78,7 +79,7 @@ public class WaitForEventThread extends Thread {
             switch (state) {
                 case NotLoggedIn:
                     // Attempt to login
-                    if ((authorization = manager.login()) != null) {
+                    if ((authorization = manager.login(null)) != null) {
                         setStateNoServerTimestamp();
                     }
                     else {
@@ -96,7 +97,7 @@ public class WaitForEventThread extends Thread {
                 case NoServerTimestampDelay:
 
                 case WaitingForEvents:
-                    WaitForEventCmdResult = waitForEvent();
+                    WaitForEventCmdResult result = waitForEvent();
 
                 default:
                     System.err.println("Unknown state:" + state.name());
@@ -209,6 +210,15 @@ public class WaitForEventThread extends Thread {
             }
             while (System.currentTimeMillis() < endTimeMSec);
         }
+    }
+
+    private void eventBMListChanged(long bmUpdateTimestampMSec, String[] bmIdents) {
+
+    }
+
+    private WaitForEventCmdResult waitForEvent() {
+        return null;
+
     }
 
 }
