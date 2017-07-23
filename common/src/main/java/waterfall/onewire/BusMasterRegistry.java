@@ -43,6 +43,10 @@ public class BusMasterRegistry extends Observable {
             throw new NullPointerException();
         }
 
+        if ((bm.getName() == null) || (bm.getName().isEmpty())) {
+            throw new IllegalArgumentException("bm does not have a name");
+        }
+
         if (!bm.getIsStarted()) {
             throw new IllegalArgumentException("bm not started");
         }
@@ -52,6 +56,8 @@ public class BusMasterRegistry extends Observable {
                 bmMap.put(bm.getName(), bm);
                 setChanged();
                 notifyObservers(new BusMasterAdded(bm));
+            } else {
+                throw new IllegalArgumentException("bm already known to the registry");
             }
         }
     }
@@ -101,15 +107,15 @@ public class BusMasterRegistry extends Observable {
      * @return
      */
     public BusMaster waitForDeviceByAddress(String address, long bmSearchPeriodMSec) {
-        WaitForDeviceByAddress o = new WaitForDeviceByAddress(address, bmSearchPeriodMSec);
+        WaitForDeviceByAddress wfdbaObj = new WaitForDeviceByAddress(address, bmSearchPeriodMSec);
         BusMaster bm = null;
         try {
-            addObserver(o);
-            bm = o.waitForBM();
+            addObserver(wfdbaObj);
+            bm = wfdbaObj.waitForBM();
         } finally {
             // Start with registering ourselves to track the lifetime of the BusMasters. When these are found we will
             // be called back on the update() method.
-            deleteObserver(o);
+            deleteObserver(wfdbaObj);
         }
 
         return bm;
@@ -161,16 +167,24 @@ public class BusMasterRegistry extends Observable {
             }
 
             if (added) {
+                BusMaster.ScheduleNotifySearchBusCmdResult result = null;
                 try {
-                    bm.scheduleNotifySearchBusCmd(this, false, bmSearchPeriodMSec);
+                    result = bm.scheduleNotifySearchBusCmd(this, false, bmSearchPeriodMSec);
                 } catch (Exception e) {
-                    System.err.println("WaitForDeviceAddress(" + address + ") scheduleNotifySearchBusCmd:" + e);
+                    System.err.println(bm.getName() + ": WaitForDeviceAddress(" + address + ") scheduleNotifySearchBusCmd:" + e);
+                }
+                if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
+                    throw new IllegalArgumentException(bm.getName() + ": scheduleNotifySearchBusCmd returned " + result.name());
                 }
             } else if (removed) {
+                BusMaster.CancelScheduledNotifySearchBusCmdResult result = null;
                 try {
-                    bm.cancelScheduledNotifySearchBusCmd(this, false);
+                    result = bm.cancelScheduledNotifySearchBusCmd(this, false);
                 } catch (Exception e) {
-                    System.err.println("WaitForDeviceAddress(" + address + ") cancelScheduledNotifySearchBusCmd:" + e);
+                    System.err.println(bm.getName() + ": WaitForDeviceAddress(" + address + ") cancelScheduledNotifySearchBusCmd:" + e);
+                }
+                if (result != BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success) {
+                    throw new IllegalArgumentException(bm.getName() + ": cancelScheduledNotifySearchBusCmd returned " + result.name());
                 }
             }
         }
