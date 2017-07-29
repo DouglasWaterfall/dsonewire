@@ -19,6 +19,8 @@ import java.util.Observable;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
@@ -106,6 +108,8 @@ public class WaitForDeviceByAddressTest {
         Assert.assertEquals(foundBM, mockBM);
     }
 
+    // With the bus master already registered, we wait for a device to show up, which will happen after three
+    // successive updates.
     @Test
     public void testWaitDeviceByAddressDelayResult() {
         BusMasterRegistry bmR = new BusMasterRegistry();
@@ -131,37 +135,71 @@ public class WaitForDeviceByAddressTest {
 
         String SEARCH_ADDRESS = "MyAddress";
         String SEARCH_ADDRESS_2 = "MyAddress_2";
+        String SEARCH_ADDRESS_3 = "MyAddress_3";
 
-        // this will call 100ms
-        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeAnswerFor(mockBM, new String[] { SEARCH_ADDRESS, SEARCH_ADDRESS_2 }, 100);
+        // this will call back with one additional address every 100ms
+        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeAnswerFor(mockBM, new String[] { SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3 }, 100);
 
         when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class), any(Long.class))).thenAnswer(answer);
 
+        // This will wait for this third address to show up.
         WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, 50);
-
-        BusMaster foundBM = wfdby.waitForBM(SEARCH_ADDRESS);
+        BusMaster foundBM = wfdby.waitForBM(SEARCH_ADDRESS_3);
         Assert.assertEquals(foundBM, mockBM);
 
+        verify(mockBM, times(1)).cancelScheduledNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class));
+    }
 
-        // Stopped - this path has the BM already registered so as soon we do the wait we add the observer and that
-        // triggers a request for search.
-        // The other test is to be waiting and then add the BM
-        // Then we need to remove the BM and have that cancel the scheduled
-        //
-        // We should create some utility methods which would do the following:
-        //  schedule NotifySearchBusCmd
-        //  schedule AddBusMaster (To Registry)
-        //  schedule RemoveBusMaster (To Registry)
-        //  if the time delay is zero then it could do it right away and thus stay on the same thread.
-        //
-        // These would let us test the threading where someone is waiting for the new busmaster or the new devices
+    // With the bus master not already registered, we wait for a device to show up, which will happen after two
+    // successive updates.
+    @Test
+    public void testWaitDeviceByAddressNoBusMasterFirst() {
+        BusMasterRegistry bmR = new BusMasterRegistry();
 
-        foundBM = wfdby.waitForBM(SEARCH_ADDRESS_2);
+        BusMaster mockBM = mock(BusMaster.class);
+
+        when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
+        when(mockBM.getIsStarted()).thenReturn(true);
+        when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
+
+        Assert.assertNotNull(bmR.getBusMasters());
+        Assert.assertEquals(bmR.getBusMasters().length, 0);
+        Assert.assertFalse(bmR.hasBusMasterByName(MOCK_BM_NAME));
+
+        // We will wait tenth of second to add the busmaster
+        new SleepAddBusMasterToRegistry(bmR, mockBM, 100L);
+
+        String SEARCH_ADDRESS = "MyAddress";
+        String SEARCH_ADDRESS_2 = "MyAddress_2";
+        String SEARCH_ADDRESS_3 = "MyAddress_3";
+
+        // this will call back with one additional address every 100ms
+        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeAnswerFor(mockBM, new String[] { SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3 }, 100);
+
+        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class), any(Long.class))).thenAnswer(answer);
+
+        // This will wait for this third address to show up.
+        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, 50);
+        BusMaster foundBM = wfdby.waitForBM(SEARCH_ADDRESS_2);
         Assert.assertEquals(foundBM, mockBM);
+
+        verify(mockBM, times(1)).cancelScheduledNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class));
+
+        // And we assume the busmaster showed up
+        Assert.assertFalse(((Observable) bmR).hasChanged());
+        Assert.assertNotNull(bmR.getBusMasters());
+        Assert.assertEquals(bmR.getBusMasters().length, 1);
+        Assert.assertEquals(bmR.getBusMasters()[0].getName(), MOCK_BM_NAME);
+        Assert.assertTrue(bmR.hasBusMasterByName(MOCK_BM_NAME));
     }
 
     //
     // Utility functions
+    //
+
+    //
+    // This method will schedule search command returns, one for each resultAddress provided with an increment between
+    // equal to the delayTimeMSec. Each return will incremently add one address without removing any of the others.
     //
     private Answer<BusMaster.ScheduleNotifySearchBusCmdResult> makeAnswerFor(BusMaster bm, String[] resultAddresses,
                                                                      long delayTimeMSec) {
@@ -172,8 +210,13 @@ public class WaitForDeviceByAddressTest {
                 Boolean typeByAlarm = (Boolean) (invocation.getArguments())[1];
                 Long minPeriodMSec = (Long) (invocation.getArguments())[2];
 
-                // call right away
-                new SleepNotifySearchBusCmdResult(obj, bm, typeByAlarm, new mySearchBusCmd(bm, Arrays.asList(resultAddresses)).getResultData(), delayTimeMSec);
+                for (int i = 0; i < resultAddresses.length; i++) {
+                    ArrayList<String> list = new ArrayList(i + 1);
+                    for (int j = 0; j <= i; j++) {
+                        list.add(resultAddresses[j]);
+                    }
+                    new SleepNotifySearchBusCmdResult(obj, bm, typeByAlarm, new mySearchBusCmd(bm, list).getResultData(), delayTimeMSec);
+                }
 
                 return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success;
             }
@@ -294,6 +337,5 @@ public class WaitForDeviceByAddressTest {
             nsbcr.notify(bm, byAlarm, resultData);
         }
     }
-
 
 }
