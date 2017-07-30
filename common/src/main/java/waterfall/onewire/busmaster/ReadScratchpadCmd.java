@@ -87,6 +87,9 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
         if ((result == null) || (result == Result.busy)) {
             throw new NoResultException();
         }
+        if (result != Result.success) {
+            throw new NoResultDataException();
+        }
 
         return resultData;
     }
