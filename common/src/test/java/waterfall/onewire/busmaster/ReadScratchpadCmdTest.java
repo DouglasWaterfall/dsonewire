@@ -73,6 +73,16 @@ public class ReadScratchpadCmdTest {
         }
     }
 
+    @Test(expectedExceptions = AssertionError.class )
+    public void testBadRequestByteCount() {
+        BusMaster mockBM = mock(BusMaster.class);
+        DSAddress mockAddr = mock(DSAddress.class);
+        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
+
+        new TestReadScratchpadCmd(mockBM, mockAddr, (short)0, mockLogLevel);
+        Assert.fail("exception expected");
+    }
+
     @Test(expectedExceptions = NoResultException.class)
     public void testGetResultWriteCTMBusy() {
         BusMaster mockBM = mock(BusMaster.class);
@@ -81,6 +91,18 @@ public class ReadScratchpadCmdTest {
 
         TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
         cmd.setResult(ReadScratchpadCmd.Result.busy);
+        cmd.getResultWriteCTM();
+        Assert.fail("exception expected");
+    }
+
+    @Test(expectedExceptions = NoResultDataException.class)
+    public void testGetResulWriteCTMNotSuccess() {
+        BusMaster mockBM = mock(BusMaster.class);
+        DSAddress mockAddr = mock(DSAddress.class);
+        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
+
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        cmd.setResult(ReadScratchpadCmd.Result.communication_error);
         cmd.getResultWriteCTM();
         Assert.fail("exception expected");
     }
