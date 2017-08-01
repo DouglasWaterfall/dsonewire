@@ -15,6 +15,9 @@ public class BaseCmd implements Logger {
     protected String logContext;
 
     public BaseCmd(BusMaster busMaster, LogLevel logLevel) {
+        if (busMaster == null) {
+            throw new IllegalArgumentException("busMaster");
+        }
         this.busMaster = busMaster;
         if ((logLevel != null) && (logLevel.isAnyLevelSet())) {
             this.logger = new ArrayList<String>();

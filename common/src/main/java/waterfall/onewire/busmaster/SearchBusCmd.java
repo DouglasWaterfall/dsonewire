@@ -95,6 +95,12 @@ public abstract class SearchBusCmd extends BaseCmd {
 
         public ResultData(final List<String> list, final long writeCTM) {
             this.list = list;
+            if (list == null) {
+                throw new IllegalArgumentException("list");
+            }
+            if (writeCTM <= 0) {
+                throw new IllegalArgumentException("writeCTM");
+            }
             this.writeCTM = writeCTM;
             CRC32 crc = new CRC32();
             for(String string : list) {
@@ -127,6 +133,9 @@ public abstract class SearchBusCmd extends BaseCmd {
      * @throws NoResultDataException
      */
     public ResultData getResultData() throws NoResultDataException {
+        if ((result == null) || (result == Result.busy)) {
+            throw new NoResultException();
+        }
         if (result != Result.success) {
             throw new NoResultDataException();
         }
@@ -181,6 +190,9 @@ public abstract class SearchBusCmd extends BaseCmd {
      */
     protected SearchBusCmd(BusMaster busMaster, short familyCode, LogLevel logLevel) {
         super(busMaster, logLevel);
+        if ((familyCode < 0) || (familyCode > 255)) {
+            throw new IllegalArgumentException("familyCode");
+        }
         this.familyCode = new Short(familyCode);
         this.byAlarm = null;
     }
