@@ -15,6 +15,9 @@ public class NotifySearchBusCmdHelper {
     private SearchBusCmd.ResultData lastNotifySearchResultData;
 
     public NotifySearchBusCmdHelper(BusMaster bm, boolean isAlarmSearch) {
+        if (bm == null) {
+            throw new IllegalArgumentException("bm");
+        }
         this.bm = bm;
         this.isAlarmSearch = isAlarmSearch;
         searchPusher = newSearchPusher();
@@ -34,12 +37,12 @@ public class NotifySearchBusCmdHelper {
             return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid;
         }
 
-        if ((notifyMap != null) && (notifyMap.get(obj) != null)) {
-            return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled;
-        }
-
         if (!bm.getIsStarted()) {
             return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted;
+        }
+
+        if ((notifyMap != null) && (notifyMap.get(obj) != null)) {
+            return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled;
         }
 
         if (notifyMap == null) {
@@ -75,12 +78,12 @@ public class NotifySearchBusCmdHelper {
      */
     public synchronized BusMaster.UpdateScheduledNotifySearchBusCmdResult updateScheduledSearchNotifyFor(NotifySearchBusCmdResult obj, long minPeriodMSec) {
 
-        if (minPeriodMSec <= 0) {
-            return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodInvalid;
-        }
-
         if ((obj == null) || (notifyMap != null) && (notifyMap.get(obj) == null)) {
             return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_NotifyObjNotAlreadyScheduled;
+        }
+
+        if (minPeriodMSec <= 0) {
+            return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodInvalid;
         }
 
         Long currentMinPeriodMSec = notifyMap.get(obj);
@@ -100,11 +103,7 @@ public class NotifySearchBusCmdHelper {
      */
     public synchronized BusMaster.CancelScheduledNotifySearchBusCmdResult cancelScheduledSearchNotifyFor(NotifySearchBusCmdResult obj) {
 
-        if (obj == null) {
-            return BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled;
-        }
-
-        if ((notifyMap != null) && (notifyMap.get(obj) == null)) {
+        if ((obj == null) || (notifyMap != null) && (notifyMap.get(obj) == null)) {
             return BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled;
         }
 
@@ -122,12 +121,15 @@ public class NotifySearchBusCmdHelper {
 
     /**
      * Called from the owning BusMaster to cancel all searches.
+     * @return true if any active searches were cancelled
      */
-    public synchronized void cancelAllScheduledSearchNotifyFor() {
+    public synchronized boolean cancelAllScheduledSearchNotifyFor() {
         if ((notifyMap != null) && (notifyMap.size() > 0)) {
             notifyMap.clear();
             searchPusher.adjustPeriod(Long.MAX_VALUE);
+            return true;
         }
+        return false;
     }
 
     /**

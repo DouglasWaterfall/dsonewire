@@ -27,7 +27,9 @@ public abstract class DeviceBaseCmd extends BaseCmd {
      */
     protected DeviceBaseCmd(BusMaster busMaster, DSAddress dsAddr, Logger.LogLevel logLevel) {
         super(busMaster, logLevel);
-        assert (dsAddr != null);
+        if (dsAddr == null) {
+            throw new IllegalArgumentException("dsAddr");
+        }
         this.dsAddr = dsAddr;
     }
 }
