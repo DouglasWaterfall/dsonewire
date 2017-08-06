@@ -59,12 +59,15 @@ public abstract class SearchPusher {
 
         if (minPeriodMSec == Long.MAX_VALUE) {
             // shutting down
-            timer.cancel();
-            timer = null;
-            currentPeriodMSec = Long.MAX_VALUE;
+            if (timer != null) {
+                timer.cancel();
+                timer = null;
+                currentPeriodMSec = Long.MAX_VALUE;
+            }
             return false;
         }
 
+        // new period is different than current so we'll need to start a new timer.
         currentPeriodMSec = minPeriodMSec;
 
         if (timer != null) {

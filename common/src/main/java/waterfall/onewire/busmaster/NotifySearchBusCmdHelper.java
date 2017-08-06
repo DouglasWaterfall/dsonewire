@@ -60,7 +60,13 @@ public class NotifySearchBusCmdHelper {
         //
         // The callee is free to call back here and deregister themselves after the notification if they found what
         // they were looking for.
-        if ((!pushStarted) && (lastNotifySearchResultData != null) &&
+        if (pushStarted) {
+            // we do this because if we've started a new search for a new caller and the result is the exactly the
+            // same as the previous value then we will not update anyone...including the new caller. The other waiters
+            // will be notified again but they have to tolerate that.
+            lastNotifySearchResultData = null;
+        }
+        else if ((lastNotifySearchResultData != null) &&
                 ((bm.getCurrentTimeMillis() - lastNotifySearchResultData.getWriteCTM()) <= minPeriodMSec)) {
             // this will occur on a new thread
             NotifyHelper notifyHelper = new NotifyHelper(bm, obj, lastNotifySearchResultData, searchPusher.isAlarmSearch());
@@ -134,6 +140,10 @@ public class NotifySearchBusCmdHelper {
      * @param searchResultData
      */
     public synchronized void notifySearchResult(final SearchBusCmd.ResultData searchResultData) {
+        if (searchResultData == null) {
+            throw new IllegalArgumentException("searchResultData null");
+        }
+
         boolean crc32Changed = ((lastNotifySearchResultData == null) ||
                 (searchResultData.getListCRC32() != lastNotifySearchResultData.getListCRC32()));
 

@@ -1,5 +1,6 @@
 package waterfall.onewire.busmaster;
 
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -9,16 +10,9 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Observable;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.stub;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Created by dwaterfa on 7/31/17.
@@ -26,8 +20,13 @@ import static org.mockito.Mockito.when;
 public class NotifySearchBusCmdHelperTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testConstructorArgs() {
-        new NotifySearchBusCmdHelper(null, false);
+    public void testConstructorNullSearhPusher() {
+        new NotifySearchBusCmdHelper(null, mock(BusMaster.class));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testConstructorNullBusMaster() {
+        new NotifySearchBusCmdHelper(mock(SearchPusher.class), null);
     }
 
     @Test(dataProvider = "scheduleNotifySearchBusCmdNegativeTestsProvider")
@@ -45,11 +44,15 @@ public class NotifySearchBusCmdHelperTest {
             when(mockBM.querySearchBusByAlarmCmd(any(Logger.LogLevel.class))).thenReturn(mySearchBusCmd);
         }
 
-        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockBM, byAlarm);
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
 
         if (addTwice) {
             BusMaster.ScheduleNotifySearchBusCmdResult result = nsbch.scheduleSearchNotifyFor(nsbcr, minPeriodMSec);
             Assert.assertEquals(BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success, result);
+            verify(mockSearchPusher, times(1)).adjustPeriod(eq(minPeriodMSec));
         }
 
         BusMaster.ScheduleNotifySearchBusCmdResult result = nsbch.scheduleSearchNotifyFor(nsbcr, minPeriodMSec);
@@ -58,13 +61,312 @@ public class NotifySearchBusCmdHelperTest {
         nsbch.cancelAllScheduledSearchNotifyFor();
     }
 
+    @DataProvider
+    public Object[][] scheduleNotifySearchBusCmdNegativeTestsProvider() {
+
+        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
+
+        boolean notStarted = false;
+        boolean started = true;
+
+        boolean notByAlarm = false;
+        boolean byAlarm = true;
+
+        boolean addOnce = false;
+        boolean addTwice = true;
+
+        long invalidMinPeriodMSec = -1;
+        long ignoredMinPeriodMSec = 1;
+
+        return new Object[][]{
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull, null, notStarted, byAlarm, addOnce, ignoredMinPeriodMSec},
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull, null, notStarted, notByAlarm, addOnce, ignoredMinPeriodMSec},
+
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid, mockNSBCR, notStarted, byAlarm, addOnce, invalidMinPeriodMSec},
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid, mockNSBCR, notStarted, notByAlarm, addOnce, invalidMinPeriodMSec},
+
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted, mockNSBCR, notStarted, byAlarm, addOnce, ignoredMinPeriodMSec},
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted, mockNSBCR, notStarted, notByAlarm, addOnce, ignoredMinPeriodMSec},
+
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, byAlarm, addTwice, ignoredMinPeriodMSec },
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, notByAlarm, addTwice, ignoredMinPeriodMSec }
+        };
+    }
+
+    @Test
+    public void testScheduleNotifySearchBusCmdPositiveCases() {
+        BusMaster mockBM = mock(BusMaster.class);
+        when(mockBM.getIsStarted()).thenReturn(true);
+
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
+
+        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
+
+        BusMaster.ScheduleNotifySearchBusCmdResult s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR, 100);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(100L));
+
+        Assert.assertTrue(nsbch.cancelAllScheduledSearchNotifyFor());
+    }
+
+    // TODO - do the two cases where we return adjustPeriod as true AND adjustPeriod as false
+
     @Test(dataProvider = "updateScheduledSearchNotifyForNegativeTestsProvider")
     public void testUpdateScheduledSearchNotifyForNegativeTests(BusMaster.UpdateScheduledNotifySearchBusCmdResult expectedResult,
-                                                                NotifySearchBusCmdResult nsbcr, BusMaster bm, boolean byAlarm, long minPeriodMSec) {
-        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(bm, byAlarm);
-        BusMaster.UpdateScheduledNotifySearchBusCmdResult result = nsbch.updateScheduledSearchNotifyFor(nsbcr, minPeriodMSec);
+                                                                NotifySearchBusCmdResult scheduleNSBCR,
+                                                                long schedule_minPeriodMSec,
+                                                                NotifySearchBusCmdResult updateNSBCR,
+                                                                long update_minPeriodMSec) {
+        BusMaster mockBM = mock(BusMaster.class);
+        when(mockBM.getIsStarted()).thenReturn(true);
+
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
+
+        if (scheduleNSBCR != null) {
+            BusMaster.ScheduleNotifySearchBusCmdResult s_result = nsbch.scheduleSearchNotifyFor(scheduleNSBCR, schedule_minPeriodMSec);
+            Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        }
+
+        BusMaster.UpdateScheduledNotifySearchBusCmdResult result = nsbch.updateScheduledSearchNotifyFor(updateNSBCR, update_minPeriodMSec);
         Assert.assertEquals(result, expectedResult);
     }
+
+    @DataProvider
+    public Object[][] updateScheduledSearchNotifyForNegativeTestsProvider() {
+
+        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
+        NotifySearchBusCmdResult mockNSBCR_2 = mock(NotifySearchBusCmdResult.class);
+
+        // result, schedule object, schedule value, update object, update value
+        return new Object[][]{
+                {BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_NotifyObjNotAlreadyScheduled, null, 100, null, 1},
+                {BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_NotifyObjNotAlreadyScheduled, null, 100, mockNSBCR, 1},
+
+                {BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodInvalid, mockNSBCR, 100, mockNSBCR, -1},
+
+                {BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodUnchanged, mockNSBCR, 100, mockNSBCR, 100}
+        };
+    }
+
+    @Test
+    public void testUpdateScheduledSearchNotifyForPositiveCases() {
+        BusMaster mockBM = mock(BusMaster.class);
+        when(mockBM.getIsStarted()).thenReturn(true);
+
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
+
+        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
+        long mockNSBCR_period = 100;
+
+        NotifySearchBusCmdResult mockNSBCR_2 = mock(NotifySearchBusCmdResult.class);
+        long mockNSBCR_2_period = 50;
+
+        BusMaster.ScheduleNotifySearchBusCmdResult s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR, mockNSBCR_period);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_period));
+
+        s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR_2, mockNSBCR_2_period);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_2_period));
+
+        long mockNSBCR_2_shorter_period = 25;
+
+        BusMaster.UpdateScheduledNotifySearchBusCmdResult u_result = nsbch.updateScheduledSearchNotifyFor(mockNSBCR_2, mockNSBCR_2_shorter_period);
+        Assert.assertEquals(u_result, BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_2_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_2_shorter_period));
+
+        long mockNSBCR_2_longer_period = 150;
+
+        u_result = nsbch.updateScheduledSearchNotifyFor(mockNSBCR_2, mockNSBCR_2_longer_period);
+        Assert.assertEquals(u_result, BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_Success);
+        verify(mockSearchPusher, times(2)).adjustPeriod(eq(mockNSBCR_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_2_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_2_shorter_period));
+
+        // cancel them all
+        Assert.assertTrue(nsbch.cancelAllScheduledSearchNotifyFor());
+        verify(mockSearchPusher, times(2)).adjustPeriod(eq(mockNSBCR_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_2_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(mockNSBCR_2_shorter_period));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(Long.MAX_VALUE));
+    }
+
+    @Test
+    public void testCancelScheduledSearchNotifyFor() {
+        BusMaster mockBM = mock(BusMaster.class);
+        when(mockBM.getIsStarted()).thenReturn(true);
+
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
+
+        // null
+        BusMaster.CancelScheduledNotifySearchBusCmdResult result = nsbch.cancelScheduledSearchNotifyFor(null);
+        Assert.assertEquals(result, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled);
+
+        // not previously scheduled
+        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
+        result = nsbch.cancelScheduledSearchNotifyFor(mockNSBCR);
+        Assert.assertEquals(result, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled);
+
+        // schedule and then remove
+        BusMaster.ScheduleNotifySearchBusCmdResult s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR, 100);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(100L));
+        result = nsbch.cancelScheduledSearchNotifyFor(mockNSBCR);
+        Assert.assertEquals(result, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(Long.MAX_VALUE));
+        Assert.assertFalse(nsbch.cancelAllScheduledSearchNotifyFor());
+
+        // schedule two and watch the adjustments
+        reset(mockSearchPusher);
+        s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR, 100);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(100L));
+        NotifySearchBusCmdResult mockNSBCR_2 = mock(NotifySearchBusCmdResult.class);
+        s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR_2, 50);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(100L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(50L));
+        NotifySearchBusCmdResult mockNSBCR_3 = mock(NotifySearchBusCmdResult.class);
+        s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR_3, 150);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(100L));
+        verify(mockSearchPusher, times(2)).adjustPeriod(eq(50L));
+
+        // now cancel and watch them adjust again
+        reset(mockSearchPusher);
+        result = nsbch.cancelScheduledSearchNotifyFor(mockNSBCR); // 100
+        Assert.assertEquals(result, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+        verify(mockSearchPusher, times(0)).adjustPeriod(eq(100L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(50L));
+        result = nsbch.cancelScheduledSearchNotifyFor(mockNSBCR_2); // 50
+        Assert.assertEquals(result, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+        verify(mockSearchPusher, times(0)).adjustPeriod(eq(100L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(50L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(150L));
+        result = nsbch.cancelScheduledSearchNotifyFor(mockNSBCR_3); // 150
+        Assert.assertEquals(result, BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success);
+        verify(mockSearchPusher, times(0)).adjustPeriod(eq(100L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(50L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(150L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(Long.MAX_VALUE));
+        Assert.assertFalse(nsbch.cancelAllScheduledSearchNotifyFor());
+    }
+
+    @Test
+    public void testCancelAllScheduledSearchNotifyFor() {
+        BusMaster mockBM = mock(BusMaster.class);
+        when(mockBM.getIsStarted()).thenReturn(true);
+
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
+
+        // nothing was scheduled
+        Assert.assertFalse(nsbch.cancelAllScheduledSearchNotifyFor());
+        verify(mockSearchPusher, times(0)).adjustPeriod(any(Long.class));
+
+        // schedule something then cancel
+        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
+        BusMaster.ScheduleNotifySearchBusCmdResult s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR, 100);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(100L));
+
+        Assert.assertTrue(nsbch.cancelAllScheduledSearchNotifyFor());
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(100L));
+        verify(mockSearchPusher, times(1)).adjustPeriod(eq(Long.MAX_VALUE));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNotifySearchResultBadArguments() {
+        BusMaster mockBM = mock(BusMaster.class);
+        when(mockBM.getIsStarted()).thenReturn(true);
+
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
+        nsbch.notifySearchResult(null);
+    }
+
+    @Test
+    public void testNotifySearchResult() {
+        BusMaster mockBM = mock(BusMaster.class);
+        when(mockBM.getIsStarted()).thenReturn(true);
+
+        SearchPusher mockSearchPusher = mock(SearchPusher.class);
+
+        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockSearchPusher, mockBM);
+
+        boolean isByAlarm = true;
+        when(mockSearchPusher.isAlarmSearch()).thenReturn(isByAlarm);
+
+        String oneDevice = "123456";
+        List<String> resultList = new ArrayList<String>();
+        resultList.add(oneDevice);
+        long writeCTM = 54321;
+
+        mySearchBusCmd mySearchBusCmd = new mySearchBusCmd(mockBM, isByAlarm);
+        mySearchBusCmd.setExpectedReturn(SearchBusCmd.Result.success, resultList, writeCTM);
+        mySearchBusCmd.execute(); // each execute will generate a new ResultData
+
+        nsbch.notifySearchResult(mySearchBusCmd.getResultData());
+        // nothing to verify here, really, since nobody is actually registered
+
+        // the schedule will NOT notify the caller of the last update because of the mock on the SearchPusher
+        // which will return that a new push was started. This will also clear the previously known state.
+        when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
+        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
+        BusMaster.ScheduleNotifySearchBusCmdResult s_result = nsbch.scheduleSearchNotifyFor(mockNSBCR, 100);
+        Assert.assertEquals(s_result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
+        delayForPush();
+        verify(mockNSBCR, times(0)).notify(any(BusMaster.class), any(Boolean.class), any(SearchBusCmd.ResultData.class));
+
+        // another notify, we expect a new callback to this mock even though it is the same result data.
+        nsbch.notifySearchResult(mySearchBusCmd.getResultData());
+        delayForPush();
+        {
+            ArgumentCaptor<SearchBusCmd.ResultData> resultDataArgs2 = ArgumentCaptor.forClass(SearchBusCmd.ResultData.class);
+            verify(mockNSBCR, times(1)).notify(eq(mockBM), eq(isByAlarm), resultDataArgs2.capture());
+            Assert.assertEquals(resultDataArgs2.getAllValues().size(), 1);
+            Assert.assertEquals(resultDataArgs2.getAllValues().get(0).getWriteCTM(), writeCTM);
+        }
+
+        // now let us change the data a bit which will trigger a new instance of
+        String twoDevice = "78910";
+        resultList.add(twoDevice);
+        long writeCTM_update = 654321;
+        mySearchBusCmd.setExpectedReturn(SearchBusCmd.Result.success, resultList, writeCTM_update);
+        mySearchBusCmd.execute();
+
+        // and push again
+        nsbch.notifySearchResult(mySearchBusCmd.getResultData());
+        delayForPush();
+        {
+            ArgumentCaptor<SearchBusCmd.ResultData> resultDataArgs3 = ArgumentCaptor.forClass(SearchBusCmd.ResultData.class);
+            verify(mockNSBCR, times(2)).notify(eq(mockBM), eq(isByAlarm), resultDataArgs3.capture());
+            Assert.assertEquals(resultDataArgs3.getAllValues().size(), 2);
+            Assert.assertEquals(resultDataArgs3.getAllValues().get(0).getWriteCTM(), writeCTM);
+            Assert.assertEquals(resultDataArgs3.getAllValues().get(1).getWriteCTM(), writeCTM_update);
+        }
+    }
+
+    // TODO: calculateMinPeriodMSecForMap needs some tests.
 
     private class mySearchBusCmd extends SearchBusCmd {
         SearchBusCmd.Result expected_result = null;
@@ -102,132 +404,14 @@ public class NotifySearchBusCmdHelperTest {
 
     }
 
-    @DataProvider
-    public Object[][] scheduleNotifySearchBusCmdNegativeTestsProvider() {
-
-        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
-
-        boolean notStarted = false;
-        boolean started = true;
-
-        boolean notByAlarm = false;
-        boolean byAlarm = true;
-
-        boolean addOnce = false;
-        boolean addTwice = true;
-
-        long invalidMinPeriodMSec = -1;
-        long ignoredMinPeriodMSec = 1;
-
-        return new Object[][]{
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull, null, notStarted, byAlarm, addOnce, ignoredMinPeriodMSec},
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull, null, notStarted, notByAlarm, addOnce, ignoredMinPeriodMSec},
-
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid, mockNSBCR, notStarted, byAlarm, addOnce, invalidMinPeriodMSec},
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid, mockNSBCR, notStarted, notByAlarm, addOnce, invalidMinPeriodMSec},
-
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted, mockNSBCR, notStarted, byAlarm, addOnce, ignoredMinPeriodMSec},
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted, mockNSBCR, notStarted, notByAlarm, addOnce, ignoredMinPeriodMSec},
-
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, byAlarm, addTwice, ignoredMinPeriodMSec },
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, notByAlarm, addTwice, ignoredMinPeriodMSec }
-        };
+    // this just lets the push thread get a chance to run
+    private void delayForPush() {
+        try {
+            Thread.sleep(5);
+        }
+        catch (InterruptedException e) {
+            ;
+        }
     }
-
-    @DataProvider
-    public Object[][] updateScheduledSearchNotifyForNegativeTestsProvider() {
-        BusMaster mockBM_notStarted = mock(BusMaster.class);
-        when(mockBM_notStarted.getIsStarted()).thenReturn(false);
-
-        BusMaster mockBM_started = mock(BusMaster.class);
-        when(mockBM_started.getIsStarted()).thenReturn(true);
-
-        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
-
-        return new Object[][]{
-                {BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodInvalid, mockNSBCR, mockBM_notStarted, false, -1},
-                {BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_NotifyObjNotAlreadyScheduled, null, mockBM_notStarted, false, 1},
-        };
-    }
-
-    // STOPPED:
-    // need CancelScheduledNegative - check cancel all found nothing
-    // need UpdateScheduled Positive showing timing change, by alarm and not
-    // Positive should demonstrate:
-    //  callbacks occur at declared rate
-    //  byAlarm flag is properly carried through
-    //  the schedule rate told to the BM is what we told the NSBCR
-    //  time writeCTM advances
-    //  feed in different values for the returned values
-    //  Have the crc32 NOT change on an update and show that we are not called a second time until it changes
-    //
-    // ? do we simulate errors on the BusMaster? Does that change the pusher?
-    //
-    // Simulate with two busmasters showing interleaving rates
-    // Make calculateMinPeriodMSecFromMap public and have a full range of cases.
-
-    @Test
-    public void testScheduleNotifySearchBusCmdPositiveCases() {
-        //
-        // The NotifySearchBusCmdHelper will call to the BusMaster to query for a SearchBusCmd which will be executed
-        // and expect to callback to the notifySearchResult() api which will then notify those NotifySearchCmdResult
-        // instances.
-        //
-        BusMaster mockBM = mock(BusMaster.class);
-        when(mockBM.getIsStarted()).thenReturn(true);
-
-        mySearchBusCmd myCmdByAlarm = new mySearchBusCmd(mockBM, true);
-        when(mockBM.querySearchBusByAlarmCmd(any(Logger.LogLevel.class))).thenReturn(myCmdByAlarm);
-
-        ArrayList<String> resultList = new ArrayList<>();
-        resultList.add("123456789");
-        myCmdByAlarm.setExpectedReturn(SearchBusCmd.Result.success, resultList, 1);
-
-        NotifySearchBusCmdHelper nsbch = new NotifySearchBusCmdHelper(mockBM, true);
-
-        doNothing().when(mockBM).searchBusCmdExecuteCallback((SearchBusCmd) argThat(new ArgumentMatcher<SearchBusCmd>() {
-            @Override
-            public boolean matches(Object obj) {
-                nsbch.notifySearchResult(((SearchBusCmd) obj).getResultData());
-                return true;
-            }
-
-        }));
-
-        NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
-
-        BusMaster.ScheduleNotifySearchBusCmdResult result = nsbch.scheduleSearchNotifyFor(mockNSBCR, 50);
-        Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success);
-
-
-        verify(mockNSBCR, times(1)).notify(eq(mockBM), eq(true), any(SearchBusCmd.ResultData.class));
-
-        Assert.assertTrue(nsbch.cancelAllScheduledSearchNotifyFor());
-    }
-
-    /*
-    public void testExecuteBusy() {
-        BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
-
-        TestStartBusCmd cmd = new TestStartBusCmd(mockBM, mockLogLevel);
-        cmd.setResult(StartBusCmd.Result.busy);
-        cmd.execute();
-
-        Assert.fail("should have thrown exception");
-    }
-    */
-
-    /*
-    @DataProvider
-    public Object[][] createExecuteInternalResultData() {
-        return new Object[][] {
-                { StartBusCmd.Result.already_started },
-                { StartBusCmd.Result.bus_not_found },
-                { StartBusCmd.Result.communication_error },
-                { StartBusCmd.Result.started },
-        };
-    }
-    */
 
 }
