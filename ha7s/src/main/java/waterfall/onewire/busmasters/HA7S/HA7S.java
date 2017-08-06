@@ -129,8 +129,8 @@ public class HA7S implements BusMaster {
         if (serial == null) {
             throw new IllegalArgumentException("serial must non-null");
         }
-        searchHelper = new NotifySearchBusCmdHelper(this, false);
-        searchByAlarmHelper = new NotifySearchBusCmdHelper(this, true);
+        searchHelper = new NotifySearchBusCmdHelper(new SearchPusherByBusCmd(this, false), this);
+        searchByAlarmHelper = new NotifySearchBusCmdHelper(new SearchPusherByBusCmd(this, true), this);
         serialPort = serial;
     }
 

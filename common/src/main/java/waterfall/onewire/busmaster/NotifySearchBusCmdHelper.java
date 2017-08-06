@@ -7,20 +7,20 @@ import java.util.*;
  */
 public class NotifySearchBusCmdHelper {
 
-    private BusMaster bm;
-    private final boolean isAlarmSearch;
-    private SearchPusher searchPusher;
-    private HashMap<Object, Long> notifyMap;
-
+    private final SearchPusher searchPusher;
+    private final BusMaster bm;
+    private final HashMap<Object, Long> notifyMap;
     private SearchBusCmd.ResultData lastNotifySearchResultData;
 
-    public NotifySearchBusCmdHelper(BusMaster bm, boolean isAlarmSearch) {
+    public NotifySearchBusCmdHelper(SearchPusher searchPusher, BusMaster bm) {
+        if (searchPusher == null) {
+            throw new IllegalArgumentException("searchPusher");
+        }
+        this.searchPusher = searchPusher;
         if (bm == null) {
             throw new IllegalArgumentException("bm");
         }
         this.bm = bm;
-        this.isAlarmSearch = isAlarmSearch;
-        searchPusher = newSearchPusher();
         notifyMap = new HashMap<Object, Long>();
         lastNotifySearchResultData = null;
     }
@@ -45,10 +45,6 @@ public class NotifySearchBusCmdHelper {
             return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled;
         }
 
-        if (notifyMap == null) {
-            notifyMap = new HashMap<Object, Long>();
-        }
-
         notifyMap.put(obj, new Long(minPeriodMSec));
 
         boolean pushStarted = searchPusher.adjustPeriod(calculateMinPeriodMSecFromMap(notifyMap));
@@ -67,7 +63,7 @@ public class NotifySearchBusCmdHelper {
         if ((!pushStarted) && (lastNotifySearchResultData != null) &&
                 ((bm.getCurrentTimeMillis() - lastNotifySearchResultData.getWriteCTM()) <= minPeriodMSec)) {
             // this will occur on a new thread
-            NotifyHelper notifyHelper = new NotifyHelper(bm, obj, lastNotifySearchResultData);
+            NotifyHelper notifyHelper = new NotifyHelper(bm, obj, lastNotifySearchResultData, searchPusher.isAlarmSearch());
         }
 
         return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success;
@@ -145,7 +141,7 @@ public class NotifySearchBusCmdHelper {
 
         if ((notifyMap.size() > 0) && (crc32Changed)) {
             // this will occur on a new thread
-            NotifyHelper notifyHelper = new NotifyHelper(bm, notifyMap, searchResultData);
+            NotifyHelper notifyHelper = new NotifyHelper(bm, notifyMap, searchResultData, searchPusher.isAlarmSearch());
         }
     }
 
@@ -166,35 +162,27 @@ public class NotifySearchBusCmdHelper {
     }
 
     /**
-     * This overridable method returns a SearchPusher instance appropriate to this class. By default it returns a
-     * conventional pusher which uses the Timer to exectute a SearchBusCmd against the BusMaster.
-     *
-     * @return SearchPusher instance for this class
-     */
-    protected SearchPusher newSearchPusher() {
-        return new SearchPusherByBusCmd(bm, isAlarmSearch);
-    }
-
-    /**
      * This private class does the dirty work of calling back by a different thread the registered Objects with the
      * result of a search
      */
     private class NotifyHelper implements Runnable {
-        final private Object[] objs;
-        final private BusMaster bm;
-        final private SearchBusCmd.ResultData searchResultData;
-        final private Thread thread;
+        private final BusMaster bm;
+        private final Object[] objs;
+        private final SearchBusCmd.ResultData searchResultData;
+        private final boolean isAlarmSearch;
+        private final Thread thread;
 
-        public NotifyHelper(final BusMaster bm, final Object obj, final SearchBusCmd.ResultData searchResultData) {
+        public NotifyHelper(final BusMaster bm, final Object obj, final SearchBusCmd.ResultData searchResultData, boolean isAlarmSearch) {
             this.bm = bm;
             this.objs = new Object[]{obj};
             this.searchResultData = searchResultData;
+            this.isAlarmSearch = isAlarmSearch;
             this.thread = new Thread(this);
             this.thread.setDaemon(true);
             this.thread.start();
         }
 
-        public NotifyHelper(final BusMaster bm, final Map<Object, Long> notifyMap, final SearchBusCmd.ResultData searchResultData) {
+        public NotifyHelper(final BusMaster bm, final Map<Object, Long> notifyMap, final SearchBusCmd.ResultData searchResultData, boolean isAlarmSearch) {
             this.bm = bm;
             this.objs = new Object[notifyMap.size()];
             int i = 0;
@@ -202,6 +190,7 @@ public class NotifySearchBusCmdHelper {
                 objs[i++] = obj;
             }
             this.searchResultData = searchResultData;
+            this.isAlarmSearch = isAlarmSearch;
             this.thread = new Thread(this);
             this.thread.setDaemon(true);
             this.thread.start();

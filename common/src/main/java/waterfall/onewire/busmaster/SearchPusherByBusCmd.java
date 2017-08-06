@@ -13,7 +13,7 @@ public class SearchPusherByBusCmd extends SearchPusher {
     private SearchBusCmd searchBusCmd;
 
     public SearchPusherByBusCmd(BusMaster bm, boolean isAlarmSearch) {
-        super();
+        super(isAlarmSearch);
         this.bm = bm;
         this.isAlarmSearch = isAlarmSearch;
         this.searchBusCmdThread = null;

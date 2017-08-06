@@ -18,14 +18,24 @@ import java.util.TimerTask;
  */
 public abstract class SearchPusher {
 
+    private final boolean isAlarmSearch;
     private Timer timer;
     private long currentPeriodMSec;
     private long lastPushTimeMSec;
 
-    protected SearchPusher() {
+    protected SearchPusher(boolean isAlarmSearch) {
+        this.isAlarmSearch = isAlarmSearch;
         this.timer = null;
         this.currentPeriodMSec = Long.MAX_VALUE;
         this.lastPushTimeMSec = 0;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public boolean isAlarmSearch() {
+        return isAlarmSearch;
     }
 
     /**
