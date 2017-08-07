@@ -1,7 +1,5 @@
 package waterfall.onewire.busmaster;
 
-import java.util.Timer;
-
 /**
  * This class implements the SearchPusher through a Timer and a call to a conventional SearchBusCmd on the BusMaster.
  */

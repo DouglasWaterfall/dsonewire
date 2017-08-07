@@ -1,6 +1,7 @@
 package waterfall.onewire.busmaster;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by dwaterfa on 11/30/16.

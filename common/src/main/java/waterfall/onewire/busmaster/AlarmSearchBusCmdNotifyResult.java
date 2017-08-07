@@ -1,7 +1,5 @@
 package waterfall.onewire.busmaster;
 
-import java.util.List;
-
 public interface AlarmSearchBusCmdNotifyResult {
 
     /**

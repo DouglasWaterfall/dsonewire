@@ -1,4 +1,6 @@
-package waterfall.onewire; /**
+package waterfall.onewire;
+
+/**
  * Created by dwaterfa on 7/23/17.
  */
 
@@ -6,14 +8,11 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import waterfall.onewire.BusMasterRegistry;
-import waterfall.onewire.WaitForDeviceByAddress;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Observable;
 

@@ -4,9 +4,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.LongSummaryStatistics;
-import java.util.Timer;
-
 /**
  * Created by dwaterfa on 8/6/17.
  */

@@ -1,7 +1,5 @@
 package waterfall.onewire.busmaster;
 
-import java.util.List;
-
 /**
  * Created by dwaterfa on 11/20/16.
  */

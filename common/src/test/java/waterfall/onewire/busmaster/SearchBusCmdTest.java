@@ -3,7 +3,6 @@ package waterfall.onewire.busmaster;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import waterfall.onewire.DSAddress;
 
 import java.util.ArrayList;
 import java.util.List;
