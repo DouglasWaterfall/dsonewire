@@ -207,7 +207,7 @@ public class HA7S implements BusMaster {
         ReadError
     }
 
-    public class cmdReturn {
+    public static class cmdReturn {
         public cmdReturn(cmdResult result) {
             this.result = result;
             this.readCount = 0;

@@ -53,6 +53,7 @@ public class HA7SConvertTCmd extends ConvertTCmd {
         setResultData(ret.writeCTM);
 
         // Bonus...
+        // Wait for the DS to finish computing the temp by reading bits
         /*
         try {
             for (int i = 0; i < 10; i++) {
