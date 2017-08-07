@@ -20,7 +20,8 @@ public class SearchPusherByBusCmd extends SearchPusher {
         this.searchBusCmd = null;
     }
 
-    public void push() {
+    @Override
+    protected void push() {
         synchronized (this) {
             if (searchBusCmdThread != null) {
                 return;

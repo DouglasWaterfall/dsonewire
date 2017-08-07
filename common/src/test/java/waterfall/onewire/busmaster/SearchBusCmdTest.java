@@ -16,50 +16,6 @@ import static org.mockito.Mockito.when;
  */
 public class SearchBusCmdTest {
 
-    public static class TestSearchBusCmd extends SearchBusCmd {
-        private Result execute_internal_result = null;
-        private long execute_internal_resultWriteCTM = 0;
-        private List<String> execute_internal_resultList = null;
-        private RuntimeException execute_internal_exception = null;
-
-        public TestSearchBusCmd(BusMaster bm, short familyCode, LogLevel logLevel) {
-            super(bm, familyCode, logLevel);
-        }
-
-        public TestSearchBusCmd(BusMaster bm, boolean byAlarm, LogLevel logLevel) {
-            super(bm, byAlarm, logLevel);
-        }
-
-        protected Result execute_internal() {
-            if (execute_internal_exception != null) {
-                throw execute_internal_exception;
-            }
-            setResultData(execute_internal_resultWriteCTM, execute_internal_resultList);
-            return execute_internal_result;
-        }
-
-        ;
-
-        protected void setResultData(long resultWriteCTM, List<String> resultList) {
-            this.resultData = new ResultData(resultList, resultWriteCTM);
-        }
-
-        public void setResult(Result result) {
-            this.result = result;
-        }
-
-        public void setExecuteResult(Result result, long resultWriteCTM, List<String> resultList) {
-            this.execute_internal_result = result;
-            this.execute_internal_resultWriteCTM = resultWriteCTM;
-            this.execute_internal_resultList = resultList;
-        }
-
-        public void setExecuteException(RuntimeException exception) {
-            this.execute_internal_exception = exception;
-        }
-
-    }
-
     @Test(dataProvider = "constructorDefaultsProvider")
     public void testConstructorDefaults(SearchBusCmd cmd, boolean isByAlarm, boolean isByFamilyCode) {
         Assert.assertEquals(cmd.isByAlarm(), isByAlarm);
@@ -233,6 +189,50 @@ public class SearchBusCmdTest {
                 {SearchBusCmd.Result.success, list, 1},
                 {SearchBusCmd.Result.success, list, 2}
         };
+    }
+
+    public static class TestSearchBusCmd extends SearchBusCmd {
+        private Result execute_internal_result = null;
+        private long execute_internal_resultWriteCTM = 0;
+        private List<String> execute_internal_resultList = null;
+        private RuntimeException execute_internal_exception = null;
+
+        public TestSearchBusCmd(BusMaster bm, short familyCode, LogLevel logLevel) {
+            super(bm, familyCode, logLevel);
+        }
+
+        public TestSearchBusCmd(BusMaster bm, boolean byAlarm, LogLevel logLevel) {
+            super(bm, byAlarm, logLevel);
+        }
+
+        protected Result execute_internal() {
+            if (execute_internal_exception != null) {
+                throw execute_internal_exception;
+            }
+            setResultData(execute_internal_resultWriteCTM, execute_internal_resultList);
+            return execute_internal_result;
+        }
+
+        ;
+
+        protected void setResultData(long resultWriteCTM, List<String> resultList) {
+            this.resultData = new ResultData(resultList, resultWriteCTM);
+        }
+
+        public void setResult(Result result) {
+            this.result = result;
+        }
+
+        public void setExecuteResult(Result result, long resultWriteCTM, List<String> resultList) {
+            this.execute_internal_result = result;
+            this.execute_internal_resultWriteCTM = resultWriteCTM;
+            this.execute_internal_resultList = resultList;
+        }
+
+        public void setExecuteException(RuntimeException exception) {
+            this.execute_internal_exception = exception;
+        }
+
     }
 
 }

@@ -20,8 +20,8 @@ public abstract class SearchPusher {
 
     private final boolean isAlarmSearch;
     private Timer timer;
-    private long currentPeriodMSec;
-    private long lastPushTimeMSec;
+    protected long currentPeriodMSec;
+    protected long lastPushTimeMSec;
 
     protected SearchPusher(boolean isAlarmSearch) {
         this.isAlarmSearch = isAlarmSearch;
