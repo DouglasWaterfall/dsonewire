@@ -182,7 +182,7 @@ public class HA7S implements BusMaster {
 
         StopBusCmd.Result result = null;
 
-        if ((started == null) || (serialPort == null)) {
+        if (started == null) {
             return StopBusCmd.Result.not_started;
         }
 
