@@ -48,7 +48,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
                     ret = ((HA7S)busMaster).cmdFamilySearch((byte)getFamilyCode(), rbuf, getDeviceLevelLogger());
                 }
                 else {
-                    ret = ((HA7S) busMaster).cmdNextFamilySearch(rbuf, getDeviceLevelLogger());
+                    ret = ((HA7S)busMaster).cmdNextFamilySearch(rbuf, getDeviceLevelLogger());
                 }
             }
             else if (isByAlarm()) {
@@ -56,7 +56,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
                     ret = ((HA7S)busMaster).cmdConditionalSearch(rbuf, getDeviceLevelLogger());
                 }
                 else {
-                    ret = ((HA7S) busMaster).cmdNextConditionalSearch(rbuf, getDeviceLevelLogger());
+                    ret = ((HA7S)busMaster).cmdNextConditionalSearch(rbuf, getDeviceLevelLogger());
                 }
             }
             else {
@@ -64,7 +64,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
                     ret = ((HA7S)busMaster).cmdSearchROM(rbuf, getDeviceLevelLogger());
                 }
                 else {
-                    ret = ((HA7S) busMaster).cmdNextSearchROM(rbuf, getDeviceLevelLogger());
+                    ret = ((HA7S)busMaster).cmdNextSearchROM(rbuf, getDeviceLevelLogger());
                 }
             }
 

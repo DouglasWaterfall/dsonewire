@@ -1,5 +1,7 @@
 package waterfall.onewire.busmasters.HA7S;
 
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.busmaster.*;
@@ -1067,6 +1069,62 @@ public class HA7STest {
         // We want to test update ...
 
         // It would be useful to consider negative tests for the APIs, though there are not that many
+    }
+
+    // Utils
+    public static Answer<HA7S.cmdReturn> makeWriteBlockCmdReturnAnswer(HA7S.cmdResult result, byte[] rbuf_data, long writeCTM) {
+        return new Answer<HA7S.cmdReturn>() {
+            @Override
+            public HA7S.cmdReturn answer(final InvocationOnMock invocation) {
+                byte[] wbuf = (byte[]) (invocation.getArguments())[0];
+                byte[] rbuf = (byte[]) (invocation.getArguments())[1];
+                Logger logger = (Logger) (invocation.getArguments())[2];
+
+                if (result == HA7S.cmdResult.Success) {
+                    int read_count = 0;
+                    if (rbuf_data != null) {
+                        read_count = rbuf_data.length;
+                        for (int i = 0; i < read_count; i++) {
+                            rbuf[i] = rbuf_data[i];
+                        }
+                    }
+                    return new HA7S.cmdReturn(read_count, writeCTM);
+                }
+                return new HA7S.cmdReturn(result);
+            }
+        };
+    }
+
+    public static Answer<HA7S.cmdReturn> makeSearchCmdReturnAnswer(HA7S.cmdResult result, byte[] rbuf_data, long writeCTM) {
+        return new Answer<HA7S.cmdReturn>() {
+            @Override
+            public HA7S.cmdReturn answer(final InvocationOnMock invocation) {
+                Byte familyCode = null;
+                byte[] rbuf = null;
+                Logger logger = null;
+                if (invocation.getArguments().length == 2) {
+                    rbuf = (byte[]) (invocation.getArguments())[0];
+                    logger = (Logger) (invocation.getArguments())[1];
+                }
+                else {
+                    familyCode = (Byte)(invocation.getArguments())[0];
+                    rbuf = (byte[]) (invocation.getArguments())[1];
+                    logger = (Logger) (invocation.getArguments())[2];
+                }
+
+                if (result == HA7S.cmdResult.Success) {
+                    int read_count = 0;
+                    if (rbuf_data != null) {
+                        read_count = rbuf_data.length;
+                        for (int i = 0; i < read_count; i++) {
+                            rbuf[i] = rbuf_data[i];
+                        }
+                    }
+                    return new HA7S.cmdReturn(read_count, writeCTM);
+                }
+                return new HA7S.cmdReturn(result);
+            }
+        };
     }
 
 }

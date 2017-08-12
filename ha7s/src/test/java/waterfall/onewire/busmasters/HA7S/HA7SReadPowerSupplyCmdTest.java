@@ -53,9 +53,10 @@ public class HA7SReadPowerSupplyCmdTest {
     }
 
     @Test(dataProvider = "createCmdWriteBlockCases")
-    public void testCmdWriteBlock(HA7S.cmdReturn cmdReturn,
-                                  ReadPowerSupplyCmd.Result expectedResult,
+    public void testCmdWriteBlock(HA7S.cmdResult cmdResult,
                                   byte[] rbuf_data,
+                                  long writeCTM,
+                                  ReadPowerSupplyCmd.Result expectedResult,
                                   Boolean parasitic) {
         HA7S mockHA7S = mock(HA7S.class);
         DSAddress dsAddr = new DSAddress("AAAAAAAAAA");
@@ -64,23 +65,7 @@ public class HA7SReadPowerSupplyCmdTest {
         when(mockHA7S.getIsStarted()).thenReturn(true);
         when(mockHA7S.cmdAddressSelect(any(DSAddress.class), any(Logger.class))).thenReturn(new HA7S.cmdReturn(HA7S.cmdResult.Success));
 
-        Answer<HA7S.cmdReturn> answer = new Answer<HA7S.cmdReturn>() {
-            @Override
-            public HA7S.cmdReturn answer(final InvocationOnMock invocation) {
-                byte[] wbuf = (byte[]) (invocation.getArguments())[0];
-                byte[] rbuf = (byte[]) (invocation.getArguments())[1];
-                Logger logger = (Logger) (invocation.getArguments())[2];
-
-                if (rbuf_data != null) {
-                    for (int i = 0; i < rbuf_data.length; i++) {
-                        rbuf[i] = rbuf_data[i];
-                    }
-                }
-
-                return cmdReturn;
-            }
-        };
-
+        Answer<HA7S.cmdReturn> answer = HA7STest.makeWriteBlockCmdReturnAnswer(cmdResult, rbuf_data, writeCTM);
         when(mockHA7S.cmdWriteBlock(any(byte[].class), any(byte[].class), any(Logger.class))).thenAnswer(answer);
 
         HA7SReadPowerSupplyCmd cmd = new HA7SReadPowerSupplyCmd(mockHA7S, dsAddr, logLevel);
@@ -98,15 +83,21 @@ public class HA7SReadPowerSupplyCmdTest {
         byte[] not_parasitic = {'0', '0', '0', '1'};
 
         return new Object[][]{
-                {new HA7S.cmdReturn(HA7S.cmdResult.NotStarted), ReadPowerSupplyCmd.Result.communication_error, null, null},
-                {new HA7S.cmdReturn(HA7S.cmdResult.DeviceNotFound), ReadPowerSupplyCmd.Result.communication_error, null, null},
-                {new HA7S.cmdReturn(HA7S.cmdResult.ReadTimeout), ReadPowerSupplyCmd.Result.communication_error, null, null},
-                {new HA7S.cmdReturn(HA7S.cmdResult.ReadOverrun), ReadPowerSupplyCmd.Result.communication_error, null, null},
-                {new HA7S.cmdReturn(HA7S.cmdResult.ReadError), ReadPowerSupplyCmd.Result.communication_error, null, null},
-                {new HA7S.cmdReturn(HA7S.cmdResult.ReadError), ReadPowerSupplyCmd.Result.communication_error, null, null},
-                {new HA7S.cmdReturn(1, 1), ReadPowerSupplyCmd.Result.communication_error, null, null},
-                {new HA7S.cmdReturn(4, 4), ReadPowerSupplyCmd.Result.success, parasitic, new Boolean(true)},
-                {new HA7S.cmdReturn(4, 4), ReadPowerSupplyCmd.Result.success, not_parasitic, new Boolean(false)}
+                {HA7S.cmdResult.NotStarted, null, -1, ReadPowerSupplyCmd.Result.communication_error, null},
+                {HA7S.cmdResult.DeviceNotFound, null, -1, ReadPowerSupplyCmd.Result.communication_error, null},
+                {HA7S.cmdResult.ReadTimeout, null, -1, ReadPowerSupplyCmd.Result.communication_error, null},
+                {HA7S.cmdResult.ReadOverrun, null, -1, ReadPowerSupplyCmd.Result.communication_error, null},
+                {HA7S.cmdResult.ReadError, null, -1, ReadPowerSupplyCmd.Result.communication_error, null},
+                {HA7S.cmdResult.ReadError, null, -1, ReadPowerSupplyCmd.Result.communication_error, null},
+
+                // no data returned
+                {HA7S.cmdResult.Success, null, 1, ReadPowerSupplyCmd.Result.communication_error, null},
+                // no data returned
+                {HA7S.cmdResult.Success, new byte[0], 1, ReadPowerSupplyCmd.Result.communication_error, null},
+                // parasitic data returned
+                {HA7S.cmdResult.Success, parasitic, 4, ReadPowerSupplyCmd.Result.success, new Boolean(true)},
+                // non-parasitic data returned
+                {HA7S.cmdResult.Success, not_parasitic, 4, ReadPowerSupplyCmd.Result.success, new Boolean(false)}
         };
     }
 
