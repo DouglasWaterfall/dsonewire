@@ -81,7 +81,8 @@ public class HA7SBusMasterManager {
                 throw new IllegalArgumentException("cannot instantiate");
             }
 
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(logLevel);
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
+            startCmd.setLogLevel(logLevel);
             StartBusCmd.Result startResult = startCmd.execute();
 
             // dumpLog(startCmd.getLogger());
@@ -108,7 +109,7 @@ public class HA7SBusMasterManager {
 
         bmRegistry.removeBusMaster(ha7s);
 
-        StopBusCmd stopCmd = ha7s.queryStopBusCmd(Logger.LogLevel.CmdOnlyLevel());
+        StopBusCmd stopCmd = ha7s.queryStopBusCmd();
         StopBusCmd.Result stopResult = stopCmd.execute();
 
         if (stopResult != StopBusCmd.Result.stopped) {

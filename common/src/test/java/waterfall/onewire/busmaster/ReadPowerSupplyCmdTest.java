@@ -19,8 +19,8 @@ public class ReadPowerSupplyCmdTest {
         private boolean execute_internal_resultIsParasitic = false;
         private RuntimeException execute_internal_exception = null;
 
-        public TestReadPowerSupplyCmd(BusMaster bm, DSAddress dsAddr, LogLevel logLevel ) {
-            super(bm, dsAddr, logLevel);
+        public TestReadPowerSupplyCmd(BusMaster bm, DSAddress dsAddr) {
+            super(bm, dsAddr);
         }
 
         protected Result execute_internal() {
@@ -56,9 +56,8 @@ public class ReadPowerSupplyCmdTest {
     public void testConstructorDefaults() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         Assert.assertNull(cmd.getResult());
 
         try {
@@ -74,9 +73,8 @@ public class ReadPowerSupplyCmdTest {
     public void testGetResultWriteCTMBusy() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         cmd.setResult(ReadPowerSupplyCmd.Result.busy);
         cmd.getResultWriteCTM();
         Assert.fail("exception expected");
@@ -86,9 +84,8 @@ public class ReadPowerSupplyCmdTest {
     public void testGetResultIsParasiticBusy() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         cmd.setResult(ReadPowerSupplyCmd.Result.busy);
         cmd.getResultIsParasitic();
         Assert.fail("exception expected");
@@ -98,9 +95,8 @@ public class ReadPowerSupplyCmdTest {
     public void testGetResultIsParasiticNotSuccess() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         cmd.setResult(ReadPowerSupplyCmd.Result.communication_error);
         cmd.getResultIsParasitic();
         Assert.fail("exception expected");
@@ -110,9 +106,8 @@ public class ReadPowerSupplyCmdTest {
     public void testExecuteBusy() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         cmd.setResult(ReadPowerSupplyCmd.Result.busy);
         cmd.execute();
 
@@ -124,9 +119,8 @@ public class ReadPowerSupplyCmdTest {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(false);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         Assert.assertEquals(cmd.execute(), ReadPowerSupplyCmd.Result.bus_not_started);
     }
 
@@ -135,9 +129,8 @@ public class ReadPowerSupplyCmdTest {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(true);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         cmd.setExecuteException(new RuntimeException("foo"));
         ReadPowerSupplyCmd.Result r = cmd.execute();
         Assert.assertEquals(r, ReadPowerSupplyCmd.Result.communication_error);
@@ -149,9 +142,8 @@ public class ReadPowerSupplyCmdTest {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(true);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr, mockLogLevel);
+        TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
         cmd.setExecuteResult(setResult, setResultWriteCTM, setResultIsParasitic);
         ReadPowerSupplyCmd.Result r = cmd.execute();
         Assert.assertEquals(r, setResult);

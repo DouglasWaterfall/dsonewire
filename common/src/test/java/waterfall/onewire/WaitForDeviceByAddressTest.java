@@ -224,7 +224,7 @@ public class WaitForDeviceByAddressTest {
 
     private static class mySearchBusCmd extends SearchBusCmd {
         public mySearchBusCmd(BusMaster bm, List<String> resultList) {
-            super(bm, false, null);
+            super(bm, false);
             result = Result.success;
             this.resultData = new ResultData(resultList, 123456);
         }

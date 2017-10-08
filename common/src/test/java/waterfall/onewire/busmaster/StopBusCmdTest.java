@@ -15,8 +15,8 @@ public class StopBusCmdTest {
         private Result execute_internal_result = null;
         private RuntimeException execute_internal_exception = null;
 
-        public TestStopBusCmd(BusMaster bm, LogLevel logLevel ) {
-            super(bm, logLevel);
+        public TestStopBusCmd(BusMaster bm) {
+            super(bm);
         }
 
         protected Result execute_internal() {
@@ -43,18 +43,16 @@ public class StopBusCmdTest {
     @Test
     public void testConstructorDefaults() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestStopBusCmd cmd = new TestStopBusCmd(mockBM, mockLogLevel);
+        TestStopBusCmd cmd = new TestStopBusCmd(mockBM);
         Assert.assertNull(cmd.getResult());
     }
 
     @Test(expectedExceptions = NoResultException.class)
     public void testExecuteBusy() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestStopBusCmd cmd = new TestStopBusCmd(mockBM, mockLogLevel);
+        TestStopBusCmd cmd = new TestStopBusCmd(mockBM);
         cmd.setResult(StopBusCmd.Result.busy);
         cmd.execute();
 
@@ -64,9 +62,8 @@ public class StopBusCmdTest {
     @Test
     public void testExecuteInternalException() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestStopBusCmd cmd = new TestStopBusCmd(mockBM, mockLogLevel);
+        TestStopBusCmd cmd = new TestStopBusCmd(mockBM);
         cmd.setExecuteException(new RuntimeException("foo"));
         StopBusCmd.Result r = cmd.execute();
         Assert.assertEquals(r, StopBusCmd.Result.communication_error);
@@ -75,9 +72,8 @@ public class StopBusCmdTest {
     @Test(dataProvider="createExecuteInternalResultData")
     public void testExecuteInternalResult(StopBusCmd.Result setResult) {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestStopBusCmd cmd = new TestStopBusCmd(mockBM, mockLogLevel);
+        TestStopBusCmd cmd = new TestStopBusCmd(mockBM);
         cmd.setExecuteResult(setResult);
         StopBusCmd.Result r = cmd.execute();
         Assert.assertEquals(r, setResult);

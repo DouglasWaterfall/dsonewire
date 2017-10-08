@@ -88,9 +88,9 @@ public abstract class SearchBusCmd extends BaseCmd {
     /**
      * Class to effectively contain the results of the operation when the result is success.
      */
-    public class ResultData {
+    public static class ResultData {
         private final List<String> list;
-        private long listCRC32;
+        private final long listCRC32;
         private final long writeCTM;
 
         public ResultData(final List<String> list, final long writeCTM) {
@@ -170,8 +170,8 @@ public abstract class SearchBusCmd extends BaseCmd {
     /**
      * Protected Constructors and Methods
      */
-    protected SearchBusCmd(BusMaster busMaster, boolean byAlarm, LogLevel logLevel) {
-        super(busMaster, logLevel);
+    protected SearchBusCmd(BusMaster busMaster, boolean byAlarm) {
+        super(busMaster);
         this.familyCode = null;
         if (byAlarm) {
             this.byAlarm = new Boolean(byAlarm);
@@ -188,8 +188,8 @@ public abstract class SearchBusCmd extends BaseCmd {
      * @param busMaster
      * @param familyCode
      */
-    protected SearchBusCmd(BusMaster busMaster, short familyCode, LogLevel logLevel) {
-        super(busMaster, logLevel);
+    protected SearchBusCmd(BusMaster busMaster, short familyCode) {
+        super(busMaster);
         if ((familyCode < 0) || (familyCode > 255)) {
             throw new IllegalArgumentException("familyCode");
         }

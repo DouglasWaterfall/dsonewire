@@ -25,7 +25,6 @@ public class HA7SReadPowerSupplyCmdTest {
 
         HA7S mockHA7S = mock(HA7S.class);
         DSAddress dsAddr = new DSAddress("AAAAAAAAAA");
-        Logger.LogLevel logLevel = Logger.LogLevel.DeviceOnlyLevel();
 
         HA7S.cmdReturn cmdReturn = new HA7S.cmdReturn(cmdResult);
 
@@ -36,7 +35,7 @@ public class HA7SReadPowerSupplyCmdTest {
         }
         when(mockHA7S.cmdAddressSelect(any(DSAddress.class), any(Logger.class))).thenReturn(cmdReturn);
 
-        HA7SReadPowerSupplyCmd cmd = new HA7SReadPowerSupplyCmd(mockHA7S, dsAddr, logLevel);
+        HA7SReadPowerSupplyCmd cmd = new HA7SReadPowerSupplyCmd(mockHA7S, dsAddr);
         Assert.assertEquals(cmd.execute(), expectedResult);
     }
 
@@ -60,7 +59,6 @@ public class HA7SReadPowerSupplyCmdTest {
                                   Boolean parasitic) {
         HA7S mockHA7S = mock(HA7S.class);
         DSAddress dsAddr = new DSAddress("AAAAAAAAAA");
-        Logger.LogLevel logLevel = Logger.LogLevel.DeviceOnlyLevel();
 
         when(mockHA7S.getIsStarted()).thenReturn(true);
         when(mockHA7S.cmdAddressSelect(any(DSAddress.class), any(Logger.class))).thenReturn(new HA7S.cmdReturn(HA7S.cmdResult.Success));
@@ -68,7 +66,7 @@ public class HA7SReadPowerSupplyCmdTest {
         Answer<HA7S.cmdReturn> answer = HA7STest.makeWriteBlockCmdReturnAnswer(cmdResult, rbuf_data, writeCTM);
         when(mockHA7S.cmdWriteBlock(any(byte[].class), any(byte[].class), any(Logger.class))).thenAnswer(answer);
 
-        HA7SReadPowerSupplyCmd cmd = new HA7SReadPowerSupplyCmd(mockHA7S, dsAddr, logLevel);
+        HA7SReadPowerSupplyCmd cmd = new HA7SReadPowerSupplyCmd(mockHA7S, dsAddr);
         Assert.assertEquals(cmd.execute(), expectedResult);
         if (parasitic != null) {
             Assert.assertEquals(cmd.getResultIsParasitic(), parasitic.booleanValue());

@@ -1,4 +1,4 @@
-package waterfall.onewire.httpserver;
+package waterfall.onewire.httpserver.model;
 
 import waterfall.onewire.HttpClient.WaitForEventCmdResult;
 import waterfall.onewire.busmaster.BusMaster;
@@ -13,17 +13,74 @@ import java.util.List;
  * manage them on behalf of the client. This data is only populated on behalf of the client registering for bus
  * master events.
  */
-public class BusMasterData {
+public class Search implements NotifySearchBusCmdResult {
 
-    public final BusMaster bm;
-    public final String bmIdent;
+    private final BusMaster bm;
+    private final SearchBusCmd.ResultData[] resultData;
+    private final boolean searchActive[];
 
-    public boolean searchCancelled;
-
-    public enum SearchType {
-        General,
-        ByAlarm
+    public Search(BusMaster bm) {
+        this.bm = bm;
+        resultData = new SearchBusCmd.ResultData[]{null, null};
+        searchActive = new boolean[]{false, false};
     }
+
+    public synchronized boolean updateSearch(boolean byAlarm, long minPeriodMSec) {
+
+        if (!searchActive[byAlarm ? 1 : 0]) {
+            BusMaster.ScheduleNotifySearchBusCmdResult result = bm.scheduleNotifySearchBusCmd(this, byAlarm, minPeriodMSec);
+            if (result == BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
+                searchActive[byAlarm ? 1 : 0] = true;
+                return true;
+            } else {
+                System.err.println("schedule failure:" + result.name());
+                return false;
+            }
+        } else {
+            BusMaster.UpdateScheduledNotifySearchBusCmdResult result = bm.updateScheduledNotifySearchBusCmd(this, byAlarm, minPeriodMSec);
+            if (result == BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_Success) {
+                return true;
+            } else {
+                System.err.println("update failure:" + result.name());
+                return false;
+            }
+
+        }
+    }
+
+    public synchronized void cancelSearches() {
+        for (int i = 0; i < searchActive.length; i++) {
+            if (searchActive[i]) {
+                BusMaster.CancelScheduledNotifySearchBusCmdResult result = bm.cancelScheduledNotifySearchBusCmd(this, (i == 1));
+                if (result != BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success) {
+                    System.err.println("cancel failure:" + result.name());
+                }
+
+                searchActive[i] = false;
+            }
+        }
+    }
+
+    /**
+     * This method is for the NotifySearchCmdBusResult when a BusMaster has a search result
+     *
+     * @param bm
+     * @param byAlarm true if by the SearchBusCmd was by Alarm, false if it was a general search.
+     * @param searchResultData
+     */
+    public synchronized void notify(final BusMaster bm, final boolean byAlarm, final SearchBusCmd.ResultData searchResultData) {
+        if (searchActive[byAlarm ? 1 : 0]) {
+            resultData[byAlarm ? 1 : 0] = searchResultData;
+        }
+        else {
+            System.err.println("notify when not active");
+        }
+    }
+
+
+}
+
+    /*
 
     public class SearchData {
         NotifySearchBusCmdResult notifyObj;
@@ -77,33 +134,7 @@ public class BusMasterData {
 
     SearchData[] searchData;
 
-    public BusMasterData(BusMaster bm, String bmIdent) {
-        this.bm = bm;
-        this.bmIdent = bmIdent;
 
-        this.searchCancelled = true;
-
-        this.searchData = new SearchData[2];
-        this.searchData[0] = new SearchData();
-        this.searchData[1] = new SearchData();
-    }
-
-    public BusMaster.ScheduleNotifySearchBusCmdResult scheduleSearch(NotifySearchBusCmdResult notifyResult, SearchType sType, long minPeriodMSec) {
-        SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
-
-        if (sData.notifyObj != null) {
-            return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled;
-        }
-
-        BusMaster.ScheduleNotifySearchBusCmdResult result = bm.scheduleNotifySearchBusCmd(notifyResult, (sType == SearchType.ByAlarm), minPeriodMSec);
-        if (result == BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
-            searchCancelled = false;
-            sData.notifyObj = notifyResult;
-            sData.resultData = null;
-        }
-
-        return result;
-    }
 
     public BusMaster.UpdateScheduledNotifySearchBusCmdResult updateScheduledSearch(SearchType sType, long minPeriodMSec) {
         SearchData sData = searchData[(sType == SearchType.ByAlarm) ? 1 : 0];
@@ -139,3 +170,4 @@ public class BusMasterData {
     }
 
 }
+*/

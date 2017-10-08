@@ -54,16 +54,15 @@ public class SearchBusCmdTest {
     @DataProvider
     public Object[][] constructorDefaultsProvider() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
         // SearchBusCmd, isByAlarm, isByFamilyCode
         return new Object[][]{
                 // byAlarm, not byFamilyCode
-                {new TestSearchBusCmd(mockBM, true, mockLogLevel), true, false},
+                {new TestSearchBusCmd(mockBM, true), true, false},
                 // not byAlarm, not byFamilyCode
-                {new TestSearchBusCmd(mockBM, false, mockLogLevel), false, false},
+                {new TestSearchBusCmd(mockBM, false), false, false},
                 // not byAlarm, byFamilyCode
-                {new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel), false, true}
+                {new TestSearchBusCmd(mockBM, (short) 5), false, true}
 
         };
 
@@ -72,27 +71,24 @@ public class SearchBusCmdTest {
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadRequestNegativeFamilyCode() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        new TestSearchBusCmd(mockBM, (short) -1, mockLogLevel);
+        new TestSearchBusCmd(mockBM, (short) -1);
         Assert.fail("exception expected");
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testBadRequestBigFamilyCode() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        new TestSearchBusCmd(mockBM, (short) 256, mockLogLevel);
+        new TestSearchBusCmd(mockBM, (short) 256);
         Assert.fail("exception expected");
     }
 
     @Test(expectedExceptions = NoResultException.class)
     public void testGetResulDataBusy() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
         cmd.setResult(SearchBusCmd.Result.busy);
         cmd.getResultData();
         Assert.fail("exception expected");
@@ -101,9 +97,8 @@ public class SearchBusCmdTest {
     @Test(expectedExceptions = NoResultDataException.class)
     public void testGetResulDataNoSuccess() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
         cmd.setResult(SearchBusCmd.Result.communication_error);
         cmd.getResultData();
         Assert.fail("exception expected");
@@ -112,9 +107,8 @@ public class SearchBusCmdTest {
     @Test(expectedExceptions = NoResultException.class)
     public void testExecuteBusy() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
         cmd.setResult(SearchBusCmd.Result.busy);
         cmd.execute();
 
@@ -125,37 +119,33 @@ public class SearchBusCmdTest {
     public void testBusNotStarted() {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(false);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
         Assert.assertEquals(cmd.execute(), SearchBusCmd.Result.bus_not_started);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testResultDataListNull() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel);
-        cmd.new ResultData(null, 1);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
+        new SearchBusCmd.ResultData(null, 1);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testResultDataBadWriteCTM() {
         BusMaster mockBM = mock(BusMaster.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel);
-        cmd.new ResultData(new ArrayList<String>(), 0);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
+        new SearchBusCmd.ResultData(new ArrayList<String>(), 0);
     }
 
     @Test
     public void testExecuteInternalException() {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(true);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5, mockLogLevel);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
         cmd.setExecuteException(new RuntimeException("foo"));
         SearchBusCmd.Result r = cmd.execute();
         Assert.assertEquals(r, SearchBusCmd.Result.communication_error);
@@ -166,9 +156,8 @@ public class SearchBusCmdTest {
                                           long setResultWriteCTM) {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(true);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, false, mockLogLevel);
+        TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, false);
         cmd.setExecuteResult(setResult, setResultWriteCTM, setResultList);
         SearchBusCmd.Result r = cmd.execute();
         Assert.assertEquals(r, setResult);
@@ -196,12 +185,12 @@ public class SearchBusCmdTest {
         private List<String> execute_internal_resultList = null;
         private RuntimeException execute_internal_exception = null;
 
-        public TestSearchBusCmd(BusMaster bm, short familyCode, LogLevel logLevel) {
-            super(bm, familyCode, logLevel);
+        public TestSearchBusCmd(BusMaster bm, short familyCode) {
+            super(bm, familyCode);
         }
 
-        public TestSearchBusCmd(BusMaster bm, boolean byAlarm, LogLevel logLevel) {
-            super(bm, byAlarm, logLevel);
+        public TestSearchBusCmd(BusMaster bm, boolean byAlarm) {
+            super(bm, byAlarm);
         }
 
         protected Result execute_internal() {

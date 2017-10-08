@@ -26,35 +26,30 @@ public interface BusMaster {
     public boolean getIsStarted();
 
     /**
-     * @param logLevel may be null for no logging
      * @return
      */
-    public StartBusCmd queryStartBusCmd(Logger.LogLevel logLevel);
+    public StartBusCmd queryStartBusCmd();
 
     /**
-     * @param logLevel may be null for no logging
      * @return
      */
-    public StopBusCmd queryStopBusCmd(Logger.LogLevel logLevel);
+    public StopBusCmd queryStopBusCmd();
 
     /**
-     * @param logLevel may be null for no logging
      * @return
      */
-    public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel);
+    public SearchBusCmd querySearchBusCmd();
 
     /**
      * @param familyCode
-     * @param logLevel may be null for no logging
      * @return
      */
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel);
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode);
 
     /**
-     * @param logLevel
      * @return
      */
-    public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel);
+    public SearchBusCmd querySearchBusByAlarmCmd();
 
     /**
      *
@@ -92,12 +87,14 @@ public interface BusMaster {
      * Likewise if an independent SearchCmd is performed then there will be a callback opportunity too, the only
      * guarantee is that the the BusMaster will generate a SearchCmd at the period specified.
      * Callback objects will only be notified if the data from a search is different since the last time they were notified.
-     * @param obj obj with SearchBusNotify interface.
-     * @param typeByAlarm true if the search should be by active alarms, otherwise it will be a general bus search
+     *
+     * @param obj           obj with SearchBusNotify interface.
+     * @param typeByAlarm   true if the search should be by active alarms, otherwise it will be a general bus search
      * @param minPeriodMSec
      * @return ScheduleNotifySearchBusCmdResult
      */
-    public ScheduleNotifySearchBusCmdResult scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec);
+    public ScheduleNotifySearchBusCmdResult scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj,
+                                                                       boolean typeByAlarm, long minPeriodMSec);
 
     /**
      *
@@ -134,13 +131,16 @@ public interface BusMaster {
      * period. If another Object is registered with a shorter time period then the an earlier search may be performed.
      * Likewise if an independent SearchCmd is performed then there will be a callback opportunity too. The only
      * guarantee is that the the BusMaster will generate a SearchCmd at the period specified.
-     * @param obj obj with SearchBusNotify interface. The obj will only be called back if the data is different since
-     *            the last time it was called back. The search itself will be performed but no callback will occur.
-     * @param typeByAlarm true if the search was active alarms, otherwise general bus search
+     *
+     * @param obj           obj with SearchBusNotify interface. The obj will only be called back if the data is different since
+     *                      the last time it was called back. The search itself will be performed but no callback will occur.
+     * @param typeByAlarm   true if the search was active alarms, otherwise general bus search
      * @param minPeriodMSec
      * @return UpdateScheduledSearchBusCmdResult
      */
-    public UpdateScheduledNotifySearchBusCmdResult updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec);
+    public UpdateScheduledNotifySearchBusCmdResult updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj,
+                                                                                     boolean typeByAlarm,
+                                                                                     long minPeriodMSec);
 
     /**
      *
@@ -164,41 +164,41 @@ public interface BusMaster {
 
     /**
      * Cancel a previously scheduled search notification.
-     * @param obj Instance which had successfully called scheduleSearchNotify()
+     *
+     * @param obj         Instance which had successfully called scheduleSearchNotify()
      * @param typeByAlarm true if the search was active alarms, otherwise general bus search
      * @return CancelScheduleSearchBusCmdResult
      */
-    public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm);
+    public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj,
+                                                                                     boolean typeByAlarm);
 
     /**
      * This method will be called by any instances of the SearchBusCmd and SearchBusByAlarmCmd generated from this
      * BusMaster after they have executed with success and right before they return to the caller. The callback will
      * be on the thread of whoever is executing the SearchCmd so minimize what you do there.
+     *
      * @param cmd Command instance from this BusMaster with a successful result.
      */
     public void searchBusCmdExecuteCallback(SearchBusCmd cmd);
 
     /**
      * @param dsAddr
-     * @param logLevel may be null for no logging
      * @return
      */
-    public ConvertTCmd queryConvertTCmd(final DSAddress dsAddr, Logger.LogLevel logLevel);
+    public ConvertTCmd queryConvertTCmd(final DSAddress dsAddr);
 
     /**
      * @param dsAddr
-     * @param logLevel may be null for no logging
      * @return
      */
-    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(final DSAddress dsAddr, Logger.LogLevel logLevel);
+    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(final DSAddress dsAddr);
 
     /**
      * @param dsAddr
      * @param requestByteCount
-     * @param logLevel may be null for no logging
      * @return
      */
-    public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount, Logger.LogLevel logLevel);
+    public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount);
 
     // ReadStatusCmd
     // AA {0000 index} FFFFFFFFFF00007F {EDC1 crc}, so write 1 + 2 + 8 + 2 = 13 = 0D

@@ -30,9 +30,7 @@ public class SearchPusherByBusCmd extends SearchPusher {
         // now that ourselves are marked as the search thread, we can get on with it
         try {
             if (searchBusCmd == null) {
-                searchBusCmd = (isAlarmSearch ?
-                        bm.querySearchBusByAlarmCmd(Logger.LogLevel.CmdOnlyLevel())
-                        : bm.querySearchBusCmd(Logger.LogLevel.CmdOnlyLevel()));
+                searchBusCmd = (isAlarmSearch ? bm.querySearchBusByAlarmCmd() : bm.querySearchBusCmd());
             }
 
             // The command will internally call back to this class when it is successful, so

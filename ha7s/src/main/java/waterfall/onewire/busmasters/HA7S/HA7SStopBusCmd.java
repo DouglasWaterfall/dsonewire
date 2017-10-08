@@ -8,8 +8,8 @@ import waterfall.onewire.busmaster.StopBusCmd;
  */
 public class HA7SStopBusCmd extends StopBusCmd {
 
-    public HA7SStopBusCmd(HA7S ha7s, LogLevel logLevel) {
-        super(ha7s, logLevel);
+    public HA7SStopBusCmd(HA7S ha7s) {
+        super(ha7s);
     }
 
     protected Result execute_internal() {

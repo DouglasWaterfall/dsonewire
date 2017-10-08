@@ -22,7 +22,7 @@ public class HA7SStopBusCmdTest {
 
         HA7SSerial mockSerial = mock(HA7SSerial.class);
         HA7S ha7s = new HA7S(mockSerial);
-        StopBusCmd stopCmd = ha7s.queryStopBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StopBusCmd stopCmd = ha7s.queryStopBusCmd();
         Assert.assertEquals(stopCmd.execute(), StopBusCmd.Result.not_started);
     }
 
@@ -41,12 +41,12 @@ public class HA7SStopBusCmdTest {
         HA7S ha7s = new HA7S(mockSerial);
         Assert.assertFalse(ha7s.getIsStarted());
 
-        StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StartBusCmd startCmd = ha7s.queryStartBusCmd();
         Assert.assertEquals(startCmd.execute(), StartBusCmd.Result.started);
 
         when(mockSerial.stop(any(Logger.class))).thenReturn(serialStopResult);
 
-        StopBusCmd stopCmd = ha7s.queryStopBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StopBusCmd stopCmd = ha7s.queryStopBusCmd();
         Assert.assertEquals(stopCmd.execute(), expectedResult);
     }
 
@@ -71,12 +71,12 @@ public class HA7SStopBusCmdTest {
         HA7S ha7s = new HA7S(mockSerial);
         Assert.assertFalse(ha7s.getIsStarted());
 
-        StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StartBusCmd startCmd = ha7s.queryStartBusCmd();
         Assert.assertEquals(startCmd.execute(), StartBusCmd.Result.started);
 
         when(mockSerial.stop(any(Logger.class))).thenReturn(HA7SSerial.StopResult.SR_Success);
 
-        StopBusCmd stopCmd = ha7s.queryStopBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StopBusCmd stopCmd = ha7s.queryStopBusCmd();
         Assert.assertEquals(stopCmd.execute(), StopBusCmd.Result.stopped);
     }
 

@@ -18,8 +18,8 @@ public class ConvertTCmdTest {
         private long execute_internal_resultWriteCTM = 0;
         private RuntimeException execute_internal_exception = null;
 
-        public TestConvertTCmd(BusMaster bm, DSAddress dsAddr, LogLevel logLevel ) {
-            super(bm, dsAddr, logLevel);
+        public TestConvertTCmd(BusMaster bm, DSAddress dsAddr) {
+            super(bm, dsAddr);
         }
 
         protected Result execute_internal() {
@@ -53,9 +53,8 @@ public class ConvertTCmdTest {
     public void testConstructorDefaults() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr, mockLogLevel);
+        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
         Assert.assertNull(cmd.getResult());
 
         try {
@@ -71,9 +70,8 @@ public class ConvertTCmdTest {
     public void testGetResultWriteCTMBusy() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr, mockLogLevel);
+        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
         cmd.setResult(ConvertTCmd.Result.busy);
         cmd.getResultWriteCTM();
         Assert.fail("exception expected");
@@ -83,9 +81,8 @@ public class ConvertTCmdTest {
     public void testExecuteBusy() {
         BusMaster mockBM = mock(BusMaster.class);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr, mockLogLevel);
+        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
         cmd.setResult(ConvertTCmd.Result.busy);
         cmd.execute();
 
@@ -97,9 +94,8 @@ public class ConvertTCmdTest {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(false);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr, mockLogLevel);
+        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
         Assert.assertEquals(cmd.execute(), ConvertTCmd.Result.bus_not_started);
     }
 
@@ -108,9 +104,8 @@ public class ConvertTCmdTest {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(true);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr, mockLogLevel);
+        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
         cmd.setExecuteException(new RuntimeException("foo"));
         ConvertTCmd.Result r = cmd.execute();
         Assert.assertEquals(r, ConvertTCmd.Result.communication_error);
@@ -121,9 +116,8 @@ public class ConvertTCmdTest {
         BusMaster mockBM = mock(BusMaster.class);
         when(mockBM.getIsStarted()).thenReturn(true);
         DSAddress mockAddr = mock(DSAddress.class);
-        Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr, mockLogLevel);
+        TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
         cmd.setExecuteResult(setResult, setResultWriteCTM);
         ConvertTCmd.Result r = cmd.execute();
         Assert.assertEquals(r, setResult);

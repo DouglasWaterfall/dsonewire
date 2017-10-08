@@ -22,15 +22,15 @@ public class SearchPusherByBusCmdTest {
         SearchBusCmd mockByAlarmCmd = mock(SearchBusCmd.class);
         SearchBusCmd mockNotByAlarmCmd = mock(SearchBusCmd.class);
 
-        when(mockBM.querySearchBusByAlarmCmd(any(Logger.LogLevel.class))).thenReturn(mockByAlarmCmd);
-        when(mockBM.querySearchBusCmd(any(Logger.LogLevel.class))).thenReturn(mockNotByAlarmCmd);
+        when(mockBM.querySearchBusByAlarmCmd()).thenReturn(mockByAlarmCmd);
+        when(mockBM.querySearchBusCmd()).thenReturn(mockNotByAlarmCmd);
 
         SearchPusherByBusCmd pusher = new SearchPusherByBusCmd(mockBM, isByAlarm);
         Assert.assertTrue(pusher.adjustPeriod(250));
         delayForPush(25);
 
-        verify(mockBM, times(isByAlarm ? 1 : 0)).querySearchBusByAlarmCmd(any(Logger.LogLevel.class));
-        verify(mockBM, times(isByAlarm ? 0 : 1)).querySearchBusCmd(any(Logger.LogLevel.class));
+        verify(mockBM, times(isByAlarm ? 1 : 0)).querySearchBusByAlarmCmd();
+        verify(mockBM, times(isByAlarm ? 0 : 1)).querySearchBusCmd();
         verify(mockByAlarmCmd, times(isByAlarm ? 1 : 0)).execute();
         verify(mockNotByAlarmCmd, times(isByAlarm ? 0 : 1)).execute();
 
@@ -47,8 +47,8 @@ public class SearchPusherByBusCmdTest {
 
     public static class TestSearchBusCmd extends SearchBusCmd {
 
-        public TestSearchBusCmd(BusMaster bm, boolean byAlarm, LogLevel logLevel) {
-            super(bm, byAlarm, logLevel);
+        public TestSearchBusCmd(BusMaster bm, boolean byAlarm) {
+            super(bm, byAlarm);
         }
 
         protected Result execute_internal() {

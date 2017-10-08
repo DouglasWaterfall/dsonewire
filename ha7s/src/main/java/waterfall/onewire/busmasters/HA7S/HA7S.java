@@ -33,28 +33,28 @@ public class HA7S implements BusMaster {
     }
 
     @Override
-    public StartBusCmd queryStartBusCmd(Logger.LogLevel logLevel) {
-        return new HA7SStartBusCmd(this, logLevel);
+    public StartBusCmd queryStartBusCmd() {
+        return new HA7SStartBusCmd(this);
     }
 
     @Override
-    public StopBusCmd queryStopBusCmd(Logger.LogLevel logLevel) {
-        return new HA7SStopBusCmd(this, logLevel);
+    public StopBusCmd queryStopBusCmd() {
+        return new HA7SStopBusCmd(this);
     }
 
     @Override
-    public SearchBusCmd querySearchBusCmd(Logger.LogLevel logLevel) {
-        return new HA7SSearchBusCmd(this, false, logLevel);
+    public SearchBusCmd querySearchBusCmd() {
+        return new HA7SSearchBusCmd(this, false);
     }
 
     @Override
-    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode, Logger.LogLevel logLevel) {
-        return new HA7SSearchBusCmd(this, familyCode, logLevel);
+    public SearchBusCmd querySearchBusByFamilyCmd(short familyCode) {
+        return new HA7SSearchBusCmd(this, familyCode);
     }
 
     @Override
-    public SearchBusCmd querySearchBusByAlarmCmd(Logger.LogLevel logLevel) {
-        return new HA7SSearchBusCmd(this, true, logLevel);
+    public SearchBusCmd querySearchBusByAlarmCmd() {
+        return new HA7SSearchBusCmd(this, true);
     }
 
     @Override
@@ -108,18 +108,18 @@ public class HA7S implements BusMaster {
     }
 
     @Override
-    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
-        return new HA7SReadPowerSupplyCmd(this, dsAddr, logLevel);
+    public ReadPowerSupplyCmd queryReadPowerSupplyCmd(DSAddress dsAddr) {
+        return new HA7SReadPowerSupplyCmd(this, dsAddr);
     }
 
     @Override
-    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr, Logger.LogLevel logLevel) {
-        return new HA7SConvertTCmd(this, dsAddr, logLevel);
+    public ConvertTCmd queryConvertTCmd(DSAddress dsAddr) {
+        return new HA7SConvertTCmd(this, dsAddr);
     }
 
     @Override
-    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount, Logger.LogLevel logLevel) {
-        return new HA7SReadScratchpadCmd(this, dsAddr, requestByteCount, logLevel);
+    public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount) {
+        return new HA7SReadScratchpadCmd(this, dsAddr, requestByteCount);
     }
 
     /*

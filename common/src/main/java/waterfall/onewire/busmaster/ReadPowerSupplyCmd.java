@@ -102,8 +102,8 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected ReadPowerSupplyCmd(BusMaster busMaster, DSAddress dsAddr, LogLevel logLevel) {
-        super(busMaster, dsAddr, logLevel);
+    protected ReadPowerSupplyCmd(BusMaster busMaster, DSAddress dsAddr) {
+        super(busMaster, dsAddr);
     }
 
     protected abstract Result execute_internal();

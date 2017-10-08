@@ -15,8 +15,8 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
 
     private byte[] readScratchpadCmdData;
 
-    public HA7SReadScratchpadCmd(HA7S ha7s, DSAddress dsAddr, short requestByteCount, LogLevel logLevel) {
-        super(ha7s, dsAddr, requestByteCount, logLevel);
+    public HA7SReadScratchpadCmd(HA7S ha7s, DSAddress dsAddr, short requestByteCount) {
+        super(ha7s, dsAddr, requestByteCount);
     }
 
     protected ReadScratchpadCmd.Result execute_internal() {

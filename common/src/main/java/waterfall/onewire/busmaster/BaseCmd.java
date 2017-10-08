@@ -9,25 +9,17 @@ import java.util.Iterator;
  * Created by dwaterfa on 7/7/16.
  */
 public class BaseCmd implements Logger {
-    protected BusMaster busMaster;
+    protected final BusMaster busMaster;
     protected ArrayList<String> logger;
     protected LogLevel logLevel;
     protected String logContext;
 
-    public BaseCmd(BusMaster busMaster, LogLevel logLevel) {
+    public BaseCmd(BusMaster busMaster) {
         if (busMaster == null) {
             throw new IllegalArgumentException("busMaster");
         }
         this.busMaster = busMaster;
-        if ((logLevel != null) && (logLevel.isAnyLevelSet())) {
-            this.logger = new ArrayList<String>();
-            this.logLevel = logLevel;
-            this.logContext = this.getClass().getSimpleName() + " ";
-        }
-        else {
-            this.logger = null;
-            this.logLevel = null;
-        }
+        setLogLevel(null);
     }
 
     /**
@@ -41,13 +33,32 @@ public class BaseCmd implements Logger {
      *
      * @return
      */
-    public Logger getLogger() { return this; }
+    public Logger getLogger() {
+        return (logger != null) ? this : null;
+    }
 
     /**
      *
      * @return
      */
     public LogLevel getLogLevel() { return logLevel; }
+
+    /**
+     *
+     * @param logLevel
+     */
+    public void setLogLevel(LogLevel logLevel) {
+        if ((logLevel != null) && (logLevel.isAnyLevelSet())) {
+            this.logger = new ArrayList<String>();
+            this.logLevel = logLevel;
+            this.logContext = this.getClass().getSimpleName() + " ";
+        }
+        else {
+            this.logger = null;
+            this.logLevel = null;
+            this.logContext = null;
+        }
+    }
 
     /**
      *

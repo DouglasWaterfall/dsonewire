@@ -24,7 +24,6 @@ public class HA7SConvertTCmdTest {
 
         HA7S mockHA7S = mock(HA7S.class);
         DSAddress dsAddr = new DSAddress("AAAAAAAAAA");
-        Logger.LogLevel logLevel = Logger.LogLevel.DeviceOnlyLevel();
 
         HA7S.cmdReturn cmdReturn = new HA7S.cmdReturn(cmdResult);
 
@@ -36,7 +35,7 @@ public class HA7SConvertTCmdTest {
         }
         when(mockHA7S.cmdAddressSelect(any(DSAddress.class), any(Logger.class))).thenReturn(cmdReturn);
 
-        HA7SConvertTCmd cmd = new HA7SConvertTCmd(mockHA7S, dsAddr, logLevel);
+        HA7SConvertTCmd cmd = new HA7SConvertTCmd(mockHA7S, dsAddr);
         Assert.assertEquals(cmd.execute(), expectedResult);
     }
 
@@ -57,14 +56,12 @@ public class HA7SConvertTCmdTest {
                                           ConvertTCmd.Result expectedResult) {
         HA7S mockHA7S = mock(HA7S.class);
         DSAddress dsAddr = new DSAddress("AAAAAAAAAA");
-        Logger.LogLevel logLevel = Logger.LogLevel.DeviceOnlyLevel();
-
 
         when(mockHA7S.getIsStarted()).thenReturn(true);
         when(mockHA7S.cmdAddressSelect(any(DSAddress.class), any(Logger.class))).thenReturn(new HA7S.cmdReturn(HA7S.cmdResult.Success));
         when(mockHA7S.cmdWriteBlock(any(byte[].class), any(byte[].class), any(Logger.class))).thenReturn(cmdReturn);
 
-        HA7SConvertTCmd cmd = new HA7SConvertTCmd(mockHA7S, dsAddr, logLevel);
+        HA7SConvertTCmd cmd = new HA7SConvertTCmd(mockHA7S, dsAddr);
         Assert.assertEquals(cmd.execute(), expectedResult);
     }
 

@@ -64,7 +64,7 @@ public class HA7STest {
 
         Assert.assertFalse(ha7s.getIsStarted());
 
-        StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+        StartBusCmd startCmd = ha7s.queryStartBusCmd();
         Assert.assertNotNull(startCmd);
 
         try {
@@ -92,7 +92,7 @@ public class HA7STest {
 
         Assert.assertFalse(ha7s.getIsStarted());
 
-        StopBusCmd stopBusCmd = ha7s.queryStopBusCmd(Logger.LogLevel.CmdOnlyLevel());
+        StopBusCmd stopBusCmd = ha7s.queryStopBusCmd();
 
         Assert.assertNotNull(stopBusCmd);
 
@@ -105,7 +105,7 @@ public class HA7STest {
         }
 
         {
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
             Assert.assertNotNull(startCmd);
 
             try {
@@ -141,7 +141,7 @@ public class HA7STest {
 
         HA7S ha7s = new HA7S(serialDummy);
 
-        SearchBusCmd searchBusCmd = ha7s.querySearchBusCmd(Logger.LogLevel.CmdOnlyLevel());
+        SearchBusCmd searchBusCmd = ha7s.querySearchBusCmd();
         Assert.assertNotNull(searchBusCmd);
         Assert.assertFalse(searchBusCmd.isByAlarm());
         Assert.assertFalse(searchBusCmd.isByFamilyCode());
@@ -155,7 +155,7 @@ public class HA7STest {
         }
 
         {
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
             Assert.assertNotNull(startCmd);
 
             try {
@@ -251,7 +251,7 @@ public class HA7STest {
 
         HA7S ha7s = new HA7S(serialDummy);
 
-        SearchBusCmd searchBusCmd = ha7s.querySearchBusByAlarmCmd(Logger.LogLevel.CmdOnlyLevel());
+        SearchBusCmd searchBusCmd = ha7s.querySearchBusByAlarmCmd();
         Assert.assertNotNull(searchBusCmd);
         Assert.assertTrue(searchBusCmd.isByAlarm());
         Assert.assertFalse(searchBusCmd.isByFamilyCode());
@@ -265,7 +265,7 @@ public class HA7STest {
         }
 
         {
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
             Assert.assertNotNull(startCmd);
 
             try {
@@ -411,7 +411,7 @@ public class HA7STest {
 
         short familyCode = 0x27;
 
-        SearchBusCmd searchBusCmd = ha7s.querySearchBusByFamilyCmd(familyCode, Logger.LogLevel.CmdOnlyLevel());
+        SearchBusCmd searchBusCmd = ha7s.querySearchBusByFamilyCmd(familyCode);
         Assert.assertNotNull(searchBusCmd);
         Assert.assertFalse(searchBusCmd.isByAlarm());
         Assert.assertTrue(searchBusCmd.isByFamilyCode());
@@ -425,7 +425,7 @@ public class HA7STest {
         }
 
         {
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
             Assert.assertNotNull(startCmd);
 
             try {
@@ -643,7 +643,7 @@ public class HA7STest {
         Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted);
 
         {
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
             Assert.assertNotNull(startCmd);
 
             try {
@@ -780,7 +780,7 @@ public class HA7STest {
         Assert.assertEquals(result, BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted);
 
         {
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
             Assert.assertNotNull(startCmd);
 
             try {
@@ -907,7 +907,7 @@ public class HA7STest {
         HA7S ha7s = new HA7S(serialDummy);
 
         {
-            StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StartBusCmd startCmd = ha7s.queryStartBusCmd();
             Assert.assertNotNull(startCmd);
 
             try {
@@ -1035,7 +1035,7 @@ public class HA7STest {
 
         // Stop the busmaster to cancel everything.
         {
-            StopBusCmd stopCmd = ha7s.queryStopBusCmd(Logger.LogLevel.CmdOnlyLevel());
+            StopBusCmd stopCmd = ha7s.queryStopBusCmd();
             Assert.assertNotNull(stopCmd);
 
             try {

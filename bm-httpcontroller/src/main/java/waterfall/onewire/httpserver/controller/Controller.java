@@ -1,4 +1,4 @@
-package waterfall.onewire.httpserver;
+package waterfall.onewire.httpserver.controller;
 
 import com.dalsemi.onewire.utils.Convert;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +9,7 @@ import waterfall.onewire.BusMasterRegistry;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HttpClient.*;
 import waterfall.onewire.busmaster.*;
+import waterfall.onewire.httpserver.model.Model;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;

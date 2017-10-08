@@ -44,7 +44,7 @@ public class HA7SStartBusCmdTest {
         HA7S ha7s = new HA7S(mockSerial);
         Assert.assertFalse(ha7s.getIsStarted());
 
-        StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StartBusCmd startCmd = ha7s.queryStartBusCmd();
         Assert.assertEquals(startCmd.execute(), expectedResult);
     }
 
@@ -82,7 +82,7 @@ public class HA7SStartBusCmdTest {
         HA7S ha7s = new HA7S(mockSerial);
         Assert.assertFalse(ha7s.getIsStarted());
 
-        StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StartBusCmd startCmd = ha7s.queryStartBusCmd();
         Assert.assertEquals(startCmd.execute(), expectedResult);
     }
 
@@ -143,7 +143,7 @@ public class HA7SStartBusCmdTest {
         HA7S ha7s = new HA7S(mockSerial);
         Assert.assertFalse(ha7s.getIsStarted());
 
-        StartBusCmd startCmd = ha7s.queryStartBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StartBusCmd startCmd = ha7s.queryStartBusCmd();
         Assert.assertEquals(startCmd.execute(), StartBusCmd.Result.started);
         Assert.assertEquals(startCmd.execute(), StartBusCmd.Result.already_started);
     }

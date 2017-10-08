@@ -37,7 +37,7 @@ public class NotifySearchBusCmdHelperTest {
         if (isStarted) {
             when(mockBM.getIsStarted()).thenReturn(true);
             mySearchBusCmd mySearchBusCmd = new mySearchBusCmd(mockBM, byAlarm);
-            when(mockBM.querySearchBusByAlarmCmd(any(Logger.LogLevel.class))).thenReturn(mySearchBusCmd);
+            when(mockBM.querySearchBusByAlarmCmd()).thenReturn(mySearchBusCmd);
         }
 
         SearchPusher mockSearchPusher = mock(SearchPusher.class);
@@ -84,8 +84,8 @@ public class NotifySearchBusCmdHelperTest {
                 {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted, mockNSBCR, notStarted, byAlarm, addOnce, ignoredMinPeriodMSec},
                 {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted, mockNSBCR, notStarted, notByAlarm, addOnce, ignoredMinPeriodMSec},
 
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, byAlarm, addTwice, ignoredMinPeriodMSec },
-                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, notByAlarm, addTwice, ignoredMinPeriodMSec }
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, byAlarm, addTwice, ignoredMinPeriodMSec},
+                {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled, mockNSBCR, started, notByAlarm, addTwice, ignoredMinPeriodMSec}
         };
     }
 
@@ -370,11 +370,11 @@ public class NotifySearchBusCmdHelperTest {
         long expected_writeCTM = 0;
 
         public mySearchBusCmd(BusMaster bm, boolean byAlarm) {
-            super(bm, byAlarm, null);
+            super(bm, byAlarm);
         }
 
         public mySearchBusCmd(BusMaster bm, short familyCode) {
-            super(bm, familyCode, null);
+            super(bm, familyCode);
         }
 
         public SearchBusCmd.Result execute_internal() {
@@ -404,8 +404,7 @@ public class NotifySearchBusCmdHelperTest {
     private void delayForPush() {
         try {
             Thread.sleep(5);
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             ;
         }
     }

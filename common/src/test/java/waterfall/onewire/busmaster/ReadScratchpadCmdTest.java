@@ -20,8 +20,8 @@ public class ReadScratchpadCmdTest {
         private byte[] execute_internal_resultHexData = null;
         private RuntimeException execute_internal_exception = null;
 
-        public TestReadScratchpadCmd(BusMaster bm, DSAddress dsAddr, short requestByteCount, LogLevel logLevel ) {
-            super(bm, dsAddr, requestByteCount, logLevel);
+        public TestReadScratchpadCmd(BusMaster bm, DSAddress dsAddr, short requestByteCount) {
+            super(bm, dsAddr, requestByteCount);
         }
 
         protected Result execute_internal() {
@@ -61,7 +61,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         Assert.assertNull(cmd.getResult());
 
         try {
@@ -79,7 +79,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        new TestReadScratchpadCmd(mockBM, mockAddr, (short)0, mockLogLevel);
+        new TestReadScratchpadCmd(mockBM, mockAddr, (short)0);
         Assert.fail("exception expected");
     }
 
@@ -89,7 +89,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setResult(ReadScratchpadCmd.Result.busy);
         cmd.getResultWriteCTM();
         Assert.fail("exception expected");
@@ -101,7 +101,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setResult(ReadScratchpadCmd.Result.communication_error);
         cmd.getResultWriteCTM();
         Assert.fail("exception expected");
@@ -113,7 +113,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setResult(ReadScratchpadCmd.Result.busy);
         cmd.getResultData();
         Assert.fail("exception expected");
@@ -125,7 +125,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setResult(ReadScratchpadCmd.Result.communication_error);
         cmd.getResultData();
         Assert.fail("exception expected");
@@ -137,7 +137,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setResult(ReadScratchpadCmd.Result.busy);
         cmd.getResultHexData();
         Assert.fail("exception expected");
@@ -149,7 +149,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setResult(ReadScratchpadCmd.Result.communication_error);
         cmd.getResultHexData();
         Assert.fail("exception expected");
@@ -161,7 +161,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setResult(ReadScratchpadCmd.Result.busy);
         cmd.execute();
 
@@ -175,7 +175,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         Assert.assertEquals(cmd.execute(), ReadScratchpadCmd.Result.bus_not_started);
     }
 
@@ -186,7 +186,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short)5);
         cmd.setExecuteException(new RuntimeException("foo"));
         ReadScratchpadCmd.Result r = cmd.execute();
         Assert.assertEquals(r, ReadScratchpadCmd.Result.communication_error);
@@ -200,7 +200,7 @@ public class ReadScratchpadCmdTest {
         DSAddress mockAddr = mock(DSAddress.class);
         Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
-        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, setRequestByteCount, mockLogLevel);
+        TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, setRequestByteCount);
         cmd.setExecuteResult(setResult, setResultWriteCTM, setResultData, setResultHexData);
         ReadScratchpadCmd.Result r = cmd.execute();
         Assert.assertEquals(r, setResult);

@@ -9,8 +9,8 @@ import waterfall.onewire.busmaster.Logger;
  */
 public class HA7SConvertTCmd extends ConvertTCmd {
 
-    public HA7SConvertTCmd(HA7S ha7s, DSAddress dsAddr, LogLevel logLevel) {
-        super(ha7s, dsAddr, logLevel);
+    public HA7SConvertTCmd(HA7S ha7s, DSAddress dsAddr) {
+        super(ha7s, dsAddr);
     }
 
     protected ConvertTCmd.Result execute_internal() {

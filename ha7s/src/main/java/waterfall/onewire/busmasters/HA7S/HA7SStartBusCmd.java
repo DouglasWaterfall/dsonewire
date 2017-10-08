@@ -8,8 +8,8 @@ import waterfall.onewire.busmaster.StartBusCmd;
  */
 public class HA7SStartBusCmd extends StartBusCmd {
 
-    public HA7SStartBusCmd(HA7S ha7s, LogLevel logLevel) {
-        super(ha7s, logLevel);
+    public HA7SStartBusCmd(HA7S ha7s) {
+        super(ha7s);
     }
 
     protected StartBusCmd.Result execute_internal() {

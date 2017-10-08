@@ -26,10 +26,9 @@ public class HA7SSearchBusCmdTest {
         Assert.assertTrue(deviceAddresses.length <= 2);
 
         HA7S mockHA7S = mock(HA7S.class);
-        Logger.LogLevel logLevel = Logger.LogLevel.DeviceOnlyLevel();
         when(mockHA7S.getIsStarted()).thenReturn(true);
 
-        SearchBusCmd cmd = new HA7SSearchBusCmd(mockHA7S, logLevel);
+        SearchBusCmd cmd = new HA7SSearchBusCmd(mockHA7S);
         Assert.assertFalse(cmd.isByAlarm());
         Assert.assertFalse(cmd.isByFamilyCode());
 
@@ -81,10 +80,9 @@ public class HA7SSearchBusCmdTest {
         Assert.assertTrue(deviceAddresses.length <= 2);
 
         HA7S mockHA7S = mock(HA7S.class);
-        Logger.LogLevel logLevel = Logger.LogLevel.DeviceOnlyLevel();
         when(mockHA7S.getIsStarted()).thenReturn(true);
 
-        SearchBusCmd cmd = new HA7SSearchBusCmd(mockHA7S, true, logLevel);
+        SearchBusCmd cmd = new HA7SSearchBusCmd(mockHA7S, true);
         Assert.assertTrue(cmd.isByAlarm());
         Assert.assertFalse(cmd.isByFamilyCode());
 
@@ -136,11 +134,10 @@ public class HA7SSearchBusCmdTest {
         Assert.assertTrue(deviceAddresses.length <= 2);
 
         HA7S mockHA7S = mock(HA7S.class);
-        Logger.LogLevel logLevel = Logger.LogLevel.DeviceOnlyLevel();
         when(mockHA7S.getIsStarted()).thenReturn(true);
 
         short familyCode = 54;
-        SearchBusCmd cmd = new HA7SSearchBusCmd(mockHA7S, familyCode, logLevel);
+        SearchBusCmd cmd = new HA7SSearchBusCmd(mockHA7S, familyCode);
         Assert.assertFalse(cmd.isByAlarm());
         Assert.assertTrue(cmd.isByFamilyCode());
         Assert.assertEquals(((HA7SSearchBusCmd)cmd).getFamilyCode(), familyCode);
@@ -214,11 +211,11 @@ public class HA7SSearchBusCmdTest {
         when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))
                 .thenReturn(new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success));
 
-        StartBusCmd startCmd = mockHA7S.queryStartBusCmd(Logger.LogLevel.DeviceOnlyLevel());
+        StartBusCmd startCmd = mockHA7S.queryStartBusCmd();
         Assert.assertEquals(startCmd.execute(), StartBusCmd.Result.started);
 
         // searching
-        SearchBusCmd searchCmd = new HA7SSearchBusCmd(mockHA7S, Logger.LogLevel.DeviceOnlyLevel());
+        SearchBusCmd searchCmd = new HA7SSearchBusCmd(mockHA7S);
         Assert.assertFalse(searchCmd.isByAlarm());
         Assert.assertFalse(searchCmd.isByFamilyCode());
 

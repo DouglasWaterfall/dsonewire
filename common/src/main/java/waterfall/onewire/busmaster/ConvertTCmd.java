@@ -84,8 +84,8 @@ public abstract class ConvertTCmd extends DeviceBaseCmd {
     /**
      * Protected Methods and Constructors
      */
-    protected ConvertTCmd(BusMaster busMaster, DSAddress dsAddr, LogLevel logLevel) {
-        super(busMaster, dsAddr, logLevel);
+    protected ConvertTCmd(BusMaster busMaster, DSAddress dsAddr) {
+        super(busMaster, dsAddr);
     }
 
     protected abstract Result execute_internal();

@@ -12,18 +12,18 @@ import java.util.List;
 public class HA7SSearchBusCmd extends SearchBusCmd {
 
     // All (so !Alarm)
-    public HA7SSearchBusCmd(HA7S ha7s, LogLevel logLevel) {
-        super(ha7s, false, logLevel);
+    public HA7SSearchBusCmd(HA7S ha7s) {
+        super(ha7s, false);
     }
 
     // By familyCode
-    public HA7SSearchBusCmd(HA7S ha7s, short familyCode, LogLevel logLevel) {
-        super(ha7s, familyCode, logLevel);
+    public HA7SSearchBusCmd(HA7S ha7s, short familyCode) {
+        super(ha7s, familyCode);
     }
 
     // By Alarm
-    public HA7SSearchBusCmd(HA7S ha7s, boolean byAlarm, LogLevel logLevel) {
-        super(ha7s, byAlarm, logLevel);
+    public HA7SSearchBusCmd(HA7S ha7s, boolean byAlarm) {
+        super(ha7s, byAlarm);
     }
 
     public short getFamilyCode() {
@@ -100,7 +100,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
 
     public void setResultData(long resultWriteCTM, List<String> resultList) {
         assert (result == SearchBusCmd.Result.busy);
-        this.resultData = new SearchBusCmd.ResultData(resultList, resultWriteCTM);
+        this.resultData = new ResultData(resultList, resultWriteCTM);
     }
 
     private Logger getDeviceLevelLogger() {

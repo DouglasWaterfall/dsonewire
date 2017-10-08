@@ -10,8 +10,8 @@ import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
  */
 public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
-    public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr, LogLevel logLevel) {
-        super(ha7s, dsAddr, logLevel);
+    public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr) {
+        super(ha7s, dsAddr);
     }
 
     @Override

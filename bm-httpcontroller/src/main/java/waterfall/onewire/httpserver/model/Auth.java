@@ -1,4 +1,4 @@
-package waterfall.onewire.httpserver;
+package waterfall.onewire.httpserver.model;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import waterfall.onewire.BusMasterRegistry;
@@ -6,6 +6,8 @@ import waterfall.onewire.HttpClient.*;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
+import waterfall.onewire.httpserver.BusMasterData;
+import waterfall.onewire.httpserver.BusMasterTracker;
 
 import java.util.*;
 
@@ -13,7 +15,7 @@ import java.util.*;
  * Created by dwaterfa on 1/12/17.
  */
 
-public class Model {
+public class Auth {
 
     private final BusMasterRegistry bmRegistry;
     private final Base64.Encoder encoder;
@@ -59,7 +61,7 @@ public class Model {
             }
 
             try {
-                Model.this.wait(timeRemainingMSec);
+                Auth.this.wait(timeRemainingMSec);
             } catch (InterruptedException e) {
                 // we have woken up due to the timeout or because someone has notified us.
             }
@@ -69,7 +71,7 @@ public class Model {
 
         public void notifyWaitingThreadIfPresent() {
             if (thread != null) {
-                Model.this.notify();
+                Auth.this.notify();
             }
         }
 
@@ -104,7 +106,7 @@ public class Model {
     private final BusMasterTracker bmUpdateData;
 
     @Autowired
-    public Model(BusMasterRegistry bmRegistry) {
+    public Auth(BusMasterRegistry bmRegistry) {
         this.bmRegistry = bmRegistry;
         this.bmUpdateData = new BusMasterTracker();
         this.encoder = Base64.getUrlEncoder();
@@ -285,7 +287,7 @@ public class Model {
 
         // Called when the timer associated with this Task fires off.
         public void run() {
-            Model.this.deadManTimerTaskNotify(this);
+            Auth.this.deadManTimerTaskNotify(this);
         }
 
     }
@@ -305,7 +307,7 @@ public class Model {
         @Override
         public void update(Observable o, Object arg) {
             if ((o instanceof BusMasterRegistry) && (arg instanceof BusMaster)) {
-                Model.this.bmRegistryUpdate((BusMasterRegistry) o, (BusMaster) arg);
+                Auth.this.bmRegistryUpdate((BusMasterRegistry) o, (BusMaster) arg);
             }
         }
     }
@@ -322,7 +324,7 @@ public class Model {
 
         @Override
         public void notify(BusMaster bm, boolean byAlarm, SearchBusCmd.ResultData searchResultData) {
-            Model.this.searchBusNotify(this, bm, byAlarm, searchResultData);
+            Auth.this.searchBusNotify(this, bm, byAlarm, searchResultData);
         }
     }
 
