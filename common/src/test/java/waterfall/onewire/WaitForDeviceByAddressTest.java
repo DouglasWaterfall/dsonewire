@@ -13,6 +13,7 @@ import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
 
@@ -30,7 +31,9 @@ public class WaitForDeviceByAddressTest {
     @Test(expectedExceptions = {IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "bmRegistry null")
     public void testWaitDeviceByAddressNullRegistry() {
 
-        new WaitForDeviceByAddress(null, 250);
+        boolean typeByAlarm = false;
+
+        new WaitForDeviceByAddress(null, typeByAlarm, 250);
 
         Assert.fail("expected exception");
     }
@@ -38,23 +41,39 @@ public class WaitForDeviceByAddressTest {
     @Test(expectedExceptions = {IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "bmSearchPeriod less than 1")
     public void testWaitDeviceByAddressBadTimeout() {
 
-        new WaitForDeviceByAddress(new BusMasterRegistry(), -1);
+        boolean typeByAlarm = false;
+
+        new WaitForDeviceByAddress(new BusMasterRegistry(), typeByAlarm, -1);
 
         Assert.fail("expected exception");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "address null or empty")
-    public void testWaitDeviceByAddressNullAddress() {
+    @Test(expectedExceptions = {IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "callback")
+    public void testWaitDeviceByAddressNullCallback() {
 
-        new WaitForDeviceByAddress(new BusMasterRegistry(), 1).waitForBM(null);
+        boolean typeByAlarm = false;
+
+        new WaitForDeviceByAddress(new BusMasterRegistry(), typeByAlarm, 1).addAddress(null, new String[0]);
 
         Assert.fail("expected exception");
     }
 
-    @Test(expectedExceptions = {IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "address null or empty")
-    public void testWaitDeviceByAddressEmptyAddress() {
+    @Test(expectedExceptions = {IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "addresses")
+    public void testWaitDeviceByAddressNullAddresses() {
 
-        new WaitForDeviceByAddress(new BusMasterRegistry(), 1).waitForBM("");
+        boolean typeByAlarm = false;
+
+        new WaitForDeviceByAddress(new BusMasterRegistry(), typeByAlarm, 1).addAddress(new myCallback(), null);
+
+        Assert.fail("expected exception");
+    }
+
+    @Test(expectedExceptions = {IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "dup hello")
+    public void testWaitDeviceByAddressDuplicateAddresses() {
+
+        boolean typeByAlarm = false;
+
+        new WaitForDeviceByAddress(new BusMasterRegistry(), typeByAlarm, 1).addAddress(new myCallback(), new String[]{"hello", "hello"});
 
         Assert.fail("expected exception");
     }
@@ -94,18 +113,137 @@ public class WaitForDeviceByAddressTest {
         String SEARCH_ADDRESS_2 = "MyAddress_2";
 
         // this will call right away
-        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeAnswerFor(mockBM, new String[] { SEARCH_ADDRESS, SEARCH_ADDRESS_2 }, 0);
+        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
+                new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
 
-        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class), any(Long.class))).thenAnswer(answer);
+        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
+                any(Long.class))).thenAnswer(answer);
 
-        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, 250);
+        // we will NOT cancel the search for each device after it is returned
+        myCallback myCallback = new myCallback();
 
-        BusMaster foundBM = wfdby.waitForBM(SEARCH_ADDRESS);
+        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, true, 250);
+        wfdby.addAddress(myCallback, new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2});
+
+        BusMaster foundBM = myCallback.waitFor(SEARCH_ADDRESS);
         Assert.assertEquals(foundBM, mockBM);
 
-        foundBM = wfdby.waitForBM(SEARCH_ADDRESS_2);
+        foundBM = myCallback.waitFor(SEARCH_ADDRESS_2);
+        Assert.assertEquals(foundBM, mockBM);
+
+        // the searches should still be in effect as we hae not cancelled
+        verify(mockBM, times(0)).cancelScheduledNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class));
+    }
+
+    @Test
+    public void testWaitDeviceByAddressImmediateResultImmediateCancel() {
+        BusMasterRegistry bmR = new BusMasterRegistry();
+
+        BusMaster mockBM = mock(BusMaster.class);
+
+        when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
+        when(mockBM.getIsStarted()).thenReturn(true);
+        when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
+
+        Assert.assertNotNull(bmR.getBusMasters());
+        Assert.assertEquals(bmR.getBusMasters().length, 0);
+        Assert.assertFalse(bmR.hasBusMasterByName(MOCK_BM_NAME));
+
+        bmR.addBusMaster(mockBM);
+
+        Assert.assertFalse(((Observable) bmR).hasChanged());
+
+        Assert.assertNotNull(bmR.getBusMasters());
+        Assert.assertEquals(bmR.getBusMasters().length, 1);
+        Assert.assertEquals(bmR.getBusMasters()[0].getName(), MOCK_BM_NAME);
+        Assert.assertTrue(bmR.hasBusMasterByName(MOCK_BM_NAME));
+
+        String SEARCH_ADDRESS = "MyAddress";
+        String SEARCH_ADDRESS_2 = "MyAddress_2";
+
+        // this will call right away
+        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
+                new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
+
+        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
+                any(Long.class))).thenAnswer(answer);
+
+        // we will cancel the search for each device after it is returned
+        myCallback myCallback = new myCallback(true);
+
+        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, true, 250);
+        wfdby.addAddress(myCallback, new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2});
+
+        BusMaster foundBM = myCallback.waitFor(SEARCH_ADDRESS);
+        Assert.assertEquals(foundBM, mockBM);
+
+        foundBM = myCallback.waitFor(SEARCH_ADDRESS_2);
+        Assert.assertEquals(foundBM, mockBM);
+
+        // therefore there should be no searches going on
+        verify(mockBM, times(1)).cancelScheduledNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class));
+    }
+
+    @Test
+    public void testWaitDeviceByAddressImmediateResultImmediateCancelStartOver() {
+        BusMasterRegistry bmR = new BusMasterRegistry();
+
+        BusMaster mockBM = mock(BusMaster.class);
+
+        when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
+        when(mockBM.getIsStarted()).thenReturn(true);
+        when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
+
+        Assert.assertNotNull(bmR.getBusMasters());
+        Assert.assertEquals(bmR.getBusMasters().length, 0);
+        Assert.assertFalse(bmR.hasBusMasterByName(MOCK_BM_NAME));
+
+        bmR.addBusMaster(mockBM);
+
+        Assert.assertFalse(((Observable) bmR).hasChanged());
+
+        Assert.assertNotNull(bmR.getBusMasters());
+        Assert.assertEquals(bmR.getBusMasters().length, 1);
+        Assert.assertEquals(bmR.getBusMasters()[0].getName(), MOCK_BM_NAME);
+        Assert.assertTrue(bmR.hasBusMasterByName(MOCK_BM_NAME));
+
+        String SEARCH_ADDRESS = "MyAddress";
+        String SEARCH_ADDRESS_2 = "MyAddress_2";
+
+        // this will call right away
+        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
+                new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
+
+        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
+                any(Long.class))).thenAnswer(answer);
+
+        // we will cancel the search for each device after it is returned
+        myCallback myCallback = new myCallback(true);
+
+        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, true, 250);
+        wfdby.addAddress(myCallback, new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2});
+
+        BusMaster foundBM = myCallback.waitFor(SEARCH_ADDRESS);
+        Assert.assertEquals(foundBM, mockBM);
+
+        foundBM = myCallback.waitFor(SEARCH_ADDRESS_2);
+        Assert.assertEquals(foundBM, mockBM);
+
+        // therefore there should be no searches going on
+        verify(mockBM, times(1)).cancelScheduledNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class));
+
+        // Now start another one
+        myCallback.clear();
+
+        wfdby.addAddress(myCallback, new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2});
+
+        foundBM = myCallback.waitFor(SEARCH_ADDRESS);
+        Assert.assertEquals(foundBM, mockBM);
+
+        foundBM = myCallback.waitFor(SEARCH_ADDRESS_2);
         Assert.assertEquals(foundBM, mockBM);
     }
+
 
     // With the bus master already registered, we wait for a device to show up, which will happen after three
     // successive updates.
@@ -137,14 +275,22 @@ public class WaitForDeviceByAddressTest {
         String SEARCH_ADDRESS_3 = "MyAddress_3";
 
         // this will call back with one additional address every 100ms
-        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeAnswerFor(mockBM, new String[] { SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3 }, 100);
+        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
+                new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3}, 100);
 
-        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class), any(Long.class))).thenAnswer(answer);
+        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class),
+                any(Boolean.class), any(Long.class))).thenAnswer(answer);
+
+        myCallback myCallback = new myCallback();
 
         // This will wait for this third address to show up.
-        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, 50);
-        BusMaster foundBM = wfdby.waitForBM(SEARCH_ADDRESS_3);
+        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, false, 50);
+        wfdby.addAddress(myCallback, new String[]{SEARCH_ADDRESS_3});
+
+        BusMaster foundBM = myCallback.waitFor(SEARCH_ADDRESS_3);
         Assert.assertEquals(foundBM, mockBM);
+
+        wfdby.cancelAddress(myCallback, SEARCH_ADDRESS_3);
 
         verify(mockBM, times(1)).cancelScheduledNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class));
     }
@@ -173,14 +319,22 @@ public class WaitForDeviceByAddressTest {
         String SEARCH_ADDRESS_3 = "MyAddress_3";
 
         // this will call back with one additional address every 100ms
-        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeAnswerFor(mockBM, new String[] { SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3 }, 100);
+        Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
+                new String[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3}, 100);
 
-        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class), any(Long.class))).thenAnswer(answer);
+        when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
+                any(Long.class))).thenAnswer(answer);
+
+        myCallback myCallback = new myCallback();
 
         // This will wait for this third address to show up.
-        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, 50);
-        BusMaster foundBM = wfdby.waitForBM(SEARCH_ADDRESS_2);
+        WaitForDeviceByAddress wfdby = new WaitForDeviceByAddress(bmR, false, 50);
+        wfdby.addAddress(myCallback, new String[]{SEARCH_ADDRESS_2});
+
+        BusMaster foundBM = myCallback.waitFor(SEARCH_ADDRESS_2);
         Assert.assertEquals(foundBM, mockBM);
+
+        wfdby.cancelAddress(myCallback, SEARCH_ADDRESS_2);
 
         verify(mockBM, times(1)).cancelScheduledNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class));
 
@@ -196,12 +350,66 @@ public class WaitForDeviceByAddressTest {
     // Utility functions
     //
 
+    public static class myCallback implements WaitForDeviceByAddressCallback {
+
+        private final WaitForDeviceByAddress wfdba;
+        private final boolean cancelOnDeviceFound;
+        private final HashMap<String, BusMaster> addrMap = new HashMap<>();
+
+        public myCallback() {
+            this.wfdba = null;
+            this.cancelOnDeviceFound = false;
+        }
+
+        public myCallback(boolean cancelOnDeviceFound) {
+            this.wfdba = null;
+            this.cancelOnDeviceFound = cancelOnDeviceFound;
+        }
+
+        @Override
+        public synchronized boolean deviceFound(BusMaster bm, String address, boolean typeByAlarm) {
+
+            BusMaster existingBM = addrMap.get(address);
+            Assert.assertTrue((existingBM == null) || (existingBM == bm));
+
+            addrMap.put(address, bm);
+
+            notify();
+
+            if (wfdba != null) {
+                wfdba.cancelAddress(this, address);
+            }
+
+            return cancelOnDeviceFound;
+        }
+
+        //
+        // Our own
+        //
+        public void clear() {
+            addrMap.clear();
+        }
+
+        public synchronized BusMaster waitFor(String addr) {
+            try {
+                if (!addrMap.containsKey(addr)) {
+                    wait(500);
+                }
+            } catch (InterruptedException e) {
+                ;
+            }
+
+            return addrMap.get(addr);
+        }
+    }
+
     //
     // This method will schedule search command returns, one for each resultAddress provided with an increment between
     // equal to the delayTimeMSec. Each return will incremently add one address without removing any of the others.
     //
-    private Answer<BusMaster.ScheduleNotifySearchBusCmdResult> makeAnswerFor(BusMaster bm, String[] resultAddresses,
-                                                                     long delayTimeMSec) {
+    private Answer<BusMaster.ScheduleNotifySearchBusCmdResult> makeSearchBusCmdAnswerFor(BusMaster bm,
+                                                                                         String[] resultAddresses,
+                                                                                         long delayTimeMSec) {
         return new Answer<BusMaster.ScheduleNotifySearchBusCmdResult>() {
             @Override
             public BusMaster.ScheduleNotifySearchBusCmdResult answer(final InvocationOnMock invocation) {
@@ -214,7 +422,8 @@ public class WaitForDeviceByAddressTest {
                     for (int j = 0; j <= i; j++) {
                         list.add(resultAddresses[j]);
                     }
-                    new SleepNotifySearchBusCmdResult(obj, bm, typeByAlarm, new mySearchBusCmd(bm, list).getResultData(), delayTimeMSec);
+                    new SleepNotifySearchBusCmdResult(obj, bm, typeByAlarm,
+                            new mySearchBusCmd(bm, list).getResultData(), delayTimeMSec);
                 }
 
                 return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success;
@@ -249,8 +458,7 @@ public class WaitForDeviceByAddressTest {
 
             if (sleepBeforeMSec > 0) {
                 new Thread(this).start();
-            }
-            else {
+            } else {
                 run();
             }
         }
@@ -258,8 +466,7 @@ public class WaitForDeviceByAddressTest {
         public void run() {
             try {
                 Thread.sleep(sleepBeforeMSec);
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 ;
             }
 
@@ -280,8 +487,7 @@ public class WaitForDeviceByAddressTest {
 
             if (sleepBeforeMSec > 0) {
                 new Thread(this).start();
-            }
-            else {
+            } else {
                 run();
             }
         }
@@ -289,8 +495,7 @@ public class WaitForDeviceByAddressTest {
         public void run() {
             try {
                 Thread.sleep(sleepBeforeMSec);
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 ;
             }
 
@@ -316,8 +521,7 @@ public class WaitForDeviceByAddressTest {
 
             if (sleepBeforeMSec > 0) {
                 new Thread(this).start();
-            }
-            else {
+            } else {
                 run();
             }
         }
@@ -327,8 +531,7 @@ public class WaitForDeviceByAddressTest {
             if (sleepBeforeMSec > 0) {
                 try {
                     Thread.sleep(sleepBeforeMSec);
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     ;
                 }
             }

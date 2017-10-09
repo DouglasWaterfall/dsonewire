@@ -8,6 +8,7 @@ import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -18,13 +19,12 @@ import java.util.Observer;
  */
 public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResult {
     private final BusMasterRegistry bmRegistry;
+    private final boolean typeByAlarm;
     private final long bmSearchPeriodMSec;
     private final ArrayList<BusMaster> bmScheduledList;
-    private String address;
-    private BusMaster foundBM;
-    private Thread waitingThread;
+    private final HashMap<String, WaitForDeviceByAddressCallback> waitMap;
 
-    public WaitForDeviceByAddress(BusMasterRegistry bmRegistry, long bmSearchPeriodMSec) {
+    public WaitForDeviceByAddress(BusMasterRegistry bmRegistry, boolean typeByAlarm, long bmSearchPeriodMSec) {
         if (bmRegistry == null) {
             throw new IllegalArgumentException("bmRegistry null");
         }
@@ -32,11 +32,10 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
             throw new IllegalArgumentException("bmSearchPeriod less than 1");
         }
         this.bmRegistry = bmRegistry;
+        this.typeByAlarm = typeByAlarm;
         this.bmSearchPeriodMSec = bmSearchPeriodMSec;
         this.bmScheduledList = new ArrayList<>();
-        this.address = null;
-        this.foundBM = null;
-        this.waitingThread = null;
+        this.waitMap = new HashMap<>();
     }
 
     // We are called from the BusMasterRegistry with a BusMaster and we will schedule a search on it.
@@ -48,7 +47,7 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
 
         synchronized (this) {
             if ((o instanceof BusMasterRegistry) && (arg != null)) {
-                if ((arg instanceof BusMasterRegistry.BusMasterAdded) && (foundBM == null)) {
+                if ((arg instanceof BusMasterRegistry.BusMasterAdded) && (!waitMap.isEmpty())) {
                     bm = ((BusMasterRegistry.BusMasterAdded) arg).getBusMaster();
                     if (!bmScheduledList.contains(bm)) {
                         bmScheduledList.add(bm);
@@ -67,9 +66,9 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
         if (added) {
             BusMaster.ScheduleNotifySearchBusCmdResult result = null;
             try {
-                result = bm.scheduleNotifySearchBusCmd(this, false, bmSearchPeriodMSec);
+                result = bm.scheduleNotifySearchBusCmd(this, typeByAlarm, bmSearchPeriodMSec);
             } catch (Exception e) {
-                System.err.println(bm.getName() + ": WaitForDeviceAddress(" + address + ") scheduleNotifySearchBusCmd:" + e);
+                System.err.println(bm.getName() + ": WaitForDeviceAddress() scheduleNotifySearchBusCmd:" + e);
             }
             if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
                 throw new IllegalArgumentException(bm.getName() + ": scheduleNotifySearchBusCmd returned " + result.name());
@@ -77,9 +76,9 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
         } else if (removed) {
             BusMaster.CancelScheduledNotifySearchBusCmdResult result = null;
             try {
-                result = bm.cancelScheduledNotifySearchBusCmd(this, false);
+                result = bm.cancelScheduledNotifySearchBusCmd(this, typeByAlarm);
             } catch (Exception e) {
-                System.err.println(bm.getName() + ": WaitForDeviceAddress(" + address + ") cancelScheduledNotifySearchBusCmd:" + e);
+                System.err.println(bm.getName() + ": WaitForDeviceAddress() cancelScheduledNotifySearchBusCmd:" + e);
             }
             if (result != BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success) {
                 throw new IllegalArgumentException(bm.getName() + ": cancelScheduledNotifySearchBusCmd returned " + result.name());
@@ -91,57 +90,84 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
     // we know which BusMaster controls it and we can cancel all of the scheduled searches.
     @Override // NotifySearchBusCmdResult
     public synchronized void notify(BusMaster bm, boolean byAlarm, SearchBusCmd.ResultData searchResultData) {
-        if (this.foundBM == null) {
-            for (String addr : searchResultData.getList()) {
-                if (addr.equals(address)) {
-                    this.foundBM = bm;
-                    for (BusMaster t_bm : bmScheduledList) {
-                        t_bm.cancelScheduledNotifySearchBusCmd(this, byAlarm);
+        for (String addr : searchResultData.getList()) {
+            if (waitMap.isEmpty()) {
+                break;
+            }
+
+            WaitForDeviceByAddressCallback callback = waitMap.get(addr);
+            if (callback != null) {
+                try {
+                    if (callback.deviceFound(bm, addr, typeByAlarm)) {
+                        cancelAddress(callback, addr);
                     }
-                    bmScheduledList.clear();
-                    if (waitingThread != null) {
-                        this.notify();
-                    }
-                    break;
+                }
+                catch (Exception e) {
+                    System.err.println("Exception from " + callback.getClass().getSimpleName() + ":" + e);
                 }
             }
         }
     }
 
-    /**
-     * Wait for the specified Address to be found on any BusMaster and return it. We will wait forever for this to occur
-     * and BusMasters can come and go and we will be patient.
-     * @return BusMaster
-     */
-    public synchronized BusMaster waitForBM(String address) {
-        if ((address == null) || (address.isEmpty())) {
-            throw new IllegalArgumentException("address null or empty");
+    public void addAddress(WaitForDeviceByAddressCallback callback, String[] addresses) {
+        if (callback == null) {
+            throw new IllegalArgumentException("callback");
         }
 
-        this.address = address;
+        if (addresses == null) {
+            throw new IllegalArgumentException("addresses");
+        }
 
-        try {
-            bmRegistry.addObserver(this);
+        boolean mapWasEmpty, mapNowEmpty;
 
-            while (this.foundBM == null) {
-                waitingThread = Thread.currentThread();
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    ;
+        synchronized (this) {
+            mapWasEmpty = waitMap.isEmpty();
+
+            for (String address : addresses) {
+                if (waitMap.containsKey(address)) {
+                    throw new IllegalArgumentException("dup " + address);
                 }
-            }
-            waitingThread = null;
 
-        } finally {
-            // Start with registering ourselves to track the lifetime of the BusMasters. When these are found we will
-            // be called back on the update() method.
-            bmRegistry.deleteObserver(this);
-            this.address = null;
+                waitMap.put(address, callback);
+            }
+
+            mapNowEmpty = waitMap.isEmpty();
         }
 
-        // We are not responsible for tearing everything down.
-        return this.foundBM;
+        if ((mapWasEmpty) && (!mapNowEmpty)) {
+            // schedule searches. This may instantly callback with the BMs already known
+            bmRegistry.addObserver(this);
+        }
+    }
+
+    public void cancelAddress(WaitForDeviceByAddressCallback callback, String address) {
+        if (callback == null) {
+            throw new IllegalArgumentException("callback");
+        }
+
+        if (address == null) {
+            throw new IllegalArgumentException("address");
+        }
+
+        synchronized (this) {
+            WaitForDeviceByAddressCallback t_callback = waitMap.get(address);
+            if (t_callback == null) {
+                throw new IllegalArgumentException("address not found");
+            }
+            if (t_callback != callback) {
+                throw new IllegalArgumentException("not your address");
+            }
+            waitMap.remove(address);
+
+            if (waitMap.isEmpty()) {
+                bmRegistry.deleteObserver(this);
+                for (BusMaster t_bm : bmScheduledList) {
+                    t_bm.cancelScheduledNotifySearchBusCmd(this, typeByAlarm);
+                }
+                bmScheduledList.clear();
+            }
+        }
     }
 
 }
+
