@@ -7,7 +7,7 @@ import jssc.SerialPortList;
 import waterfall.onewire.busmaster.Logger;
 
 
-public class JSSC implements HA7SSerial {
+public class JSSC extends HA7SSerial {
     private String portName;
     private SerialPort serialPort = null;
 

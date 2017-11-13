@@ -1,0 +1,463 @@
+Make a Temperature Controller for the DS18B20 which will be simple and simplify the access of one of these devices.
+
+Design Goals:
+1. Expose as a REST api
+2. Caller will supply the known DSAddress
+3. Configuration can be made by the caller
+4. Simplified "read temp" interface which will allow caller to specify "no more than X times old"
+5. Automatically handle finding the device and busmaster, and initialization/configuration.
+6. Errors are automatically handled away from the client
+
+- Policy Choices For The Cmds?
+1. Retry on data error
+2. Check for read before convert complete
+>> The BM hands out the cmd for the device - many callers could get their own instance for the same
+>> device. what does this mean? From the standpoint of a simple device which just reads some data all the
+>> time this seems easy - everyone should use the same instance and wait until it is done. But a device
+>> which has multiple data paths...like say a switch...potentially has conflict? Someone might like to write
+>> different data, or read from different data. So when you queried for a command which has static data
+>> with it (say a read count) then the commands are not the same. The part which IS the same is that you
+>> want to talk to the same device. Does that really matter?
+>> It does seem a bit odd to have two controllers talking to the same device in parallel - conceptually
+>> this just seems like a logical problem. How do they coordinate their actions? Seems like it is one step
+>> up from the bm.
+>>
+>> Consider the question about retries: Who is in the best situation to do this? You might ask who also is
+>> in the best situation to decide if it failed, or give up? Or to handle the consequences of this?
+>> If the BM is just the conduit of the command, then the result is the result, the caller would need to
+>> decide what to do about this. If many objects were trying to manage the same device, then it would make
+>> sense to centralize it to something common, but with only one Object trying to deal with it it seems
+>> that it can make its own decision about number of retries, how to retry and what to do when the retries
+>> fail since by definition it IS managing the device in effect.
+>>
+>> I think therefore for our purposes that this manager needs to deal with these retries.
+>>
+>> Now let us think of a related question - if we are managing a specific device, and let us imaging that
+>> in a some future we might have a backup BM for the same phyiscal link, then the Manager here is not
+>> necessarily managing the BusMaster - it is managing the DEVICE wherever the BM might be, and thus if the
+>> BM changes the device itself is constant.
+>>
+>> So the logic around "let us find this device" because inherent to this particular device not that path
+>> to the device.
+>>
+>> In Spring terms therefore we are wanting to instantiate an instance of the manager for a list of
+>> DS18b20 devices and they will manage the device by finding it and dealing with its entire lifetime.
+>>
+>> The higher level things like the temperature slope management would seem to be layer on top of this,
+>> but also kind of like a policy associated with this. They too are interested in the device regardless
+>> of manager. So this is this another kind of linking we need to do, but in this case with device instance?
+>> That seems kind of odd.
+>>
+>> If these were seen as a kind of POLICY which wanted to be attached to the device then you would be
+>> able to ask questions like "what is the slope of the temperature". But in what way is this handled by the
+>> caller in Java terms? To be able to answer the question "is it on" is a high level concept specific to
+>> the context of the temperature - so the water heater is different from the furnace.
+>>
+>> That implies that Furnace wants to talk to the Temp manager instance for a particular device - how will
+>> it find that? There could be a static map of instances and it simply looks for it AFTER things have been
+>> all built...but how is that known?
+>>
+>> @PostConstruct
+>>
+>> How do I configure an instance per an input?
+>> https://www.tutorialspoint.com/spring/spring_bean_scopes.htm
+>>
+>> Maybe the manager is a single instance and it takes as input a list of devices and when it gets
+>> contructed it creates the necessary other bean instances which can then be retrieved by asking the
+>> manager...which is a single instance.
+>>
+>> The furnace instance is bit of an issue - when does it get instantiated? It can wait until all things
+>> are instantiated and then ask the temp manager for what it wants - seems like a smilar pattern of
+>> being responsible. Though if its gets its dependent value injected then when it comes up and knows that
+>> all the beans are created then it can ask the mgr for the instance it wants and it is good.
+>>
+>> Of course that leads to a uniqueness issue with something like the furnace? That is special policy
+>> on top of temperature. That would be a special instance of a bean. It could use some shared code to
+>> compute the slope of the temperature/off/on but what it represents as an API is fully unique and
+>> specific to itself. It gets configured with the device(s) it supposed to talk to and then knowns what
+>> controller to talk to on top of that.
+>>
+>> TempManager,281234ABDEF,3456FEDCA28
+>>
+>> WaterHeader,281234ABDEF
+>>
+>>
+
+/**
+ * This class manages the instances of Temp18B20 tied to specified DSAddress(es).
+ *
+ * It is configured with a list of DSAddresses.
+ *
+ * It will create a thread which will wait for all the devices it has been configured with to be found.
+ *
+ * It will create a thread which will monitor Temp18B20 instances which need to be initialized/reset
+ *
+ * >> It seems like the work item IS the list of configured devices. For each entry/key we need to find
+ * >> any instance and manage the instance. The pings/notifies are "new device found" and wakeup and see
+ * >> if any devices went bad. The latter is timeout driven and the former can use the notify thread to
+ * >> create the instance as is and then let the interrupt recognize that it needs to be configured
+ * >>
+ * >> The searching for devices by name IS a standardized sort of function.
+ * >>
+ * >> WFDBA.add(this, Address[])
+ * >>
+ * >> notifyDeviceFound(BusMaster bm, Address addr) {
+ * >>   WFDBA.cancel(this, addr);
+ * >> }
+ */
+class Temp18B20Manager implements InitializingBean, Runnable, WaitForDeviceByAddressCallback {
+    @Autowired
+    BusMasterRegistry bmR;
+
+    @Autowired configuration of DSAddress we should support and their precision
+    // returns the desired precision based on the DSAddress
+    // configures the default precision for devices which are not known
+    static String deviceList[];
+
+    private WaitForDeviceByAddress wfdba = null;
+
+    private HashMap<String, Temp18B20> instanceMap = new HashMap<>();
+
+    private Thread initThread = null;
+
+    synchronized Temp18B20 getInstance(DSAddress) {
+        return instanceMap.get(DSAddress);
+    }
+
+    // called by Spring after everything is found
+    public void afterPropertiesSet() throws Exception {
+        wfdba = new WaitForDeviceByAddress(bmR, false, 250);
+        wfdba.addAddresses(this, deviceList);
+
+        // fork a thread to call our run method
+        // should be daemon
+        initThread = new Thread(this, "Temp18B20 Initializer");
+        initThread.setDaemon();
+        initThread.start();
+    }
+
+    // called by WaitForDeviceByAddress when one of the addresses we wanted is found
+    public synchronized boolean deviceFound(BusMaster bm, String address, boolean typeByAlarm) {
+        BusMaster currentBM = instanceMap.get(address);
+
+        if (currentBM != null) {
+            throw new IllegalArgumentException("duplicate for " + address);
+        }
+
+        instanceMap.put(address, new TempDS18B20(bm, address));
+
+        initThread.interrupt();
+
+        // cancel our search request for this address as we found it
+        return true;
+    }
+
+    // This thread is responsible for initializing, and re-initializing TempDS18B20 instances.
+    public void run() {
+
+        while (true) {
+            Temp18B20 needsWork = null;
+
+            synchronized(this) {
+                interrupted(); // clear state
+
+                for (Temp18B20 d; instanceMap.keySet()) {
+                    if (d.state() != running) {
+                        needsWork = d;
+                        break;
+                    }
+                }
+            }
+
+            if (needsWork != null) {
+                needsWork.initalize();
+                continue;
+            }
+
+            try {
+                Thread.sleep(5 seconds);
+            }
+            catch (InterruptedException e) {
+            }
+        }
+    }
+
+}
+
+class Temp18B20 {
+
+    private Temp18B20(BusMaster bm, DSAddress, precision) {
+    }
+
+    ConvertTCmd
+    final ReadScratchPadCmd
+    WriteScratchPadCmd
+
+    int state; // stopped, initializing, running, busy, failed
+    // should this state be a human readable String? That would useful for the failed case.
+    // from the standpoint of the caller trying to get a temperature it probably only really needs
+    // a simpler state - running or not. If not running then you won't get a result and we'll return status.
+    // one state should be "device not found" ... this would tell the manager to start over?
+
+    int initializedPrecisionAmount;
+    Thread busy;
+
+    int lastDataD;
+    int lastPrecisionAmount;
+    long lastTimestampMSec;
+
+    public void initialize() {
+        Read powersupply to see if the device really exists.
+        throw exception?
+
+        throw exception on error?
+        Get the current configuration of the device.
+
+        // the default precision at poweron is to be high, and we need to distinguish this from the desired precision.
+        // if the caller ask for something smaller then we should shift it to being smaller. So knowing what the last
+        // set value was is important.
+        // Now, how do we detect that the device was reset? Readscratchpad after ConverT would verify that the value
+        // we asked for was calculated correctly - if it got reset unexpectedly we could simply re-initialize it. Who
+        // does this? It is really no different from a change of precision.
+        // WHEN do we level the precision down in this scheme? If someone asks for a certain value and we generate it,
+        // then someone asks for a lower value - if they like the value as-is then they take it. Otherwise they launch
+        // a request at the low level...but then the new guys shows up and wants the higher precision and we ask again.
+        // Is that wasted? From the device perspective it is not problem. So who in this scheme needs to worry about
+        // this level of precision? Perhaps that is simply a system-configuration decision. We declare when we create
+        // the instance what precision we want and that's it. The caller cannot change their mind. It is a function of
+        // the system setup - the same setup which said that there should be a controller for this device.
+
+        // WHO should take responsibility for the reset? How often should they do this? A device which has failed is not
+        // that dissimilar to a device which never was found/initialized at all. Anyone who is merely interested in
+        // getting a temperature is not qualified to decide to initialize or reset a errant device. That is a different
+        // responsibility.
+    }
+
+    // should the caller specify the degree of precision?
+    // what if two callers want different degrees?
+    // what if the device gets reset and we have no knowledge of the precision
+    // anyone asking for MORE precision when there is a value which has less precision WILL want to re-calculate.
+    TempData getTemperature(long withinMSec) {
+
+        sychronized(this) {
+            if (state == error) {
+                return ...
+            }
+
+            if (state == uninitialized) {
+                return ...
+            }
+
+            if ((has an existing time) && (withinMSec okay)) {
+                return the existing time.
+            }
+
+            if (state == busy) {
+                // sleep
+                // if we are interrupted and the time is excessive then we return an error TempData
+            }
+
+            state = busy
+        }
+
+        // make convert cmd if necessary
+
+        send convert cmd
+
+        wait the required amount of time
+
+        read the result, check the configuration field to ensure that precision is what we expected
+
+        synchronized (this) {
+
+            state = not busy;
+        }
+
+        return result;
+    }
+
+    class TempData {
+        String error; // if null, then the data is okay (if a map then we have error or the other fields)
+        int dataC; // divide by X to get full value
+        int precison_amount
+        long timeMSec; // when temperature was taken
+    }
+
+
+}
+
+@Controller
+class Temp18B20Controller {
+
+    @Autowired
+    TempDS18B20Manager tMgr;
+
+    Map<String, String> getTemperature(String dsAddress, withinMSec) {
+        TempDS18B20 inst = tMgr.getInstance(dsAddress);
+        if (inst == null) {
+            return not found;
+        }
+
+        // look for instance based on the dsAddress
+        TempData td = instance.getTemperature(withinMSec);
+
+        HashMap<String, String> ret = new HashMap<>();
+        if (td.error != null) {
+            ret.put("error", td.error);
+        }
+        else {
+            ret.put("dataC", td.dataC);
+            ret.put("precisionAmt", td.precision_amt);
+            ret.put("timeMSec", td.timeMSec);
+        }
+        return ret;
+    }
+
+}
+
+
+
+Thoughts:
+We should have some sort of protection about sending multiple convertT cmds to the same device - should be busy error.
+Seems like the BM itself is the only one who can know that.
+>> Add some sort of "Policy" object associated with the BM commands? You can decide if you want that protection or not?
+>> Logging is perhaps something like that?
+
+The first thread to ask for the temperature which exceeds the last time will start a request.
+Any other which likes the current temperature can take it an not wait.
+Any other which ALSO want an updated temperature will sleep on the class Observer.
+When the first thread finishes the request it will update the last value and notify the Observers who will all wakeup
+    and see the updated value and return.
+If the caller is asking for a precistion which is MORE than the current one then it must initiate a change to the
+    precision.
+What abour errors - if we consider that the thread is "pushing" the temperature then when it fails what do we do?
+    It seems to me that considering this a kind of state machine which the thread pushes and error simply puts the
+    state machine in a new state which affects what happens when you push it.
+    Should threads which are waiting for an response WAIT on the call or get an error return?
+    If they never wait then the timeout problem is eliminated - they just leave and have to poll/call again.
+    However, they will then need to know when to try to call back and that introduces the timeout issue again.
+    The State machine of the temp would seem to be important - we kick it to get a result and either get what we need
+    OR are told in effect "we are broken/disabled" stop asking
+    This is the STATE of the Temp State machine. I would think therefore that we need to return this state.
+    Someone needs to try to reset the thing - when? Reset is not that dissimilar to the initalization. Until that is
+        completed we cannot start it.
+
+An instance of this is KNOWN to be interesting and so will need to initialized when the device shows up.
+So we kind of have a DS18B20 Manager which knows that it needs to create one of for certain DSAddresses.
+
+These instances are thus ALSO findable through polling via the manager.
+This make the temperature rising falling thing to be easy to write - it simply looks for the existance of this device
+    instance and vectors its interest to it. It can have its own state which is also somewhat simple - looking for device,
+    running, fault
+
+The temp slope thing just is passive - it keeps trying at some rate and the fixing of the device is not its problem.
+
+Who fixes the device? It seems that the DS18B20 manger, who created the instance in the first place and initaialized
+it would seem to be responsible for having this instance exist so one in fault needs to be fixed, but perhaps at some
+sort of rate - every 60 seconds wakup and look for a device in fault and attempt to reset them. Perhaps it can try so
+many times and then stop. If we ever have multiple bus masters targeting the same bus then bus might switch over and
+a new instance created?
+
+
+Optional:
+1. Indicate the temperature slope/change
+2. Who determines the parameters of this?
+3. Many folks could access a single Temperature control but have different interesting policies.
+
+--
+
+Make a adaptive TemperatureController which when confgured with a Simple Temperature Controller drives the
+calcluation of temperature and slope.
+
+This would have a simplified REST API.
+It would expect/find the correct instance of TemperatureController on the server.
+The APi would allow us to poll for the existance of the device, no waiting for it to be there in terms REST.
+
+
+---- 10/18
+
+I think we've come full circle on this with the Temperature.
+
+The problem of course is that the seeing devices as re-usable components is probably only true for the temp device
+anyway. Anything else, like switch control/reading is highly configurable and the savings is not so clear - who does
+the re-initialization anyway? How does it know how to to that?
+
+For a specific application, like this Water Heater thing, we already know offhand which is the DSAddress for the furnace
+and so we are going to created some control Object for it in spite of it being found or not. So the whole "make it when
+we find it" thing is nice...but not for things which are known.
+
+The point where it IS convenient is really about prototyping - I've tossed a bunch of devices on the string and would
+like to talk to them. I might not know yet to configure them so it is a nicety that they are available. But clearly
+that is an extra "special" case - the normal case are that things are pre-configured.
+
+Consider next the Furnace - it requires several devices to work and that's clearly going to be some pretty special code
+to manage the devices. It is not going to get re-initialized through some automatic process unless we decide we need
+that - but the Temperature device(s) underlaying it will still need to be managed as part of the Furnace object itself
+and not some external support.
+
+So we've come full circle in that we are back writing device code that lives on the PI and not on the client somewhere.
+We will still provide a REST api to the "device" and that is for the application to get useful/simple things. But the
+model code will live on the PI.
+
+The original reason to create a http implementation of BusMaster was to make development of the model implementations
+easier but with the discovery of unit testing we can get a whole lot done without having to go through a whole deploy
+process. So all that becomes much, much simpler and lest costly to implement.
+
+So, back to the temperature thing.
+
+For general purposes it seems "nice" to have an instance which reports temperature.
+
+The Water Heater would like that basic functionality too BUT also add some support to determine slope, etc so it will
+be more of a driver of the data stream.
+
+An Historical data collector, like something that would store stuff in a persistent DB for long term analysis, would
+also be a driver of a general Temp instance - but it could just use a external API whereas the WaterHeater probably has
+no real value exposing the temperature.
+
+I guess there really is not THAT much to be saved in the Temp thing other than something to do with setting the
+configuration and the ConvertT read cycle. Perhaps that can just be a library which can then be re-used.
+
+We need to resist imagining a change of BusMaster as a problem to be solved - once we get some actual implemenations we
+could imagine it if we care. More likely we'll focus on something else as being a bigger payback.
+
+So the simplest, easiest to understand thing to start with is the simple Temp model object. We'll configure it
+in the constructor with the DSAddress and the desired configuration and that's it.
+
+We could even initialize it passively - if nobody has asked for the temperature then there is no reason to go touch it.
+That would also work for retries - if there was problem (the device disappeared) then we'd mark it so and on the next
+request for the Temperature we would re-initialize it.
+
+That seems pretty simple.
+
+Lots of Spring options for specifying the configurations for devices,etc.
+Spring Configuration Options: https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html
+
+===================================
+
+Testing for devices.
+
+This is a problematic thing since we would like to simulate a device in detail so as to ensure that the clients
+do the right thing. This is hard to do at such a low level as a HA7S Dummy.
+
+One thought that comes to mind is to create a series of classes which in effect simulate the HA7S (like search) and
+its internal state and then do something which ties in a device.
+
+So, for example, we could define the DS18B20 and the selection bit would be something that the HA7S would handle and
+the the rest is something that the device would be given - it would have to qualify the arguments and do the right
+thing whatever it was.
+
+The trick here is that testing can be done much easier when tied to a specific device profile. So I could tell it -
+return the data in this order based on call sequence. Or just tell it what is the next data to return.
+
+This would make the client side testing, which cares what the data looks like much easier, and we could simluate errors
+such as CRC errors so that can be handled. We can also simluate the device being dropped and then coming back online.
+
+Though this is NOT really an HA7S simluator - it is a BusMaster simluator with plugged in devices. Of course the problem
+here is that we would have generate our own commands, etc which means a whole amount of pointless duplication.
+
+Though - if we are trying to simulate the kinds of errors that the API can great that is independent of the HA7S.
+
+But that still leave the HA7S wondering how to test itself relative to the data stream.
+
+A data stream tester would potentially solve two problems with one solution.
+

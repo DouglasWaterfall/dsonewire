@@ -123,4 +123,8 @@ public class Convert {
         return -1;
     }
 
+    public static int hexTo8bits(byte msbHex, byte lsbHex) {
+        return (hexToFourBits(msbHex) << 4) | hexToFourBits(lsbHex);
+    }
+
 }

@@ -1,14 +1,21 @@
 package waterfall.onewire.busmasters.HA7S;
 
+import waterfall.onewire.Convert;
+import waterfall.onewire.DSAddress;
+import waterfall.onewire.HexByteArray;
 import waterfall.onewire.busmaster.Logger;
 
-public interface HA7SSerial {
+import java.util.Arrays;
+import java.util.HashMap;
+
+public abstract class HA7SSerial {
 
     /**
      * Some human readable description of this physical device we are talking through.
+     *
      * @return
      */
-    public String getPortName();
+    public abstract String getPortName();
 
     /**
      *
@@ -41,7 +48,7 @@ public interface HA7SSerial {
      *
      * @return 0 if successful, negative values for errors
      */
-    public StartResult start(Logger optLogger);
+    public abstract StartResult start(Logger optLogger);
 
     /**
      * The HA7S uses a write/read sequence to communicate with the host and this method will write bytes (terminated
@@ -53,9 +60,9 @@ public interface HA7SSerial {
      * @param rTimeoutMSec positive time to wait for a read reply
      * @return ReadResult
      */
-    public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], long rTimeoutMSec, Logger optLogger);
+    public abstract ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], long rTimeoutMSec, Logger optLogger);
 
-    class ReadResult {
+    public static class ReadResult {
         public ReadResult() {
             error = null;
             readCount = 0;
@@ -139,6 +146,301 @@ public interface HA7SSerial {
      *
      * @return StopResult
      */
-    public StopResult stop(Logger optLogger);
+    public abstract StopResult stop(Logger optLogger);
 
+    /**
+     * @param dsAddress
+     * @param rTimeoutMSec
+     * @param optLogger
+     * @return
+     */
+    public NoDataResult cmdAddress(DSAddress dsAddress, long rTimeoutMSec, Logger optLogger) {
+        if (dsAddress == null) {
+            throw new NullPointerException("dsAddress");
+        }
+
+        byte[] selectCmdData = new byte[1 + 16 + 1];
+        selectCmdData[0] = 'A';
+        String s = dsAddress.toString();
+        for (int i = 0; i < 16; i++) {
+            selectCmdData[1 + i] = (byte) s.charAt(i);
+        }
+        selectCmdData[17] = 0x0D;
+
+        byte[] rbuf = new byte[16];
+
+        HA7SSerial.ReadResult readResult = writeReadTilCR(selectCmdData, rbuf, rTimeoutMSec, optLogger);
+
+        if (readResult.error != ReadResult.ErrorCode.RR_Success) {
+            return new NoDataResult().setFailure(readResult.error.name());
+        }
+
+        if (readResult.readCount != 16) {
+            return new NoDataResult().setFailure("Underrun - expected 16 got:" + readResult.readCount);
+        }
+
+        // Expect to match what we passed in
+        for (int i = 0; i < 16; i++) {
+            if (rbuf[i] != s.charAt(i)) {
+                return new NoDataResult().setFailure("Invalid char index:" + i);
+            }
+        }
+
+        return new NoDataResult().setSuccess(readResult.postWriteCTM, readResult.postWriteCTM);
+    }
+
+    /**
+     * @param rTimeoutMSec
+     * @param optLogger
+     * @return
+     */
+    public HexByteArrayResult cmdSearch(long rTimeoutMSec, Logger optLogger) {
+        return cmdSearchInternal(new byte[] { 'S' } , rTimeoutMSec, optLogger);
+    }
+
+    public HexByteArrayResult cmdSearchNext(long rTimeoutMSec, Logger optLogger) {
+        return cmdSearchInternal(new byte[] { 's' } , rTimeoutMSec, optLogger);
+    }
+
+    public HexByteArrayResult cmdConditionalSearch(long rTimeoutMSec, Logger optLogger) {
+        return cmdSearchInternal(new byte[] { 'C' } , rTimeoutMSec, optLogger);
+    }
+
+    public HexByteArrayResult cmdConditionalSearchNext(long rTimeoutMSec, Logger optLogger) {
+        return cmdSearchInternal(new byte[] { 'c' } , rTimeoutMSec, optLogger);
+    }
+
+    public HexByteArrayResult cmdFamilySearch(short familyCode, long rTimeoutMSec, Logger optLogger) {
+        if ((familyCode < 0) || (familyCode > 255))  {
+            throw new IllegalArgumentException("Bad familyCode");
+        }
+        return cmdSearchInternal(new byte[] { 'F', Convert.fourBitsToHex(familyCode >> 4),
+                Convert.fourBitsToHex(familyCode & 0xf) }, rTimeoutMSec, optLogger);
+    }
+
+    public HexByteArrayResult cmdFamilySearchNext(long rTimeoutMSec, Logger optLogger) {
+        return cmdSearchInternal(new byte[] { 'f' } , rTimeoutMSec, optLogger);
+    }
+
+    private HexByteArrayResult cmdSearchInternal(byte[] cmdData, long rTimeoutMSec, Logger optLogger) {
+        byte[] rbuf = new byte[16];
+
+        HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+
+        if (readResult.error != ReadResult.ErrorCode.RR_Success) {
+            return new HexByteArrayResult().setFailure(readResult.error.name());
+        }
+
+        if ((readResult.readCount != 0) && (readResult.readCount != 16)) {
+            return new HexByteArrayResult().setFailure("Underrun - expected 0 or 16 got:" + readResult.readCount);
+        }
+
+        if ((readResult.readCount > 0) && (!isValidUpperCaseHex(rbuf, readResult.readCount))) {
+            return new HexByteArrayResult().setFailure("Not hex bytes");
+        }
+
+        return new HexByteArrayResult().setSuccess((readResult.readCount > 0)? rbuf : new byte[0],
+                readResult.postWriteCTM, readResult.postWriteCTM);
+    }
+
+    public NoDataResult cmdReset(long rTimeoutMSec, Logger optLogger) {
+        byte[] cmdData = new byte[] { 'R' };
+        byte[] rbuf = new byte[0];
+
+        HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+
+        if (readResult.error != ReadResult.ErrorCode.RR_Success) {
+            return new NoDataResult().setFailure(readResult.error.name());
+        }
+
+        return new NoDataResult().setSuccess(readResult.postWriteCTM, readResult.postWriteCTM);
+    }
+
+    public BooleanResult cmdReadBit(long rTimeoutMSec, Logger optLogger) {
+        return null;
+    }
+
+    public HexByteArrayResult cmdWriteBlock(HexByteArray wData, long rTimeoutMSec, Logger optLogger) {
+        return null;
+    }
+
+    /**
+     *
+     */
+    public static class BaseCmdResult {
+        protected long writeCTM;
+        protected long readCRCTM;
+        protected boolean success;
+        protected String errorMsg;
+
+        protected BaseCmdResult() {
+            writeCTM = -1;
+            readCRCTM = -1;
+            success = false;
+            errorMsg = null;
+        }
+
+        protected BaseCmdResult setSuccess(long writeCTM, long readCRCTM) {
+            if ((writeCTM < 0) || (readCRCTM < 0)) {
+                throw new IllegalArgumentException("setSuccess() bad values for writeCTM or readCRCTM");
+            }
+            if ((success != false) || (errorMsg != null)) {
+                throw new IllegalArgumentException("setSuccess() called twice");
+            }
+            this.writeCTM = writeCTM;
+            this.readCRCTM = readCRCTM;
+            success = true;
+            return this;
+        }
+
+        public BaseCmdResult setFailure(String errorMsg) {
+            if ((errorMsg == null) || (errorMsg.isEmpty())) {
+                throw new IllegalArgumentException("setFailure() message must not be blank");
+            }
+            if ((success != false) || (this.errorMsg != null)) {
+                throw new IllegalArgumentException("setFailure() called twice");
+            }
+            this.errorMsg = errorMsg;
+            return this;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public String getErrorMsg() {
+            if (errorMsg == null) {
+                throw new IllegalArgumentException("errorMsg uninitialized");
+            }
+            return errorMsg;
+        }
+
+        public long getWriteCTM() {
+            if (writeCTM == -1) {
+                throw new IllegalArgumentException("writeCTM uninitialized");
+            }
+            return writeCTM;
+        }
+
+        public long getReadCRCTM() {
+            if (readCRCTM == -1) {
+                throw new IllegalArgumentException("readCRCTM uninitialized");
+            }
+            return readCRCTM;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return ((other != null) &&
+                    (other instanceof BaseCmdResult) &&
+                    (((BaseCmdResult) other).writeCTM == writeCTM) &&
+                    (((BaseCmdResult) other).readCRCTM == readCRCTM) &&
+                    (((BaseCmdResult) other).success == success) &&
+                    (((((BaseCmdResult) other).errorMsg == null) && (errorMsg == null)) ||
+                            ((((BaseCmdResult) other).errorMsg != null) && (errorMsg != null) && (((BaseCmdResult) other).errorMsg.equals(errorMsg)))));
+        }
+
+    }
+
+    public static class NoDataResult extends BaseCmdResult {
+        public NoDataResult() {
+            super();
+        }
+
+        public NoDataResult setSuccess(long writeCTM, long readCRCTM) {
+            super.setSuccess(writeCTM, readCRCTM);
+            return this;
+        }
+
+        public NoDataResult setFailure(String errorMsg) {
+            super.setFailure(errorMsg);
+            return this;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return (super.equals(other) && (other instanceof NoDataResult));
+        }
+    }
+
+    public static class HexByteArrayResult extends BaseCmdResult {
+        private HexByteArray value;
+
+        public HexByteArrayResult() {
+            super();
+            value = null;
+        }
+
+        public HexByteArrayResult setSuccess(byte[] hexData, long writeCTM, long readCRCTM) {
+            super.setSuccess(writeCTM, readCRCTM);
+            if ((hexData != null) && (hexData.length > 0)) {
+                this.value = new HexByteArray(hexData);
+            }
+            return this;
+        }
+
+        public HexByteArrayResult setFailure(String errorMsg) {
+            super.setFailure(errorMsg);
+            return this;
+        }
+
+        // may return null if none
+        public HexByteArray getValue() {
+            if (!success) {
+                throw new IllegalArgumentException("getValue() not success");
+            }
+            return value;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return (super.equals(other) &&
+                    (other instanceof HexByteArrayResult) &&
+                    (((((HexByteArrayResult) other).value == null) && (value == null)) ||
+                            ((((HexByteArrayResult) other).value != null) && (value != null) && (((HexByteArrayResult) other).value.equals(errorMsg)))));
+        }
+    }
+
+    public static class BooleanResult extends BaseCmdResult {
+        private boolean value;
+
+        public BooleanResult() {
+            super();
+            value = false;
+        }
+
+        public BooleanResult setSuccess(boolean value, long writeCTM, long readCRCTM) {
+            super.setSuccess(writeCTM, readCRCTM);
+            this.value = value;
+            return this;
+        }
+
+        public BooleanResult setFailure(String errorMsg) {
+            super.setFailure(errorMsg);
+            return this;
+        }
+
+        public boolean getValue() {
+            if (!success) {
+                throw new IllegalArgumentException("getValue() not success");
+            }
+            return value;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return (super.equals(other) &&
+                    (other instanceof BooleanResult) &&
+                    (((BooleanResult) other).value == value));
+        }
+    }
+
+    public boolean isValidUpperCaseHex(byte[] buf, int count) {
+        for (int i = 0; i < count; i++) {
+            if (!((buf[i] >= 'A') && (buf[i] <= 'F')) || ((buf[i] >= '0') && (buf[i] <= '9'))) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

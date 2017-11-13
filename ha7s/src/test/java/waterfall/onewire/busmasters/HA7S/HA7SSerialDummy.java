@@ -1,42 +1,24 @@
 package waterfall.onewire.busmasters.HA7S;
 
-import waterfall.onewire.DSAddress;
+import waterfall.onewire.Convert;
 import waterfall.onewire.busmaster.Logger;
 
 import java.util.*;
-import java.util.concurrent.SynchronousQueue;
 
 /**
  * Created by dwaterfa on 1/18/17.
  */
-public class HA7SSerialDummy implements HA7SSerial  {
+public class HA7SSerialDummy extends HA7SSerial  {
 
     private String portName;
 
-    public class DeviceData {
-        public String dsAddr;
-        public boolean alarm;
-
-        public DeviceData(String dsAddr, boolean alarm) {
-            this.dsAddr = dsAddr;
-            this.alarm = alarm;
-        }
-    }
-
-    private final ArrayList<DeviceData> deviceDataList = new ArrayList<>();
+    private final HashMap<String, HA7SDummyDevice> deviceDataList = new HashMap<>();
 
     private boolean started = false;
 
-    private int searchIndex = 1000;
+    private ActiveSearch activeSearch = null;
 
-    private enum ActiveSearch {
-        General,
-        Alarm,
-        Family
-    }
-
-    private ActiveSearch searchType = null;
-    private byte[] lastFamilySearchCode = null;
+    private String activeDeviceHexAddr = null;
 
     public HA7SSerialDummy(String portName) {
         this.portName = portName;
@@ -96,6 +78,10 @@ public class HA7SSerialDummy implements HA7SSerial  {
                 }
 
                 switch (wBuf[wStart]) {
+                    case 'A':
+                        addressSelect(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+                        break;
+
                     case 'S':
                         search(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
                         break;
@@ -105,9 +91,6 @@ public class HA7SSerialDummy implements HA7SSerial  {
                         break;
 
                     case 'R':
-                        searchIndex = 1000;
-                        searchType = null;
-                        lastFamilySearchCode = null;
                         reset(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
                         break;
 
@@ -128,10 +111,8 @@ public class HA7SSerialDummy implements HA7SSerial  {
                         break;
 
                     case 'W':
-                        if (optLogger != null) {
-                            optLogger.logError(logContext, "unsupported cmd code:" + (char) wBuf[wStart]);
-                        }
-                        return new ReadResult(ReadResult.ErrorCode.RR_Error);
+                        writeBlock(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+                        break;
 
                     default:
                         if (optLogger != null) {
@@ -164,33 +145,55 @@ public class HA7SSerialDummy implements HA7SSerial  {
     }
 
     /* For our testing */
-    public void addDevice(String dsAddr, boolean alarmActive) {
-        if ((dsAddr == null) || (!DSAddress.isValid(dsAddr))) {
-            throw new IllegalArgumentException("dsAddr is not valid");
+    public void addDevice(HA7SDummyDevice device) {
+        if (device == null) {
+            throw new IllegalArgumentException("device is null");
         }
-
-        for (int i = 0; i < deviceDataList.size(); i++) {
-            if (deviceDataList.get(i).dsAddr.equals(dsAddr)) {
-                throw new IllegalArgumentException("dsAddr is duplicate");
-            }
+        String hexAddr = device.getDSAddress().toString();
+        if (deviceDataList.containsKey(hexAddr)) {
+            throw new IllegalArgumentException("duplicate device " + hexAddr);
         }
-
-        deviceDataList.add(new DeviceData(dsAddr, alarmActive));
+        deviceDataList.put(hexAddr, device);
     }
 
-    public void removeDevice(String dsAddr) {
-        for (int i = 0; i < deviceDataList.size(); i++) {
-            if (deviceDataList.get(i).dsAddr.equals(dsAddr)) {
-                deviceDataList.remove(i);
-                return;
-            }
+    public void removeDevice(String dsHexAddr) {
+        if (!deviceDataList.containsKey(dsHexAddr)) {
+            throw new IllegalArgumentException("dsAddr not found " + dsHexAddr);
         }
-
-        throw new IllegalArgumentException("dsAddr not found");
+        deviceDataList.remove(dsHexAddr);
     }
 
     public void removeAllDevices() {
         deviceDataList.clear();
+    }
+
+    private void addressSelect(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger, ReadResult readResult) throws IllegalArgumentException {
+        if ((wEnd - wStart) != 18) { // A {16} CR
+            throw new IllegalArgumentException("address select must include address");
+        }
+        if (wBuf[wEnd - 1] != 0x0d) {
+            throw new IllegalArgumentException("address select must be terminated by CR");
+        }
+        byte[] dsHexBytes = new byte[16];
+        int index = 0;
+        for (int i = (wStart + 1); i < (wEnd - 1); i++) {
+            if (!(((wBuf[i] >= '0') && (wBuf[i] <= '9')) || ((wBuf[i] >= 'A') && (wBuf[i] <= 'F')))) {
+                throw new IllegalArgumentException("address has bad chars");
+            }
+            rBuf[index] = wBuf[i];
+            dsHexBytes[index++] = wBuf[i];
+        }
+        String dsHexAddr = new String(dsHexBytes);
+
+        if (!deviceDataList.containsKey(dsHexAddr)) {
+            // this is technically not an error for the DS - it just does something. We care because of a logic error.
+            // however, once we start thinking about device disappearing then we will have to do something useful when
+            // the device is not found.
+            throw new IllegalArgumentException("address has no device");
+        }
+
+        activeDeviceHexAddr = dsHexAddr;
+        readResult.readCount = 16;
     }
 
     private void search(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger, ReadResult readResult) throws IllegalArgumentException {
@@ -198,16 +201,9 @@ public class HA7SSerialDummy implements HA7SSerial  {
             throw new IllegalArgumentException("search is single char cmd");
         }
 
-        searchIndex = 0;
-        searchType = ActiveSearch.General;
-        lastFamilySearchCode = null;
+        activeSearch = new ActiveSearch(ActiveSearchType.General, deviceDataList.keySet().toArray(new String[0]));
+        readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
 
-        if (searchIndex < deviceDataList.size()) {
-            String dsAddr = deviceDataList.get(searchIndex++).dsAddr;
-            for (int i = 0; i < dsAddr.length(); i++) {
-                rBuf[readResult.readCount++] = (byte)dsAddr.charAt(i);
-            }
-        }
         // never pass back the CR
     }
 
@@ -215,16 +211,12 @@ public class HA7SSerialDummy implements HA7SSerial  {
         if ((wEnd - wStart) != 1) {
             throw new IllegalArgumentException("search next is single char cmd");
         }
-        if (searchType != ActiveSearch.General) {
+        if ((activeSearch == null) || (activeSearch.getType() != ActiveSearchType.General)) {
             throw new IllegalArgumentException("general search is not active");
         }
 
-        if (searchIndex < deviceDataList.size()) {
-            String dsAddr = deviceDataList.get(searchIndex++).dsAddr;
-            for (int i = 0; i < dsAddr.length(); i++) {
-                rBuf[readResult.readCount++] = (byte)dsAddr.charAt(i);
-            }
-        }
+        readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+
         // never pass back the CR
     }
 
@@ -233,19 +225,16 @@ public class HA7SSerialDummy implements HA7SSerial  {
             throw new IllegalArgumentException("alarm search is single char cmd");
         }
 
-        searchIndex = 0;
-        searchType = ActiveSearch.Alarm;
-        lastFamilySearchCode = null;
-
-        while (searchIndex < deviceDataList.size()) {
-            DeviceData data = deviceDataList.get(searchIndex++);
-            if (data.alarm) {
-                for (int i = 0; i < data.dsAddr.length(); i++) {
-                    rBuf[readResult.readCount++] = (byte) data.dsAddr.charAt(i);
-                }
-                break;
+        ArrayList<String> alarms = new ArrayList<>();
+        for (HA7SDummyDevice dd: deviceDataList.values()) {
+            if (dd.hasAlarm()) {
+                alarms.add(dd.getDSAddress().toString());
             }
         }
+        activeSearch = new ActiveSearch(ActiveSearchType.Alarm, alarms.toArray(new String[0]));
+
+        readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+
         // never pass back the CR
     }
 
@@ -254,19 +243,12 @@ public class HA7SSerialDummy implements HA7SSerial  {
             throw new IllegalArgumentException("alarm search next is single char cmd");
         }
 
-        if (searchType != ActiveSearch.Alarm) {
+        if ((activeSearch == null) || (activeSearch.getType() != ActiveSearchType.Alarm)) {
             throw new IllegalArgumentException("alarm search is not active");
         }
 
-        while (searchIndex < deviceDataList.size()) {
-            DeviceData data = deviceDataList.get(searchIndex++);
-            if (data.alarm) {
-                for (int i = 0; i < data.dsAddr.length(); i++) {
-                    rBuf[readResult.readCount++] = (byte) data.dsAddr.charAt(i);
-                }
-                break;
-            }
-        }
+        readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+
         // never pass back the CR
     }
 
@@ -275,22 +257,18 @@ public class HA7SSerialDummy implements HA7SSerial  {
             throw new IllegalArgumentException("family search cmd length must be three");
         }
 
-        searchIndex = 0;
-        searchType = ActiveSearch.Family;
-        lastFamilySearchCode = new byte[2];
-        lastFamilySearchCode[0] = wBuf[wStart + 1];
-        lastFamilySearchCode[1] = wBuf[wStart + 2];
+        short familySearchCode = (short)((Convert.hexToFourBits(wBuf[wStart + 1]) << 4) | Convert.hexToFourBits(wBuf[wStart + 2]));
 
-        while (searchIndex < deviceDataList.size()) {
-            String dsAddr = deviceDataList.get(searchIndex++).dsAddr;
-            if ((dsAddr.charAt(14) == lastFamilySearchCode[0]) &&
-                (dsAddr.charAt(15) == lastFamilySearchCode[1])) {
-                for (int i = 0; i < dsAddr.length(); i++) {
-                    rBuf[readResult.readCount++] = (byte) dsAddr.charAt(i);
-                }
-                break;
+        ArrayList<String> families = new ArrayList<>();
+        for (HA7SDummyDevice dd: deviceDataList.values()) {
+            if ((dd.getDSAddress().getFamilyCode()) == familySearchCode) {
+                families.add(dd.getDSAddress().toString());
             }
         }
+        activeSearch = new ActiveSearch(ActiveSearchType.Family, families.toArray(new String[0]));
+
+        readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+
         // never pass back the CR
     }
 
@@ -299,35 +277,58 @@ public class HA7SSerialDummy implements HA7SSerial  {
             throw new IllegalArgumentException("family search next is single char cmd");
         }
 
-        if (searchType != ActiveSearch.Family) {
+        if ((activeSearch == null) || (activeSearch.getType() != ActiveSearchType.Family)) {
             throw new IllegalArgumentException("family search is not active");
         }
 
-        while (searchIndex < deviceDataList.size()) {
-            String dsAddr = deviceDataList.get(searchIndex++).dsAddr;
-            if ((dsAddr.charAt(14) == lastFamilySearchCode[0]) &&
-                    (dsAddr.charAt(15) == lastFamilySearchCode[1])) {
-                for (int i = 0; i < dsAddr.length(); i++) {
-                    rBuf[readResult.readCount++] = (byte) dsAddr.charAt(i);
-                }
-                break;
-            }
-        }
+        readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+
         // never pass back the CR
     }
 
     private void reset(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger, ReadResult readResult) throws IllegalArgumentException {
         if ((wEnd - wStart) != 1) {
-            throw new IllegalArgumentException("Reset not single cmd char");
+            throw new IllegalArgumentException("Reset is single cmd char");
         }
 
+        activeSearch = null;
+        activeDeviceHexAddr = null;
+
         // leave readCount alone
+    }
+
+    private void writeBlock(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger, ReadResult readResult) throws IllegalArgumentException {
+        if ((wEnd - wStart) < 3) {
+            throw new IllegalArgumentException("Write block must be at least 3 chars");
+        }
+        if (wBuf[wEnd - 1] != 0x0d) {
+            throw new IllegalArgumentException("WriteBlock must be terminated by CR");
+        }
+        if (activeDeviceHexAddr == null) {
+            throw new IllegalArgumentException("Write block has no active device addr");
+        }
+        HA7SDummyDevice dd = deviceDataList.get(activeDeviceHexAddr);
+        if (dd == null) {
+            throw new IllegalArgumentException("Write block cannot find active device addr");
+        }
+        short end = 0;
+        for (int i = wStart + 3; i < (wEnd - 1); i++) {
+            rBuf[end++] = wBuf[i];
+        }
+        try {
+            dd.writeBlock(rBuf, (short)0, end);
+            readResult.readCount += (end - 0);
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Write block device threw exception", e);
+        }
     }
 
     // Even values are the char code, odd values are the expected total chars for the command data, -1 means terminated
     // with CR.
     private static final byte cmdLen[] = new byte[] {
             '\r', 1,
+            'A', -1,
             'R', 1,
             'S', 1,
             's', 1,
@@ -380,6 +381,44 @@ public class HA7SSerialDummy implements HA7SSerial  {
         else {
             // we want to be PAST the CR.
             return (wEnd + 1);
+        }
+    }
+
+    private enum ActiveSearchType {
+        General,
+        Alarm,
+        Family
+    }
+
+    private class ActiveSearch {
+
+        private final ActiveSearchType type;
+        private final String[] dsHexAddrs;
+        private int index;
+
+        public ActiveSearch(ActiveSearchType type, String[] dsHexAddrs) {
+            this.type = type;
+            this.dsHexAddrs = dsHexAddrs;
+            index = 0;
+        }
+
+        public ActiveSearchType getType() {
+            return type;
+        }
+
+        public short nextDSHexAddr(byte[] rBuf) {
+            short readCount = 0;
+
+            if (index < dsHexAddrs.length) {
+                for (int i = 0; i < 16; i ++) {
+                    rBuf[i] = (byte)dsHexAddrs[index].charAt(i);
+                }
+
+                index++;
+                readCount += 16;
+            }
+
+            return readCount;
         }
     }
 
