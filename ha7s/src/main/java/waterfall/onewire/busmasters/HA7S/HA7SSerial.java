@@ -257,11 +257,72 @@ public abstract class HA7SSerial {
     }
 
     public BooleanResult cmdReadBit(long rTimeoutMSec, Logger optLogger) {
-        return null;
+        byte[] cmdData = new byte[] { 'O' };
+        byte[] rbuf = new byte[1];
+
+        HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+
+        if (readResult.error != ReadResult.ErrorCode.RR_Success) {
+            return new BooleanResult().setFailure(readResult.error.name());
+        }
+
+        if (readResult.readCount != 1) {
+            return new BooleanResult().setFailure("Underrun - expected 1 byte");
+        }
+
+        boolean v;
+
+        if (rbuf[0] == '0') {
+            v = false;
+        }
+        else if (rbuf[0] == '1') {
+            v = false;
+        }
+        else {
+            return new BooleanResult().setFailure("Data error - not 0 or 1");
+        }
+
+        return new BooleanResult().setSuccess(v, readResult.postWriteCTM, readResult.postWriteCTM);
     }
 
     public HexByteArrayResult cmdWriteBlock(HexByteArray wData, long rTimeoutMSec, Logger optLogger) {
-        return null;
+        if (wData == null) {
+            throw new NullPointerException("wData");
+        }
+        if (wData.size() < 1) {
+            throw new IllegalArgumentException("wData.size < 1");
+        }
+        if (wData.size() > 32) {
+            throw new IllegalArgumentException("wData.size > 32");
+        }
+
+        int bCount = wData.getRaw().length;
+        byte[] cmdData = new byte[1 + 2 + bCount + 1];
+        cmdData[0] = 'W';
+        cmdData[1] = Convert.fourBitsToHex(bCount >> 4);
+        cmdData[2] = Convert.fourBitsToHex(bCount & 0x0f);
+        for (int i = 0; i < bCount; i++) {
+            cmdData[3 + i] = wData.getRaw()[i];
+        }
+        cmdData[cmdData.length - 1] = 0x0D;
+
+        byte[] rbuf = new byte[bCount];
+
+        HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+
+        if (readResult.error != ReadResult.ErrorCode.RR_Success) {
+            return new HexByteArrayResult().setFailure(readResult.error.name());
+        }
+
+        if (readResult.readCount != bCount) {
+            return new HexByteArrayResult().setFailure("Underrun - expected:" + bCount + " got:" + readResult.readCount);
+        }
+
+        if (!isValidUpperCaseHex(rbuf, readResult.readCount)) {
+            return new HexByteArrayResult().setFailure("Not hex bytes");
+        }
+
+        return new HexByteArrayResult().setSuccess(rbuf, readResult.postWriteCTM, readResult.postWriteCTM);
     }
 
     /**

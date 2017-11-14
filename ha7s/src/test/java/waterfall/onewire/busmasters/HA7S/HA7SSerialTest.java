@@ -6,6 +6,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
+import waterfall.onewire.HexByteArray;
 import waterfall.onewire.busmaster.Logger;
 
 import java.util.ArrayList;
@@ -324,6 +325,107 @@ public class HA7SSerialTest {
 
         TestHA7SSerial serial = new TestHA7SSerial(readResult, readRBufData, readWriteCTM);
         HA7SSerial.HexByteArrayResult result = serial.cmdFamilySearchNext(rTimeoutMSec, optLogger);
+        Assert.assertEquals(result, expectedResult);
+    }
+
+    @DataProvider
+    public Object[][] cmdReadBitNegativeCasesProvider() {
+        long rTimeoutMSec = 5;
+        Logger optLogger = null;
+
+        byte[] nullRBuf = null;
+        long writeCTM = 5;
+
+        return new Object[][]{
+                // Error - ReadOverrun
+                {rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_ReadOverrun),
+                        nullRBuf, writeCTM,
+                        new HA7SSerial.BooleanResult().setFailure("RR_ReadOverrun")
+                },
+                // Error - ReadTimeout
+                {rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_ReadTimeout),
+                        nullRBuf, writeCTM,
+                        new HA7SSerial.BooleanResult().setFailure("RR_ReadTimeout")
+                },
+                // Error - Error
+                {rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Error),
+                        nullRBuf, writeCTM,
+                        new HA7SSerial.BooleanResult().setFailure("RR_Error")
+                },
+                // Success - Bad count
+                {rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 0, writeCTM),
+                        new byte[] {0}, writeCTM,
+                        new HA7SSerial.BooleanResult().setFailure("Underrun - expected 1 byte")
+                },
+                // Success - Bad count
+                {rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 1, writeCTM),
+                        new byte[] {'A'}, writeCTM,
+                        new HA7SSerial.BooleanResult().setFailure("Data error - not 0 or 1")
+                }
+        };
+    }
+
+    @Test(dataProvider = "cmdReadBitNegativeCasesProvider")
+    public void cmdReadBitNegativeTests(long rTimeoutMSec, Logger optLogger,
+                                      HA7SSerial.ReadResult readResult, byte[] readRBufData, long readWriteCTM,
+                                      HA7SSerial.BooleanResult expectedResult) {
+
+        TestHA7SSerial serial = new TestHA7SSerial(readResult, readRBufData, readWriteCTM);
+        HA7SSerial.BooleanResult result = serial.cmdReadBit(rTimeoutMSec, optLogger);
+        Assert.assertEquals(result, expectedResult);
+    }
+
+    @DataProvider
+    public Object[][] cmdWriteBlockNegativeCasesProvider() {
+        HexByteArray hexByteArray = new HexByteArray(new byte[] { 'F', 'F', 'F', 'F' });
+        long rTimeoutMSec = 5;
+        Logger optLogger = null;
+
+        byte[] nullRBuf = null;
+        long writeCTM = 5;
+
+        return new Object[][]{
+                // Error - ReadOverrun
+                {hexByteArray, rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_ReadOverrun), nullRBuf, writeCTM,
+                        new HA7SSerial.HexByteArrayResult().setFailure("RR_ReadOverrun")
+                },
+                // Error - ReadTimeout
+                {hexByteArray, rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_ReadTimeout), nullRBuf, writeCTM,
+                        new HA7SSerial.HexByteArrayResult().setFailure("RR_ReadTimeout")
+                },
+                // Error - Error
+                {hexByteArray, rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Error), nullRBuf, writeCTM,
+                        new HA7SSerial.HexByteArrayResult().setFailure("RR_Error")
+                },
+                // Success - Read underrun
+                {hexByteArray, rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 3, writeCTM), nullRBuf, writeCTM,
+                        new HA7SSerial.HexByteArrayResult().setFailure("Underrun - expected:4 got:3")
+                },
+                // Success - Bad hex chars
+                {hexByteArray, rTimeoutMSec, optLogger,
+                        new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 4, writeCTM),
+                        new byte[] { 'f', 'f', 'f', 'f' }, writeCTM,
+                        new HA7SSerial.HexByteArrayResult().setFailure("Not hex bytes")
+                }
+        };
+    }
+
+    @Test(dataProvider = "cmdWriteBlockNegativeCasesProvider")
+    public void cmdWriteBlockNegativeTests(HexByteArray hData, long rTimeoutMSec, Logger optLogger,
+                                           HA7SSerial.ReadResult readResult, byte[] readRBufData, long readWriteCTM,
+                                           HA7SSerial.HexByteArrayResult expectedResult) {
+
+        TestHA7SSerial serial = new TestHA7SSerial(readResult, readRBufData, readWriteCTM);
+        HA7SSerial.HexByteArrayResult result = serial.cmdWriteBlock(hData, rTimeoutMSec, optLogger);
         Assert.assertEquals(result, expectedResult);
     }
 }
