@@ -6,6 +6,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.*;
+import waterfall.onewire.busmasters.HA7S.part.DS18B20;
 
 /**
  * Created by dwaterfa on 1/29/17.
@@ -189,9 +190,9 @@ public class HA7STest {
         final String dev_B = "090000065BD53528";
         final String dev_C = "5F0000065CCD1A28";
 
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_A)));
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_B)));
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_C)));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_A)));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_B)));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_C)));
 
         try {
             SearchBusCmd.Result result = searchBusCmd.execute();
@@ -299,9 +300,9 @@ public class HA7STest {
         final String dev_B = "090000065BD53528";
         final String dev_C = "5F0000065CCD1A28";
 
-        HA7SDummyDS18B20 dev_A_dev = new HA7SDummyDS18B20(new DSAddress(dev_A));
-        HA7SDummyDS18B20 dev_B_dev = new HA7SDummyDS18B20(new DSAddress(dev_B));
-        HA7SDummyDS18B20 dev_C_dev = new HA7SDummyDS18B20(new DSAddress(dev_C));
+        DS18B20 dev_A_dev = new DS18B20(new DSAddress(dev_A));
+        DS18B20 dev_B_dev = new DS18B20(new DSAddress(dev_B));
+        DS18B20 dev_C_dev = new DS18B20(new DSAddress(dev_C));
 
         dev_B_dev.setHasAlarm(true);
         dev_C_dev.setHasAlarm(true);
@@ -465,9 +466,9 @@ public class HA7STest {
         final String dev_B = "090000065BD53528";
         final String dev_C = "5F0000065CCD1A28";
 
-        HA7SDummyDS18B20 dev_A_dev = new HA7SDummyDS18B20(new DSAddress(dev_A));
-        HA7SDummyDS18B20 dev_B_dev = new HA7SDummyDS18B20(new DSAddress(dev_B));
-        HA7SDummyDS18B20 dev_C_dev = new HA7SDummyDS18B20(new DSAddress(dev_C));
+        DS18B20 dev_A_dev = new DS18B20(new DSAddress(dev_A));
+        DS18B20 dev_B_dev = new DS18B20(new DSAddress(dev_B));
+        DS18B20 dev_C_dev = new DS18B20(new DSAddress(dev_C));
 
         serialDummy.addDevice(dev_A_dev);
         serialDummy.addDevice(dev_B_dev);
@@ -489,7 +490,7 @@ public class HA7STest {
         lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
         final String dev_D = "7B0000063B759F27";
-        HA7SDummyDS18B20 dev_D_dev = new HA7SDummyDS18B20(new DSAddress(dev_D));
+        DS18B20 dev_D_dev = new DS18B20(new DSAddress(dev_D));
         serialDummy.addDevice(dev_D_dev);
 
         try {
@@ -582,7 +583,7 @@ public class HA7STest {
 
             if (serialDummy != null) {
                 if (updateOnNotifyDoAdd) {
-                    serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(updateOnNotifyDev)).setHasAlarm(updateOnNotifyAlarm));
+                    serialDummy.addDevice(new DS18B20(new DSAddress(updateOnNotifyDev)).setHasAlarm(updateOnNotifyAlarm));
                 }
                 else {
                     serialDummy.removeDevice(updateOnNotifyDev);
@@ -709,7 +710,7 @@ public class HA7STest {
         // add a device to the bus
         final String dev_A = "EE0000065BC0AE28";
 
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_A)));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_A)));
 
         for (int i = 0; i < 2; i++) {
             waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -734,8 +735,8 @@ public class HA7STest {
         final String dev_B = "090000065BD53528";
         final String dev_C = "5F0000065CCD1A28";
 
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_B)));
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_C)));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_B)));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_C)));
 
         for (int i = 0; i < 2; i++) {
             waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -846,7 +847,7 @@ public class HA7STest {
         // add a device to the bus
         final String dev_A = "EE0000065BC0AE28";
 
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_A)).setHasAlarm(true));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_A)).setHasAlarm(true));
 
         for (int i = 0; i < 2; i++) {
             waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -871,8 +872,8 @@ public class HA7STest {
         final String dev_B = "090000065BD53528";
         final String dev_C = "5F0000065CCD1A28";
 
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_B)));
-        serialDummy.addDevice(new HA7SDummyDS18B20(new DSAddress(dev_C)).setHasAlarm(true));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_B)));
+        serialDummy.addDevice(new DS18B20(new DSAddress(dev_C)).setHasAlarm(true));
 
         for (int i = 0; i < 2; i++) {
             waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);

@@ -29,4 +29,10 @@ public interface HA7SDummyDevice {
      */
     public void writeBlock(byte[] data, short start, short end);
 
+    /**
+     * Read a bit from the Device.
+     * @param data The byte read from the device, must be in the form '0' or '1'
+     */
+    public void readBit(byte[] data);
+
 }

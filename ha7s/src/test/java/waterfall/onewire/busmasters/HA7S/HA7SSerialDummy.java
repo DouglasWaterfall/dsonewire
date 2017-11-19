@@ -145,7 +145,7 @@ public class HA7SSerialDummy extends HA7SSerial  {
     }
 
     /* For our testing */
-    public void addDevice(HA7SDummyDevice device) {
+    public HA7SSerialDummy addDevice(HA7SDummyDevice device) {
         if (device == null) {
             throw new IllegalArgumentException("device is null");
         }
@@ -154,17 +154,20 @@ public class HA7SSerialDummy extends HA7SSerial  {
             throw new IllegalArgumentException("duplicate device " + hexAddr);
         }
         deviceDataList.put(hexAddr, device);
+        return this;
     }
 
-    public void removeDevice(String dsHexAddr) {
+    public HA7SSerialDummy removeDevice(String dsHexAddr) {
         if (!deviceDataList.containsKey(dsHexAddr)) {
             throw new IllegalArgumentException("dsAddr not found " + dsHexAddr);
         }
         deviceDataList.remove(dsHexAddr);
+        return this;
     }
 
-    public void removeAllDevices() {
+    public HA7SSerialDummy removeAllDevices() {
         deviceDataList.clear();
+        return this;
     }
 
     private void addressSelect(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger, ReadResult readResult) throws IllegalArgumentException {

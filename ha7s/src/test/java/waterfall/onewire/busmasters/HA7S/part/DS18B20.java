@@ -1,16 +1,14 @@
-package waterfall.onewire.busmasters.HA7S;
+package waterfall.onewire.busmasters.HA7S.part;
 
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.Command;
-
-import java.lang.reflect.Array;
-import java.util.Arrays;
+import waterfall.onewire.busmasters.HA7S.HA7SDummyDevice;
 
 /**
  * Created by dwaterfa on 11/8/17.
  */
-public class HA7SDummyDS18B20 implements HA7SDummyDevice {
+public class DS18B20 implements HA7SDummyDevice {
 
     private final DSAddress dsAddress;
     private boolean isParasitic = false;
@@ -18,7 +16,7 @@ public class HA7SDummyDS18B20 implements HA7SDummyDevice {
     private short readIndex;
     private byte[][] readData;
 
-    public HA7SDummyDS18B20(DSAddress dsAddress) {
+    public DS18B20(DSAddress dsAddress) {
         this.dsAddress = dsAddress;
         this.isParasitic = isParasitic;
         hasAlarm = false;
@@ -56,42 +54,15 @@ public class HA7SDummyDS18B20 implements HA7SDummyDevice {
 
         switch ((byte)Convert.hexTo8bits(data[start], data[start + 1])) {
             case Command.CONVERT_T:
-                if ((end - start) > 1) {
-                    throw new IllegalArgumentException("CONVERT_T extra data");
-                }
-
+                convertT(data, start, end);
                 break;
 
             case Command.READ_POWER_SUPPLY:
-                if ((end - start) > 2) {
-                    throw new IllegalArgumentException("READ_POWER_SUPPLY extra data");
-                }
-
-                // we only drive the LSB bit low, otherwise leave alone
-                // Note: the device only drives one byte low - need to check what happens with the rest of the byte.
-                if ((end > start) && (isParasitic)) {
-                    data[start + 1] &= (byte)0xfe;
-                }
+                readPowerSupply(data, start, end);
                 break;
 
             case Command.READ_SCRATCHPAD:
-                if ((end - start) > ((9 + 1) * 2)) {
-                    throw new IllegalArgumentException("READ_SCRATCHPATH extra data");
-                }
-                if (readData == null) {
-                    throw new IllegalArgumentException("READ_SCRATCHPAD no read data");
-                }
-                int rIndex = readIndex;
-                if (readIndex < readData.length) {
-                    readIndex++;
-                }
-                int y = 0;
-                for (int i = (start + 2); i < end; i += 2) {
-                    int b = Convert.hexTo8bits(data[i], data[i + 1]);
-                    b &= readData[rIndex][y++];
-                    data[i] = Convert.fourBitsToHex(b >> 4);
-                    data[i + 1] = Convert.fourBitsToHex(b & 0xf);
-                }
+                readScratchpad(data, start, end);
                 break;
 
             default:
@@ -99,8 +70,57 @@ public class HA7SDummyDS18B20 implements HA7SDummyDevice {
         }
     }
 
+    public void readBit(byte[] data) {
+        // Expected to be 0 if the device is busy Converting
+        data[0] = '1';
+    }
+
+    //
     // Our private methods.
-    public HA7SDummyDS18B20 setHasAlarm(boolean hasAlarm) {
+    //
+    public void convertT(byte[] data, short start, short end) {
+        if ((end - start) > 2) { // hex for cmd
+            throw new IllegalArgumentException("CONVERT_T extra data");
+        }
+        if ((readIndex + 1) < readData.length) {
+            readIndex++;
+        }
+    }
+
+    public void readPowerSupply(byte[] data, short start, short end) {
+        if ((end - start) > 2) { // hex for cmd.
+            throw new IllegalArgumentException("READ_POWER_SUPPLY extra data");
+        }
+
+        // we only drive the LSB bit low, otherwise leave alone
+        // Note: the device only drives one byte low - need to check what happens with the rest of the byte.
+        if ((end > start) && (isParasitic)) {
+            data[start + 1] &= (byte) 0xfe;
+        }
+    }
+
+    public void readScratchpad(byte[] data, short start, short end) {
+        if ((end - start) > ((9 + 1) * 2)) {
+            throw new IllegalArgumentException("READ_SCRATCHPATH extra data");
+        }
+        if (readData == null) {
+            throw new IllegalArgumentException("READ_SCRATCHPAD no read data");
+        }
+
+        // ConvertT is the only way we advance the data.
+
+        int y = 0;
+        for (int i = (start + 2); i < end; i += 2) {
+            int b = Convert.hexTo8bits(data[i], data[i + 1]);
+            b &= readData[readIndex][y++];
+            data[i] = Convert.fourBitsToHex(b >> 4);
+            data[i + 1] = Convert.fourBitsToHex(b & 0xf);
+        }
+
+        data.toString();
+    }
+
+    public DS18B20 setHasAlarm(boolean hasAlarm) {
         this.hasAlarm = hasAlarm;
         return this;
     }
@@ -109,7 +129,7 @@ public class HA7SDummyDS18B20 implements HA7SDummyDevice {
         return isParasitic;
     }
 
-    public HA7SDummyDS18B20 setParasitic(boolean isParasitic) {
+    public DS18B20 setParasitic(boolean isParasitic) {
         this.isParasitic = isParasitic;
         return this;
     }
@@ -118,7 +138,7 @@ public class HA7SDummyDS18B20 implements HA7SDummyDevice {
         return this.readData;
     }
 
-    public void setScratchPadData(byte[][] data) {
+    public DS18B20 setScratchPadData(byte[][] data) {
         if ((data == null) || (data.length < 1)) {
             throw new IllegalArgumentException("data is null or empty");
         }
@@ -129,6 +149,7 @@ public class HA7SDummyDS18B20 implements HA7SDummyDevice {
         }
         readData = data;
         readIndex = 0;
+        return this;
     }
 
 }
