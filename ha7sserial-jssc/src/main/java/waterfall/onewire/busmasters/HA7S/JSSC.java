@@ -8,346 +8,358 @@ import waterfall.onewire.busmaster.Logger;
 
 
 public class JSSC extends HA7SSerial {
-    private String portName;
-    private SerialPort serialPort = null;
 
-    class SharedData {
-        public boolean started = false;
+  SharedData sharedData = new SharedData();
+  private String portName;
+  private SerialPort serialPort = null;
 
-        public Thread waitingThread = null;
-        public Logger waitingThreadLogger = null;
-        public String waitingThreadLoggerContext = null;
-        public byte[] readBuffer = null;
+  public JSSC(String portName) {
+    this.portName = portName;
+  }
 
-        public int readOffset = 0;
-        public int readCount = 0;
-        public boolean readOverrun = false;
-        public boolean readComplete = true;
-
-        public void addWaitingThread(Thread waitingThread, byte[] rBuf, Logger waitingThreadLogger, String waitingThreadLoggerContext) {
-            this.waitingThread = waitingThread;
-            this.waitingThreadLogger = waitingThreadLogger;
-            this.waitingThreadLoggerContext = waitingThreadLoggerContext;
-            this.readBuffer = rBuf;
-            readOffset = 0;
-            readCount = 0;
-            readOverrun = false;
-            readComplete = false;
-        }
-
-        public void clearWaitingThread() {
-            this.waitingThread = null;
-            this.waitingThreadLogger = null;
-            this.waitingThreadLoggerContext = null;
-            this.readBuffer = null;
-        }
-
-        public void logInfo(String msg) {
-            if (waitingThread != null) {
-                if (waitingThreadLogger != null) {
-                    waitingThreadLogger.logInfo(waitingThreadLoggerContext, msg);
-                }
-            } else {
-                System.err.println("[INFO] " + "noWaitingThread " + msg);
-            }
-        }
-
-        public void logError(String msg) {
-            if (waitingThread != null) {
-                if (waitingThreadLogger != null) {
-                    waitingThreadLogger.logError(waitingThreadLoggerContext, msg);
-                }
-            } else {
-                System.err.println("[ERROR] " + "noWaitingThread " + msg);
-            }
-        }
-
+  public static String byteToSafeString(byte[] buf, int bOffset, int bCount) {
+    if (bCount == 0) {
+      return "{empty}";
     }
 
-    SharedData sharedData = new SharedData();
+    StringBuilder sb = new StringBuilder();
 
-    public JSSC(String portName) {
-        this.portName = portName;
+    for (int i = 0; i < bCount; i++) {
+      if (buf[i] < 32) {
+        sb.append(String.format("{%02X}", buf[i]));
+      } else {
+        sb.append((char) buf[i]);
+      }
     }
 
-    @Override
-    public String getPortName() {
-        return this.portName;
+    return sb.toString();
+  }
+
+  @Override
+  public String getPortName() {
+    return this.portName;
+  }
+
+  @Override
+  public synchronized StartResult start(Logger optLogger) {
+
+    String logContext = null;
+
+    if (optLogger != null) {
+      logContext =
+          this.getClass().getSimpleName() + ".start() " + ((portName != null) ? portName : "")
+              + " ";
     }
 
-    @Override
-    public synchronized StartResult start(Logger optLogger) {
+    if (sharedData.started) {
+      if (optLogger != null) {
+        optLogger.logInfo(logContext, "Already started");
+      }
+      return StartResult.SR_Success;
+    }
 
-        String logContext = null;
-
+    if (portName == null) {
+      if (true) {
+        String[] portList = SerialPortList.getPortNames();
+        String s = null;
+        if (portList.length == 1) {
+          s = portList[0];
+        } else {
+          StringBuilder sb = new StringBuilder();
+          sb.append(portList[0]);
+          for (int i = 1; i < portList.length; i++) {
+            sb.append(", " + portList[i]);
+          }
+          s = sb.toString();
+        }
         if (optLogger != null) {
-            logContext = this.getClass().getSimpleName() + ".start() " + ((portName != null) ? portName : "") + " ";
+          optLogger.logError(logContext, "No portName. Valid portNames are " + s);
         }
+      }
+      return StartResult.SR_NoPortName;
+    }
 
-        if (sharedData.started) {
-            if (optLogger != null) {
-                optLogger.logInfo(logContext, "Already started");
-            }
-            return StartResult.SR_Success;
+    serialPort = new SerialPort(portName);
+    try {
+      serialPort.openPort();
+    } catch (SerialPortException ex) {
+      if (optLogger != null) {
+        optLogger.logError(logContext, ex);
+      }
+      serialPort = null;
+      return StartResult.SR_Error;
+    }
+
+    try {
+      serialPort.setParams(
+          SerialPort.BAUDRATE_9600,
+          SerialPort.DATABITS_8,
+          SerialPort.STOPBITS_1,
+          SerialPort.PARITY_NONE);
+    } catch (SerialPortException ex) {
+      if (optLogger != null) {
+        optLogger.logError(logContext, ex);
+      }
+      serialPort = null;
+      return StartResult.SR_Error;
+    }
+
+    // flush anything we find.
+    try {
+      if (serialPort.getInputBufferBytesCount() > 0) {
+        byte[] flushed = serialPort.readBytes();
+        if (optLogger != null) {
+          optLogger.logInfo(logContext, "flushing[" + flushed.length + "]:" + JSSC
+              .byteToSafeString(flushed, 0, flushed.length));
         }
+      }
+    } catch (SerialPortException ex) {
+      if (optLogger != null) {
+        optLogger.logError(logContext, ex);
+      }
+      ;
+      serialPort = null;
+      return StartResult.SR_Error;
+    }
 
-        if (portName == null) {
-            if (true) {
-                String[] portList = SerialPortList.getPortNames();
-                String s = null;
-                if (portList.length == 1) {
-                    s = portList[0];
+    try {
+      serialPort.addEventListener((SerialPortEvent serialPortEvent) -> {
+        if (serialPortEvent.isRXCHAR()) {
+          synchronized (serialPort) {
+            try {
+              byte[] rbuf = serialPort.readBytes();
+              if ((rbuf != null) && (rbuf.length > 0)) {
+                sharedData
+                    .logInfo("read[" + rbuf.length + "]:" + byteToSafeString(rbuf, 0, rbuf.length));
+                if ((sharedData.waitingThread == null) || (sharedData.readComplete)) {
+                  // nobody is waiting so log and clear.
+                  sharedData.logError("No thread or readComplete, flushing");
                 } else {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(portList[0]);
-                    for (int i = 1; i < portList.length; i++) {
-                        sb.append(", " + portList[i]);
+                  for (int i = 0; i < rbuf.length; i++) {
+                    if (rbuf[i] == '\r') {
+                      // found the terminator
+                      sharedData.readComplete = true;
+                      if ((i + 1) != rbuf.length) {
+                        sharedData.logError((rbuf.length - i - 1) + " extra bytes ignored");
+                      }
+
+                      if (sharedData.waitingThread != null) {
+                        serialPort.notify();
+                      }
+
+                      break; // necessary if the read has extra chars
+
+                    } else if (sharedData.readBuffer != null) {
+                      if ((sharedData.readOffset + sharedData.readCount)
+                          < sharedData.readBuffer.length) {
+                        sharedData.readBuffer[sharedData.readOffset
+                            + sharedData.readCount++] = rbuf[i];
+                      } else if (!sharedData.readOverrun) {
+                        sharedData.logError(String.format("Read overrun at index %d", i));
+                        sharedData.readOverrun = true;
+                      }
                     }
-                    s = sb.toString();
+                  }
                 }
-                if (optLogger != null) {
-                    optLogger.logError(logContext, "No portName. Valid portNames are " + s);
-                }
+              } else {
+                sharedData.logError("Read zero chars?");
+              }
+            } catch (SerialPortException ex) {
+              sharedData.logError(ex.toString());
             }
-            return StartResult.SR_NoPortName;
+          }
         }
-
-        serialPort = new SerialPort(portName);
-        try {
-            serialPort.openPort();
-        } catch (SerialPortException ex) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, ex);
-            }
-            serialPort = null;
-            return StartResult.SR_Error;
-        }
-
-        try {
-            serialPort.setParams(
-                    SerialPort.BAUDRATE_9600,
-                    SerialPort.DATABITS_8,
-                    SerialPort.STOPBITS_1,
-                    SerialPort.PARITY_NONE);
-        } catch (SerialPortException ex) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, ex);
-            }
-            serialPort = null;
-            return StartResult.SR_Error;
-        }
-
-        // flush anything we find.
-        try {
-            if (serialPort.getInputBufferBytesCount() > 0) {
-                byte[] flushed = serialPort.readBytes();
-                if (optLogger != null) {
-                    optLogger.logInfo(logContext, "flushing[" + flushed.length + "]:" + JSSC.byteToSafeString(flushed, 0, flushed.length));
-                }
-            }
-        } catch (SerialPortException ex) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, ex);
-            }
-            ;
-            serialPort = null;
-            return StartResult.SR_Error;
-        }
-
-        try {
-            serialPort.addEventListener((SerialPortEvent serialPortEvent) -> {
-                if (serialPortEvent.isRXCHAR()) {
-                    synchronized (serialPort) {
-                        try {
-                            byte[] rbuf = serialPort.readBytes();
-                            if ((rbuf != null) && (rbuf.length > 0)) {
-                                sharedData.logInfo("read[" + rbuf.length + "]:" + byteToSafeString(rbuf, 0, rbuf.length));
-                                if ((sharedData.waitingThread == null) || (sharedData.readComplete)) {
-                                    // nobody is waiting so log and clear.
-                                    sharedData.logError("No thread or readComplete, flushing");
-                                } else {
-                                    for (int i = 0; i < rbuf.length; i++) {
-                                        if (rbuf[i] == '\r') {
-                                            // found the terminator
-                                            sharedData.readComplete = true;
-                                            if ((i + 1) != rbuf.length) {
-                                                sharedData.logError((rbuf.length - i - 1) + " extra bytes ignored");
-                                            }
-
-                                            if (sharedData.waitingThread != null) {
-                                                serialPort.notify();
-                                            }
-
-                                            break; // necessary if the read has extra chars
-
-                                        } else if (sharedData.readBuffer != null) {
-                                            if ((sharedData.readOffset + sharedData.readCount) < sharedData.readBuffer.length) {
-                                                sharedData.readBuffer[sharedData.readOffset + sharedData.readCount++] = rbuf[i];
-                                            } else if (!sharedData.readOverrun) {
-                                                sharedData.logError(String.format("Read overrun at index %d", i));
-                                                sharedData.readOverrun = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            } else {
-                                sharedData.logError("Read zero chars?");
-                            }
-                        } catch (SerialPortException ex) {
-                            sharedData.logError(ex.toString());
-                        }
-                    }
-                }
-            }, SerialPort.MASK_RXCHAR);
-        } catch (SerialPortException ex) {
-            if (optLogger != null) {
-                optLogger.logError(logContext, ex);
-            }
-            serialPort = null;
-            return StartResult.SR_Error;
-        }
-
-        sharedData.started = true;
-        if (optLogger != null) {
-            optLogger.logInfo(logContext, "started");
-        }
-        return StartResult.SR_Success;
+      }, SerialPort.MASK_RXCHAR);
+    } catch (SerialPortException ex) {
+      if (optLogger != null) {
+        optLogger.logError(logContext, ex);
+      }
+      serialPort = null;
+      return StartResult.SR_Error;
     }
 
-    @Override
-    public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], long rTimeoutMSec, Logger optLogger) {
-        ReadResult result = new ReadResult();
+    sharedData.started = true;
+    if (optLogger != null) {
+      optLogger.logInfo(logContext, "started");
+    }
+    return StartResult.SR_Success;
+  }
 
-        String logContext = null;
+  @Override
+  public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], long rTimeoutMSec, Logger optLogger) {
+    ReadResult result = new ReadResult();
 
-        if (optLogger != null) {
-            logContext = this.getClass().getSimpleName() + ".writeReadTilCR() " + ((portName != null) ? portName : "") + " ";
-        }
+    String logContext = null;
 
-        synchronized (this) {
+    if (optLogger != null) {
+      logContext =
+          this.getClass().getSimpleName() + ".writeReadTilCR() " + ((portName != null) ? portName
+              : "") + " ";
+    }
 
-            if (sharedData.started) {
-                synchronized (serialPort) {
-                    try {
-                        sharedData.addWaitingThread(Thread.currentThread(), rBuf, optLogger, logContext);
+    synchronized (this) {
 
-                        try {
-                            final int wcount = wBuf.length;
+      if (sharedData.started) {
+        synchronized (serialPort) {
+          try {
+            sharedData.addWaitingThread(Thread.currentThread(), rBuf, optLogger, logContext);
 
-                            if (optLogger != null) {
-                                optLogger.logInfo(logContext, "write[" + wcount + "]:" + byteToSafeString(wBuf, 0, wcount));
-                            }
+            try {
+              final int wcount = wBuf.length;
 
-                            for (int i = 0; i < wcount; i++) {
-                                serialPort.writeByte(wBuf[i]);
-                            }
+              if (optLogger != null) {
+                optLogger.logInfo(logContext,
+                    "write[" + wcount + "]:" + byteToSafeString(wBuf, 0, wcount));
+              }
 
-                            result.postWriteCTM = new Long(System.currentTimeMillis());
+              for (int i = 0; i < wcount; i++) {
+                serialPort.writeByte(wBuf[i]);
+              }
 
-                            serialPort.wait(rTimeoutMSec);
+              result.postWriteCTM = new Long(System.currentTimeMillis());
 
-                            if (sharedData.readComplete) {
-                                if (sharedData.readOverrun) {
-                                    result.error = ReadResult.ErrorCode.RR_ReadOverrun;
-                                } else {
-                                    result.error = ReadResult.ErrorCode.RR_Success;
-                                }
-                                result.readCount = sharedData.readCount;
-                            } else {
-                                if (optLogger != null) {
-                                    optLogger.logError(logContext, "read not complete?");
-                                }
-                                result.error = ReadResult.ErrorCode.RR_Error;
-                            }
-                        } catch (SerialPortException ex) {
-                            if (optLogger != null) {
-                                optLogger.logError(logContext, ex);
-                            }
-                            result.error = ReadResult.ErrorCode.RR_Error;
-                        } catch (InterruptedException ex) {
-                            if (optLogger != null) {
-                                optLogger.logError(logContext, ex);
-                            }
-                            result.error = ReadResult.ErrorCode.RR_ReadTimeout;
-                            result.readCount = sharedData.readCount;
-                        }
-                    } finally {
-                        sharedData.clearWaitingThread();
-                    }
+              serialPort.wait(rTimeoutMSec);
+
+              if (sharedData.readComplete) {
+                if (sharedData.readOverrun) {
+                  result.error = ReadResult.ErrorCode.RR_ReadOverrun;
+                } else {
+                  result.error = ReadResult.ErrorCode.RR_Success;
                 }
-            } else {
+                result.readCount = sharedData.readCount;
+              } else {
                 if (optLogger != null) {
-                    optLogger.logInfo(logContext, "not started.");
+                  optLogger.logError(logContext, "read not complete?");
                 }
                 result.error = ReadResult.ErrorCode.RR_Error;
-            }
-        }
-        if (optLogger != null) {
-            optLogger.logInfo(logContext, result.error.name());
-        }
-
-        return result;
-    }
-
-    @Override
-    public synchronized StopResult stop(Logger optLogger) {
-
-        String logContext = null;
-
-        if (optLogger != null) {
-            logContext = this.getClass().getSimpleName() + ".stop() " + ((portName != null) ? portName : "") + " ";
-        }
-
-        if (optLogger != null) {
-            optLogger.logInfo(logContext, "stop()\n");
-        }
-
-        if (!sharedData.started) {
-            if (optLogger != null) {
-                optLogger.logInfo(logContext, "Already stopped");
-            }
-            return StopResult.SR_Success;
-        }
-
-        sharedData.started = false;
-
-        try {
-            boolean closeResult = serialPort.closePort();
-            if (!closeResult) {
-                if (optLogger != null) {
-                    optLogger.logError(logContext, "serial port failed to close");
-                }
-            }
-        } catch (SerialPortException ex) {
-            if (optLogger != null) {
+              }
+            } catch (SerialPortException ex) {
+              if (optLogger != null) {
                 optLogger.logError(logContext, ex);
+              }
+              result.error = ReadResult.ErrorCode.RR_Error;
+            } catch (InterruptedException ex) {
+              if (optLogger != null) {
+                optLogger.logError(logContext, ex);
+              }
+              result.error = ReadResult.ErrorCode.RR_ReadTimeout;
+              result.readCount = sharedData.readCount;
             }
-            return StopResult.SR_Error;
+          } finally {
+            sharedData.clearWaitingThread();
+          }
         }
-
+      } else {
         if (optLogger != null) {
-            optLogger.logInfo(logContext, "stopped");
+          optLogger.logInfo(logContext, "not started.");
         }
-
-        return StopResult.SR_Success;
+        result.error = ReadResult.ErrorCode.RR_Error;
+      }
+    }
+    if (optLogger != null) {
+      optLogger.logInfo(logContext, result.error.name());
     }
 
-    public static String byteToSafeString(byte[] buf, int bOffset, int bCount) {
-        if (bCount == 0) {
-            return "{empty}";
-        }
+    return result;
+  }
 
-        StringBuilder sb = new StringBuilder();
+  @Override
+  public synchronized StopResult stop(Logger optLogger) {
 
-        for (int i = 0; i < bCount; i++) {
-            if (buf[i] < 32) {
-                sb.append(String.format("{%02X}", buf[i]));
-            } else {
-                sb.append((char) buf[i]);
-            }
-        }
+    String logContext = null;
 
-        return sb.toString();
+    if (optLogger != null) {
+      logContext =
+          this.getClass().getSimpleName() + ".stop() " + ((portName != null) ? portName : "") + " ";
     }
+
+    if (optLogger != null) {
+      optLogger.logInfo(logContext, "stop()\n");
+    }
+
+    if (!sharedData.started) {
+      if (optLogger != null) {
+        optLogger.logInfo(logContext, "Already stopped");
+      }
+      return StopResult.SR_Success;
+    }
+
+    sharedData.started = false;
+
+    try {
+      boolean closeResult = serialPort.closePort();
+      if (!closeResult) {
+        if (optLogger != null) {
+          optLogger.logError(logContext, "serial port failed to close");
+        }
+      }
+    } catch (SerialPortException ex) {
+      if (optLogger != null) {
+        optLogger.logError(logContext, ex);
+      }
+      return StopResult.SR_Error;
+    }
+
+    if (optLogger != null) {
+      optLogger.logInfo(logContext, "stopped");
+    }
+
+    return StopResult.SR_Success;
+  }
+
+  class SharedData {
+
+    public boolean started = false;
+
+    public Thread waitingThread = null;
+    public Logger waitingThreadLogger = null;
+    public String waitingThreadLoggerContext = null;
+    public byte[] readBuffer = null;
+
+    public int readOffset = 0;
+    public int readCount = 0;
+    public boolean readOverrun = false;
+    public boolean readComplete = true;
+
+    public void addWaitingThread(Thread waitingThread, byte[] rBuf, Logger waitingThreadLogger,
+        String waitingThreadLoggerContext) {
+      this.waitingThread = waitingThread;
+      this.waitingThreadLogger = waitingThreadLogger;
+      this.waitingThreadLoggerContext = waitingThreadLoggerContext;
+      this.readBuffer = rBuf;
+      readOffset = 0;
+      readCount = 0;
+      readOverrun = false;
+      readComplete = false;
+    }
+
+    public void clearWaitingThread() {
+      this.waitingThread = null;
+      this.waitingThreadLogger = null;
+      this.waitingThreadLoggerContext = null;
+      this.readBuffer = null;
+    }
+
+    public void logInfo(String msg) {
+      if (waitingThread != null) {
+        if (waitingThreadLogger != null) {
+          waitingThreadLogger.logInfo(waitingThreadLoggerContext, msg);
+        }
+      } else {
+        System.err.println("[INFO] " + "noWaitingThread " + msg);
+      }
+    }
+
+    public void logError(String msg) {
+      if (waitingThread != null) {
+        if (waitingThreadLogger != null) {
+          waitingThreadLogger.logError(waitingThreadLoggerContext, msg);
+        }
+      } else {
+        System.err.println("[ERROR] " + "noWaitingThread " + msg);
+      }
+    }
+
+  }
 
 }
