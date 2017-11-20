@@ -7,6 +7,6 @@ package waterfall.onewire;
  */
 public interface DeviceControllerManager {
 
-    DeviceController getDevice();
+  DeviceController getDevice();
 
 }

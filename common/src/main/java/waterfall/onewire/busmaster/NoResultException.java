@@ -6,11 +6,12 @@ package waterfall.onewire.busmaster;
  * This class signals that the command has either has not started or has not completed.
  */
 public class NoResultException extends RuntimeException {
-    public NoResultException() {
-        super();
-    }
 
-    public NoResultException(String s) {
-        super(s);
-    }
+  public NoResultException() {
+    super();
+  }
+
+  public NoResultException(String s) {
+    super(s);
+  }
 }

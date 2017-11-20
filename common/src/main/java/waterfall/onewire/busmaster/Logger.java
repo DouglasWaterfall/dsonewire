@@ -8,83 +8,84 @@ import java.util.Iterator;
  */
 public interface Logger {
 
-    public class LogLevel {
-        public boolean device;
-        public boolean cmd;
-        public boolean comm;
-        // public boolean app;
+  public LogLevel getLogLevel();
 
-        public LogLevel() {
-            this.device = false;
-            this.cmd = false;
-            this.comm = false;
-        }
+  public void logInfo(String context, String str);
 
-        public LogLevel(boolean device, boolean cmd, boolean comm) {
-            this.device = device;
-            this.cmd = cmd;
-            this.comm = comm;
-        }
+  public void logError(String context, String str);
 
-        public boolean isLevelDevice() {
-            return device;
-        }
+  public void logError(String context, Throwable t);
 
-        public LogLevel setLevelDevice() {
-            this.device = true;
-            return this;
-        }
+  public void logMerge(ArrayList<String> data);
 
-        public boolean isLevelCmd() {
-            return cmd;
-        }
+  public int getLogSize();
 
-        public LogLevel setLevelCmd() {
-            this.cmd = true;
-            return this;
-        }
+  public Iterator<String> getLogIter();
 
-        public boolean isLevelComm() {
-            return comm;
-        }
+  public void clearLog();
 
-        public LogLevel setLevelComm() {
-            this.comm = true;
-            return this;
-        }
+  public class LogLevel {
 
-        public boolean isAnyLevelSet() {
-            return ((device != false) || (cmd != false) || (comm != false));
-        }
+    public boolean device;
+    public boolean cmd;
+    public boolean comm;
+    // public boolean app;
 
-        public static LogLevel DeviceOnlyLevel() {
-            return new LogLevel(true, false, false);
-        }
-
-        public static LogLevel CmdOnlyLevel() {
-            return new LogLevel(false, true, false);
-        }
-
-        public static LogLevel CommOnlyLevel() {
-            return new LogLevel(false, false, true);
-        }
-
+    public LogLevel() {
+      this.device = false;
+      this.cmd = false;
+      this.comm = false;
     }
 
-    public LogLevel getLogLevel();
+    public LogLevel(boolean device, boolean cmd, boolean comm) {
+      this.device = device;
+      this.cmd = cmd;
+      this.comm = comm;
+    }
 
-    public void logInfo(String context, String str);
+    public static LogLevel DeviceOnlyLevel() {
+      return new LogLevel(true, false, false);
+    }
 
-    public void logError(String context, String str);
+    public static LogLevel CmdOnlyLevel() {
+      return new LogLevel(false, true, false);
+    }
 
-    public void logError(String context, Throwable t);
+    public static LogLevel CommOnlyLevel() {
+      return new LogLevel(false, false, true);
+    }
 
-    public void logMerge(ArrayList<String> data);
+    public boolean isLevelDevice() {
+      return device;
+    }
 
-    public int getLogSize();
+    public LogLevel setLevelDevice() {
+      this.device = true;
+      return this;
+    }
 
-    public Iterator<String> getLogIter();
+    public boolean isLevelCmd() {
+      return cmd;
+    }
 
-    public void clearLog();
+    public LogLevel setLevelCmd() {
+      this.cmd = true;
+      return this;
+    }
+
+    public boolean isLevelComm() {
+      return comm;
+    }
+
+    public LogLevel setLevelComm() {
+      this.comm = true;
+      return this;
+    }
+
+    public boolean isAnyLevelSet() {
+      return ((device != false) || (cmd != false) || (comm != false));
+    }
+
+  }
 
 }
