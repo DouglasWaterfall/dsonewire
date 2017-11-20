@@ -7,32 +7,35 @@ import waterfall.onewire.DSAddress;
  */
 public interface HA7SDummyDevice {
 
-    /**
-     * Returns the DSAddress of the device.
-     * @return The DSAddress of the device
-     */
-    public DSAddress getDSAddress();
+  /**
+   * Returns the DSAddress of the device.
+   *
+   * @return The DSAddress of the device
+   */
+  public DSAddress getDSAddress();
 
-    /**
-     * Indicates that device has an active alarm during search.
-     * @return true if the device is a search alarm state, false otherwise.
-     */
-    public boolean hasAlarm();
+  /**
+   * Indicates that device has an active alarm during search.
+   *
+   * @return true if the device is a search alarm state, false otherwise.
+   */
+  public boolean hasAlarm();
 
-    /**
-     * Send and read bytes to a Device. The HA7S will copy the written data unchanged to the data range and the
-     * callee must modify it as appropriate based on the read data of the device.
-     *
-     * @param data The bytes written and read from the device
-     * @param start index where the data begin (expected to be the DS command byte)
-     * @param end index where the data ends, where the count is (end - start)
-     */
-    public void writeBlock(byte[] data, short start, short end);
+  /**
+   * Send and read bytes to a Device. The HA7S will copy the written data unchanged to the data
+   * range and the callee must modify it as appropriate based on the read data of the device.
+   *
+   * @param data The bytes written and read from the device
+   * @param start index where the data begin (expected to be the DS command byte)
+   * @param end index where the data ends, where the count is (end - start)
+   */
+  public void writeBlock(byte[] data, short start, short end);
 
-    /**
-     * Read a bit from the Device.
-     * @param data The byte read from the device, must be in the form '0' or '1'
-     */
-    public void readBit(byte[] data);
+  /**
+   * Read a bit from the Device.
+   *
+   * @param data The byte read from the device, must be in the form '0' or '1'
+   */
+  public void readBit(byte[] data);
 
 }

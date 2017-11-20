@@ -10,75 +10,74 @@ import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
  */
 public class HA7SReadPowerSupplyCmd extends ReadPowerSupplyCmd {
 
-    public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr) {
-        super(ha7s, dsAddr);
+  public HA7SReadPowerSupplyCmd(HA7S ha7s, DSAddress dsAddr) {
+    super(ha7s, dsAddr);
+  }
+
+  @Override
+  protected ReadPowerSupplyCmd.Result execute_internal() {
+    assert (result == Result.busy);
+    assert (resultWriteCTM == 0);
+
+    HA7S.cmdReturn ret = ((HA7S) busMaster).cmdAddressSelect(getAddress(), getLogger());
+    switch (ret.result) {
+      case Success:
+        break;
+      case NotStarted:
+        return ReadPowerSupplyCmd.Result.bus_not_started;
+      case DeviceNotFound:
+        return ReadPowerSupplyCmd.Result.device_not_found;
+      case ReadTimeout:
+      case ReadOverrun:
+      case ReadError:
+      default:
+        return ReadPowerSupplyCmd.Result.communication_error;
     }
 
-    @Override
-    protected ReadPowerSupplyCmd.Result execute_internal() {
-        assert (result == Result.busy);
-        assert (resultWriteCTM == 0);
+    final byte[] readPowerSupplyCmdData = {
+        'W', '0', '2', 'B', '4', 'F', 'F', '\r'
+    };
 
+    final byte[] rbuf = new byte[readPowerSupplyCmdData.length];
 
-        HA7S.cmdReturn ret = ((HA7S)busMaster).cmdAddressSelect(getAddress(), getLogger());
-        switch (ret.result) {
-            case Success:
-                break;
-            case NotStarted:
-                return ReadPowerSupplyCmd.Result.bus_not_started;
-            case DeviceNotFound:
-                return ReadPowerSupplyCmd.Result.device_not_found;
-            case ReadTimeout:
-            case ReadOverrun:
-            case ReadError:
-            default:
-                return ReadPowerSupplyCmd.Result.communication_error;
-        }
+    ret = ((HA7S) busMaster).cmdWriteBlock(readPowerSupplyCmdData, rbuf, getLogger());
 
-        final byte[] readPowerSupplyCmdData = {
-                'W', '0', '2', 'B', '4', 'F', 'F', '\r'
-        };
-
-        final byte[] rbuf = new byte[readPowerSupplyCmdData.length];
-
-        ret = ((HA7S)busMaster).cmdWriteBlock(readPowerSupplyCmdData, rbuf, getLogger());
-
-        if (ret.result != HA7S.cmdResult.Success) {
-            // All other returns are basically logic errors or real errors.
-            return ReadPowerSupplyCmd.Result.communication_error;
-        }
-
-        if (ret.readCount != 4) {
-            logErrorInternal("Expected readCount of 4, got:" + ret.readCount);
-            return ReadPowerSupplyCmd.Result.communication_error;
-        }
-
-        // externally powered will pull the bus high
-        final int v = Convert.hexToFourBits(rbuf[3]);
-        setResultData(ret.writeCTM, ((v & 0x01) == 0));
-
-        return ReadPowerSupplyCmd.Result.success;
+    if (ret.result != HA7S.cmdResult.Success) {
+      // All other returns are basically logic errors or real errors.
+      return ReadPowerSupplyCmd.Result.communication_error;
     }
 
-    @Override
-    public void setResultData(long resultWriteCTM, boolean isParasitic) {
-        assert (result == Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-        this.resultIsParasitic = isParasitic;
+    if (ret.readCount != 4) {
+      logErrorInternal("Expected readCount of 4, got:" + ret.readCount);
+      return ReadPowerSupplyCmd.Result.communication_error;
     }
 
-    private Logger getDeviceLevelLogger() {
-        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-            return getLogger();
-        }
-        return null;
-    }
+    // externally powered will pull the bus high
+    final int v = Convert.hexToFourBits(rbuf[3]);
+    setResultData(ret.writeCTM, ((v & 0x01) == 0));
 
-    private void logErrorInternal(String str) {
-        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-            getLogger().logError(this.getClass().getSimpleName(), str);
-        }
+    return ReadPowerSupplyCmd.Result.success;
+  }
+
+  @Override
+  public void setResultData(long resultWriteCTM, boolean isParasitic) {
+    assert (result == Result.busy);
+    this.resultWriteCTM = resultWriteCTM;
+    this.resultIsParasitic = isParasitic;
+  }
+
+  private Logger getDeviceLevelLogger() {
+    if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+      return getLogger();
     }
+    return null;
+  }
+
+  private void logErrorInternal(String str) {
+    if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+      getLogger().logError(this.getClass().getSimpleName(), str);
+    }
+  }
 
 }
 

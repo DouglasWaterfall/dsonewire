@@ -9,51 +9,51 @@ import waterfall.onewire.busmaster.Logger;
  */
 public class HA7SConvertTCmd extends ConvertTCmd {
 
-    public HA7SConvertTCmd(HA7S ha7s, DSAddress dsAddr) {
-        super(ha7s, dsAddr);
+  public HA7SConvertTCmd(HA7S ha7s, DSAddress dsAddr) {
+    super(ha7s, dsAddr);
+  }
+
+  protected ConvertTCmd.Result execute_internal() {
+    assert (result == Result.busy);
+    assert (resultWriteCTM == 0);
+
+    HA7S.cmdReturn ret = ((HA7S) busMaster).cmdAddressSelect(getAddress(), getDeviceLevelLogger());
+    switch (ret.result) {
+      case Success:
+        break;
+      case NotStarted:
+        return ConvertTCmd.Result.bus_not_started;
+      case DeviceNotFound:
+        return ConvertTCmd.Result.device_not_found;
+      case ReadTimeout:
+      case ReadOverrun:
+      case ReadError:
+      default:
+        return ConvertTCmd.Result.communication_error;
     }
 
-    protected ConvertTCmd.Result execute_internal() {
-        assert (result == Result.busy);
-        assert (resultWriteCTM == 0);
+    final byte[] convertTCmdData = {
+        'W', '0', '1', '4', '4', '\r'
+    };
 
-        HA7S.cmdReturn ret = ((HA7S)busMaster).cmdAddressSelect(getAddress(), getDeviceLevelLogger());
-        switch (ret.result) {
-            case Success:
-                break;
-            case NotStarted:
-                return ConvertTCmd.Result.bus_not_started;
-            case DeviceNotFound:
-                return ConvertTCmd.Result.device_not_found;
-            case ReadTimeout:
-            case ReadOverrun:
-            case ReadError:
-            default:
-                return ConvertTCmd.Result.communication_error;
-        }
+    final byte[] rbuf = new byte[2];
 
-        final byte[] convertTCmdData = {
-                'W', '0', '1', '4', '4', '\r'
-        };
+    ret = ((HA7S) busMaster).cmdWriteBlock(convertTCmdData, rbuf, getDeviceLevelLogger());
 
-        final byte[] rbuf = new byte[2];
+    if (ret.result != HA7S.cmdResult.Success) {
+      // All other returns are basically logic errors or real errors.
+      return ConvertTCmd.Result.communication_error;
+    }
 
-        ret = ((HA7S) busMaster).cmdWriteBlock(convertTCmdData, rbuf, getDeviceLevelLogger());
+    if (ret.readCount != 2) {
+      logErrorInternal("Expected readCount of 2, got:" + ret.readCount);
+      return ConvertTCmd.Result.communication_error;
+    }
 
-        if (ret.result != HA7S.cmdResult.Success) {
-            // All other returns are basically logic errors or real errors.
-            return ConvertTCmd.Result.communication_error;
-        }
+    setResultData(ret.writeCTM);
 
-        if (ret.readCount != 2) {
-            logErrorInternal("Expected readCount of 2, got:" + ret.readCount);
-            return ConvertTCmd.Result.communication_error;
-        }
-
-        setResultData(ret.writeCTM);
-
-        // Bonus...
-        // Wait for the DS to finish computing the temp by reading bits
+    // Bonus...
+    // Wait for the DS to finish computing the temp by reading bits
         /*
         try {
             for (int i = 0; i < 10; i++) {
@@ -74,26 +74,26 @@ public class HA7SConvertTCmd extends ConvertTCmd {
         }
         */
 
-        return ConvertTCmd.Result.success;
-    }
+    return ConvertTCmd.Result.success;
+  }
 
-    public void setResultData(long resultWriteCTM) {
-        assert (result == Result.busy);
-        this.resultWriteCTM = resultWriteCTM;
-    }
+  public void setResultData(long resultWriteCTM) {
+    assert (result == Result.busy);
+    this.resultWriteCTM = resultWriteCTM;
+  }
 
-    private Logger getDeviceLevelLogger() {
-        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-            return getLogger();
-        }
-        return null;
+  private Logger getDeviceLevelLogger() {
+    if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+      return getLogger();
     }
+    return null;
+  }
 
-    private void logErrorInternal(String str) {
-        if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-            getLogger().logError(this.getClass().getSimpleName(), str);
-        }
+  private void logErrorInternal(String str) {
+    if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+      getLogger().logError(this.getClass().getSimpleName(), str);
     }
+  }
 
 }
 
