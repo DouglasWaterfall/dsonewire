@@ -1,6 +1,5 @@
 package waterfall.onewire;
 
-import com.dalsemi.onewire.utils.CRC8;
 import java.util.concurrent.TimeUnit;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.ConvertTCmd;
@@ -18,6 +17,8 @@ public class Temp18B20 {
   public static String ERR_SCRATCHPAD_DATA_NOT_VALID = "Scratchpad data not valid";
   public static String ERR_SCRATCHPAD_DATA_CRC = "Scratchpad data crc error";
   public static String ERR_CONVERTT_RESULT = "ConvertTCmd.Result.";
+  public static String ERR_REINITIALIZE_CYCLE = "Reinitialize cycle";
+  public static String ERR_UNEXPECTED_INITSTATE = "Unexpected initState:"; // starts with
 
   private final DSAddress dsAddress;
   private final PrecisionBits precisionBits;
@@ -53,7 +54,7 @@ public class Temp18B20 {
     this.convertTCmd = null;
     this.readScratchpadCmd = null;
 
-    initState = InitializationState.noBusMaster;
+    initState = InitializationState.WaitingForBusMaster;
 
     this.lastReading = null;
     this.pushingThread = null;
@@ -195,128 +196,163 @@ public class Temp18B20 {
    * state changed.
    */
   private Reading pushRead() {
-    while (true) {
-      switch (initState) {
-        case noBusMaster: {
-          if (bm != null) {
-            convertTCmd = bm.queryConvertTCmd(dsAddress);
-            readScratchpadCmd = bm.queryReadScratchpadCmd(dsAddress, (short) 9);
-            initState = InitializationState.findDevice;
-            break;
-          }
-          return new ReadingError(ERR_NO_BUSMASTER);
+
+    boolean wasReInitalize = false;
+
+    if (initState == InitializationState.WaitingForBusMaster) {
+      if (bm == null) {
+        return new ReadingError(ERR_NO_BUSMASTER);
+      }
+
+      convertTCmd = bm.queryConvertTCmd(dsAddress);
+      readScratchpadCmd = bm.queryReadScratchpadCmd(dsAddress, (short) 9);
+      initState = InitializationState.Initialize;
+    }
+
+    if (initState == InitializationState.ReInitialize) {
+      // We don't want to do this more than once to avoid recursion.
+      wasReInitalize = true;
+      initState = InitializationState.Initialize;
+    }
+
+    if (initState == InitializationState.Initialize) {
+      // find out what the current configuration setting is
+      ReadScratchpadCmd.Result rResult = readScratchpadCmd.execute();
+      if (rResult != ReadScratchpadCmd.Result.success) {
+        initState = InitializationState.Initialize;
+        return new ReadingError(ERR_READSCRATCHPAD_RESULT + rResult.name());
+      }
+
+      // If the device is present it will pull at least some of the bits low to return data.
+      // So we if get back all FFs then we know the device is not there.
+      DS18B20Scratchpad scratchpadData = new DS18B20Scratchpad(readScratchpadCmd.getResultData());
+      if (scratchpadData.checkAllFFs()) {
+        initState = InitializationState.Initialize;
+        return new ReadingError(ERR_DEVICE_NOT_FOUND);
+      }
+
+      // Check to see if this is a DS18B20.
+      if (!scratchpadData.checkValid()) {
+        initState = InitializationState.Initialize;
+        return new ReadingError(ERR_SCRATCHPAD_DATA_NOT_VALID);
+      }
+
+      // Looks okay. Now check configuration to see if it is the state we wanted.
+      if ((scratchpadData.getResolution() != precisionBits.ordinal()) ||
+          (scratchpadData.getTempHAlarm() != tempHAlarm) ||
+          (scratchpadData.getTempLAlarm() != tempLAlarm)) {
+        ReadingError readingError = Initialize();
+        if (readingError != null) {
+          return readingError;
         }
+      }
 
-        case findDevice: {
-          // find out what the current configuration setting is
-          ReadScratchpadCmd.Result rResult = readScratchpadCmd.execute();
-          if (rResult != ReadScratchpadCmd.Result.success) {
-            return new ReadingError(ERR_READSCRATCHPAD_RESULT + rResult.name());
-          }
+      initState = InitializationState.Ready;
+    }
 
-          // If the device is present it will pull at least some of the bits low to return data. So we if get back
-          // all FFs then we know the device is not there.
-          byte[] resultData = readScratchpadCmd.getResultData();
-          boolean notAllFFs = false;
-          for (byte b : resultData) {
-            if (b != 0xff) {
-              notAllFFs = true;
-              break;
-            }
-          }
-          if (!notAllFFs) {
-            // Not found.
-            return new ReadingError(ERR_DEVICE_NOT_FOUND);
-          }
+    if (initState != InitializationState.ReInitialize) {
+      ReadingError readingError = Initialize();
+      if (readingError != null) {
+        initState = InitializationState.Initialize;
+        return readingError;
+      }
 
-          // check configuration to see if it is what we wanted.
-          DS18B20Scratchpad scratchpadData = new DS18B20Scratchpad(resultData);
-          if (!scratchpadData.checkValid()) {
-            // Not quite what we thought it was - perhaps wrong device of our code.
-            return new ReadingError(ERR_SCRATCHPAD_DATA_NOT_VALID);
-          }
+      initState = InitializationState.Ready;
+    }
 
-          if ((scratchpadData.getResolution() != precisionBits.ordinal()) ||
-              (scratchpadData.getTempHAlarm() != tempHAlarm) ||
-              (scratchpadData.getTempLAlarm() != tempLAlarm)) {
-            initState = InitializationState.needInitialization;
-          } else {
-            initState = InitializationState.initialized;
-          }
-          break;
-        }
+    if (initState != InitializationState.Ready) {
+      return new ReadingError(ERR_UNEXPECTED_INITSTATE + initState.name());
+    }
 
-        case needInitialization: {
-          //
-          // We need to write to the device scratchpad to set the configuration.
-          //
-          DS18B20Scratchpad scratchpadData = new DS18B20Scratchpad();
-          scratchpadData.setTempHAlarm((byte) tempHAlarm);
-          scratchpadData.setTempLAlarm((byte) tempLAlarm);
-          scratchpadData.setResolution((byte) precisionBits.ordinal());
+    ConvertTCmd.Result cResult = convertTCmd.execute();
+    if (cResult != ConvertTCmd.Result.success) {
+      return new ReadingError(ERR_CONVERTT_RESULT + cResult.name());
+    }
 
-          // write scratchpad cmd
+    long cWriteCTM = convertTCmd.getResultWriteCTM();
+    long delayMSec = calculateWaitDelayMSec();
+    long waitUntilMSec = System.currentTimeMillis() + delayMSec;
 
-          // Not yet.
-          initState = InitializationState.initialized;
-          // FALLTHROUGH
-        }
-
-        case initialized:
-          ConvertTCmd.Result cResult = convertTCmd.execute();
-          if (cResult != ConvertTCmd.Result.success) {
-            return new ReadingError(ERR_CONVERTT_RESULT + cResult.name());
-          }
-
-          long cWriteCTM = convertTCmd.getResultWriteCTM();
-          long delayMSec = calculateWaitDelayMSec();
-          long waitUntilMSec = System.currentTimeMillis() + delayMSec;
-
-          do {
-            try {
-              wait(delayMSec);
-            } catch (InterruptedException e) {
-              ;
-            }
-          }
-          while (System.currentTimeMillis() < waitUntilMSec);
-
-          byte[] resultData = null;
-
-          for (int retryCount = 0; retryCount < 5; retryCount++) {
-            // Read out the temp.
-            ReadScratchpadCmd.Result rResult = readScratchpadCmd.execute();
-            if (rResult != ReadScratchpadCmd.Result.success) {
-              return new ReadingError(ERR_READSCRATCHPAD_RESULT + rResult.name());
-            }
-
-            resultData = readScratchpadCmd.getResultData();
-
-            // check that the data was transferred correctly (otherwise re-read it)
-            if (CRC8.compute(resultData) == 0) {
-              break;
-            }
-
-            if (retryCount == 4) {
-              return new ReadingError(ERR_SCRATCHPAD_DATA_CRC);
-            }
-          }
-
-          DS18B20Scratchpad data = new DS18B20Scratchpad(resultData);
-
-          // check that the device has the right setting - if not then there has been a reset and we should clear the
-          // state to be needs-init and redo it. "check init" is different from "do the init"
-          byte resolution = data.getResolution();
-          if (resolution != precisionBits.ordinal()) {
-            initState = InitializationState.needInitialization;
-            break;
-          }
-
-          // calculate the value
-          float tempC = data.getTempC();
-          return new ReadingData(tempC, cWriteCTM);
+    do {
+      try {
+        wait(delayMSec);
+      } catch (InterruptedException e) {
+        ;
       }
     }
+    while (System.currentTimeMillis() < waitUntilMSec);
+
+    DS18B20Scratchpad data = null;
+
+    for (int retryCount = 0; retryCount < 5; retryCount++) {
+      // Read out the temp.
+      ReadScratchpadCmd.Result rResult = readScratchpadCmd.execute();
+      if (rResult != ReadScratchpadCmd.Result.success) {
+        return new ReadingError(ERR_READSCRATCHPAD_RESULT + rResult.name());
+      }
+
+      data = new DS18B20Scratchpad(readScratchpadCmd.getResultData());
+
+      if (data.checkAllFFs()) {
+        // The device did not respond
+        initState = InitializationState.Initialize;
+        return new ReadingError(ERR_DEVICE_NOT_FOUND);
+      }
+
+      // check that the data was transferred correctly (otherwise re-read it)
+      if (data.checkValid()) {
+        break;
+      }
+
+      if (retryCount == 4) {
+        return new ReadingError(ERR_SCRATCHPAD_DATA_CRC);
+      }
+    }
+
+    // check that the device has the right setting - if not then there has been a reset and we
+    // should clear the state to be needs-init and redo it. "check init" is different from
+    // "do the init"
+    if ((data.getResolution() != precisionBits.ordinal()) ||
+        (data.getTempHAlarm() != tempHAlarm) ||
+        (data.getTempLAlarm() != tempLAlarm)) {
+
+      // It is tempting to theoretically be able to use the temperature that we just asked for
+      // but the problem is that we might not have waited long enough for it to be generated and
+      // so it is suspect. Better to just start over.
+
+      // we wish to avoid recursion
+      if (wasReInitalize)  {
+        // this is odd - we did the init, and then convert and then read and we are unhappy? We
+        // do not want to cycle forever so we fail this and force it to try again from scratch.
+        initState = InitializationState.Initialize;
+        return new ReadingError(ERR_REINITIALIZE_CYCLE);
+      }
+
+      initState = InitializationState.ReInitialize;
+      return pushRead();
+    }
+
+    // calculate the value
+    float tempC = data.getTempC();
+    return new ReadingData(tempC, cWriteCTM);
+  }
+
+  private ReadingError Initialize() {
+
+    //
+    // We need to write to the device scratchpad to set the configuration.
+    //
+    DS18B20Scratchpad scratchpadData = new DS18B20Scratchpad();
+    scratchpadData.setTempHAlarm((byte) tempHAlarm);
+    scratchpadData.setTempLAlarm((byte) tempLAlarm);
+    scratchpadData.setResolution((byte) precisionBits.ordinal());
+
+    // write scratchpad cmd
+
+    // Not yet.
+
+    // Success - not returning an ReadingError
+    return null;
   }
 
   /**
@@ -365,22 +401,23 @@ public class Temp18B20 {
     /**
      * No busmaster for the device has been determined.
      */
-    noBusMaster,
+    WaitingForBusMaster,
 
     /**
-     * The device is in an unknown state and needs to be checked to see if it needs initialization
+     * The device needs to be found and/or initialized.
      */
-    findDevice,
-
-    /**
-     * The device has been determined to need initialization.
-     */
-    needInitialization,
+    Initialize,
 
     /**
      * The device has been initialized.
      */
-    initialized
+    Ready,
+
+    /**
+     * The device was ready and we found that it was not what we wanted. We attempt to re-init once
+     * and then go back to Ready.
+     */
+    ReInitialize
   }
 
   /**
@@ -458,5 +495,4 @@ public class Temp18B20 {
   }
 
 }
-
 

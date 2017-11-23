@@ -35,6 +35,7 @@ public class DS18B20Scratchpad {
     if (data.length != 9) {
       throw new IllegalArgumentException("data must be 9 bytes");
     }
+    // We intentionally do NOT check for validity here.
     this.data = data;
   }
 
@@ -130,6 +131,15 @@ public class DS18B20Scratchpad {
     data[4] = (byte) (MASK_BYTE_4 | (resolution << 5));
     data[8] = (byte) CRC8.compute(data, 0, 8);
     return this;
+  }
+
+  public boolean checkAllFFs() {
+    for (byte b: data) {
+      if (b != (byte)0xff) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public boolean checkValid() {

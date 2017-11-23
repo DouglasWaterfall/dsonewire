@@ -115,6 +115,9 @@ public class Temp18B20Test {
     byte[] deviceNotFoundRaw = new byte[9];
     Arrays.fill(deviceNotFoundRaw, (byte) 0xff);
 
+    DS18B20Scratchpad badCRCData = new DS18B20Scratchpad();
+    badCRCData.getRawBytes()[0] = (byte)~badCRCData.getRawBytes()[0];
+
     return new Object[][]{
         // busmaster not assigned
         {dsAddress, nullBM, PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
@@ -123,6 +126,27 @@ public class Temp18B20Test {
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
             .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {deviceNotFoundRaw}))),
             PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_DEVICE_NOT_FOUND},
+        // bad data when reading the device scratchpad
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {badCRCData.getRawBytes()}))),
+            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_SCRATCHPAD_DATA_NOT_VALID},
+        // device goes missing after convertT
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {
+                new DS18B20Scratchpad().getRawBytes(),
+                deviceNotFoundRaw }))),
+            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_DEVICE_NOT_FOUND},
+        // device gets permanent CRC after convertT
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {
+                new DS18B20Scratchpad().getRawBytes(),
+                badCRCData.getRawBytes()}))),
+        PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_SCRATCHPAD_DATA_CRC},
+
+        // STOPPED
+        // We do really need to divide based on negative vs positive tests. They can just be
+        // results some errors some not - if we expect a ReadingError then we can make one of
+        // those else we need to make a real result. That should make the testing clearer.
     };
   }
 

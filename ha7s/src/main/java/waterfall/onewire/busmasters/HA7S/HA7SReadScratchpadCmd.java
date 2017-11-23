@@ -87,14 +87,6 @@ public class HA7SReadScratchpadCmd extends ReadScratchpadCmd {
 
     byte[] resultHexData = Arrays.copyOfRange(rbuf, 2, (2 + hexByteCount));
 
-    // check the CRC
-    final short crcIndex = dsAddrToCRCIndex(dsAddr);
-    if ((crcIndex >= 0) && ((crcIndex + 1) == getRequestByteCount()) && (CRC8.compute(resultData)
-        != 0)) {
-      logErrorInternal("CRC8 failed, crcIndex:" + crcIndex + " hex:" + resultHexData);
-      return ReadScratchpadCmd.Result.communication_error;
-    }
-
     // return count of characters in the char buffer.
     setResultData(ret.writeCTM, resultData, resultHexData);
 
