@@ -13,6 +13,10 @@ public class DS18B20Scratchpad {
   public static final int RESOLUTION_11 = 2;
   public static final int RESOLUTION_12 = 3;
 
+  public static final byte DEFAULT_HALARM = 10;
+  public static final byte DEFAULT_LALARM = 5;
+  public static final byte DEFAULT_RESOLUTION = RESOLUTION_12;
+
   /**
    * The format of the configuration byte is { 0 R1 R0 1 1 1 1 1 }
    */
@@ -43,9 +47,9 @@ public class DS18B20Scratchpad {
     byte[] data = new byte[9];
     data[0] = 0x10; // 1 C
     data[1] = 0x00;
-    data[2] = 0x0A; // 10C high alarm
-    data[3] = 0x05; // 5C low alarm
-    data[4] = MASK_BYTE_4 + (RESOLUTION_12 << 5);   // 12 bits
+    data[2] = DEFAULT_HALARM;
+    data[3] = DEFAULT_LALARM;
+    data[4] = MASK_BYTE_4 + (DEFAULT_RESOLUTION << 5);   // 12 bits
     data[5] = RESERVED_BYTE_5;
     data[6] = 0;
     data[7] = RESERVED_BYTE_7;
@@ -134,8 +138,8 @@ public class DS18B20Scratchpad {
   }
 
   public boolean checkAllFFs() {
-    for (byte b: data) {
-      if (b != (byte)0xff) {
+    for (byte b : data) {
+      if (b != (byte) 0xff) {
         return false;
       }
     }

@@ -13,7 +13,8 @@ import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import waterfall.onewire.Temp18B20.PrecisionBits;
+import waterfall.onewire.Temp18B20.Reading;
+import waterfall.onewire.Temp18B20.ReadingData;
 import waterfall.onewire.Temp18B20.ReadingError;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.ConvertTCmd;
@@ -32,34 +33,57 @@ public class Temp18B20Test {
 
   @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "dsAddress")
   public void testConstructorNullAddress() {
-    new Temp18B20(null, Temp18B20.PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    new Temp18B20(null, DS18B20Scratchpad.DEFAULT_RESOLUTION, Byte.MIN_VALUE, Byte.MAX_VALUE);
   }
 
-  @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "precisionBits")
-  public void testConstructorNullPrecisionBits() {
-    new Temp18B20(new DSAddress(validDSAddress), null, Byte.MIN_VALUE, Byte.MAX_VALUE);
+  @DataProvider
+  public Object[][] constructorResolutionNegativeCases() {
+    return new Object[][]{
+        {(byte) -1},
+        {(byte) 4}
+    };
   }
 
-  @Test
-  public void testConstructorValues() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
-    Temp18B20.PrecisionBits pBits = Temp18B20.PrecisionBits.Eleven;
+  @Test(dataProvider = "constructorResolutionNegativeCases",
+      expectedExceptions = IllegalArgumentException.class,
+      expectedExceptionsMessageRegExp = "resolution")
+  public void testConstructorResolutionNegativeCases(byte resolution) {
+    new Temp18B20(new DSAddress(validDSAddress), resolution, Byte.MIN_VALUE, Byte.MAX_VALUE);
+  }
 
-    Temp18B20 t = new Temp18B20(dsAddress, pBits, Byte.MIN_VALUE, Byte.MAX_VALUE);
+  @DataProvider
+  public Object[][] constructorPositiveCases() {
+    DSAddress valid = new DSAddress(validDSAddress);
+
+    return new Object[][]{
+        {valid, (byte) 0, Byte.MAX_VALUE, Byte.MIN_VALUE},
+        {valid, (byte) 1, Byte.MAX_VALUE, Byte.MIN_VALUE},
+        {valid, (byte) 2, Byte.MAX_VALUE, Byte.MIN_VALUE},
+        {valid, (byte) 3, Byte.MAX_VALUE, Byte.MIN_VALUE},
+        {valid, (byte) 0, (byte) 0, Byte.MIN_VALUE},
+        {valid, (byte) 0, Byte.MIN_VALUE, Byte.MIN_VALUE},
+        {valid, (byte) 0, Byte.MAX_VALUE, (byte) 0},
+        {valid, (byte) 0, Byte.MIN_VALUE, Byte.MAX_VALUE}
+    };
+  }
+
+  @Test(dataProvider = "constructorPositiveCases")
+  public void testConstructorValues(DSAddress dsAddress, byte resolution, byte hAlarm,
+      byte lAlarm) {
+    Temp18B20 t = new Temp18B20(dsAddress, resolution, hAlarm, lAlarm);
 
     Assert.assertEquals(t.getDSAddress(), dsAddress);
-    Assert.assertEquals(t.getPrecisionBits(), pBits);
-    Assert.assertEquals(t.getTempHAlarm(), Byte.MIN_VALUE);
-    Assert.assertEquals(t.getTempLAlarm(), Byte.MAX_VALUE);
+    Assert.assertEquals(t.getResolution(), resolution);
+    Assert.assertEquals(t.getTempHAlarm(), hAlarm);
+    Assert.assertEquals(t.getTempLAlarm(), lAlarm);
     Assert.assertNull(t.getBusMaster());
   }
 
   @Test
   public void testGetTemperatureNoBM() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
-    Temp18B20.PrecisionBits pBits = Temp18B20.PrecisionBits.Eleven;
 
-    Temp18B20 t = new Temp18B20(dsAddress, pBits, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    Temp18B20 t = new Temp18B20(dsAddress, (byte)3, Byte.MIN_VALUE, Byte.MAX_VALUE);
 
     Temp18B20.Reading r = t.getTemperature(100L);
     Assert.assertTrue(r instanceof Temp18B20.ReadingError);
@@ -69,9 +93,8 @@ public class Temp18B20Test {
   @Test
   public void testSetBusMaster() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
-    Temp18B20.PrecisionBits pBits = Temp18B20.PrecisionBits.Eleven;
 
-    Temp18B20 t = new Temp18B20(dsAddress, pBits, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    Temp18B20 t = new Temp18B20(dsAddress, (byte)2, Byte.MIN_VALUE, Byte.MAX_VALUE);
     Assert.assertNull(t.getBusMaster());
 
     BusMaster mockBM = getMockBMFor(dsAddress, null, 0, null, 0, null);
@@ -83,9 +106,8 @@ public class Temp18B20Test {
   @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "dup bm")
   public void testSetDuplicateBusMaster() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
-    Temp18B20.PrecisionBits pBits = Temp18B20.PrecisionBits.Eleven;
 
-    Temp18B20 t = new Temp18B20(dsAddress, pBits, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    Temp18B20 t = new Temp18B20(dsAddress, (byte)2, Byte.MIN_VALUE, Byte.MAX_VALUE);
     Assert.assertNull(t.getBusMaster());
 
     BusMaster mockBM = getMockBMFor(dsAddress, null, 0, null, 0, null);
@@ -97,9 +119,8 @@ public class Temp18B20Test {
   @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "dup bMR")
   public void testSetBusMasterRegistry() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
-    Temp18B20.PrecisionBits pBits = Temp18B20.PrecisionBits.Eleven;
 
-    Temp18B20 t = new Temp18B20(dsAddress, pBits, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    Temp18B20 t = new Temp18B20(dsAddress, (byte)2, Byte.MIN_VALUE, Byte.MAX_VALUE);
     Assert.assertNull(t.getBusMaster());
 
     BusMasterRegistry bmR = new BusMasterRegistry();
@@ -108,7 +129,7 @@ public class Temp18B20Test {
   }
 
   @DataProvider
-  public Object[][] getTemperatureNegativeCases() {
+  public Object[][] getTemperatureCases() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
     BusMaster nullBM = null;
 
@@ -116,52 +137,69 @@ public class Temp18B20Test {
     Arrays.fill(deviceNotFoundRaw, (byte) 0xff);
 
     DS18B20Scratchpad badCRCData = new DS18B20Scratchpad();
-    badCRCData.getRawBytes()[0] = (byte)~badCRCData.getRawBytes()[0];
+    badCRCData.getRawBytes()[0] = (byte) ~badCRCData.getRawBytes()[0];
 
     return new Object[][]{
+        /*
         // busmaster not assigned
         {dsAddress, nullBM, PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
-            Temp18B20.ERR_NO_BUSMASTER},
+            new ReadingError(Temp18B20.ERR_NO_BUSMASTER)},
         // device not found
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
-            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {deviceNotFoundRaw}))),
-            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_DEVICE_NOT_FOUND},
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{deviceNotFoundRaw}))),
+            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            new ReadingError(Temp18B20.ERR_DEVICE_NOT_FOUND)},
         // bad data when reading the device scratchpad
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
-            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {badCRCData.getRawBytes()}))),
-            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_SCRATCHPAD_DATA_NOT_VALID},
+            .addDevice(
+                new DS18B20(dsAddress).setScratchPadData(new byte[][]{badCRCData.getRawBytes()}))),
+            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            new ReadingError(Temp18B20.ERR_SCRATCHPAD_DATA_NOT_VALID)},
         // device goes missing after convertT
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
-            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
                 new DS18B20Scratchpad().getRawBytes(),
-                deviceNotFoundRaw }))),
-            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_DEVICE_NOT_FOUND},
+                deviceNotFoundRaw}))),
+            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            new ReadingError(Temp18B20.ERR_DEVICE_NOT_FOUND)},
         // device gets permanent CRC after convertT
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
-            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][] {
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
                 new DS18B20Scratchpad().getRawBytes(),
                 badCRCData.getRawBytes()}))),
-        PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE, Temp18B20.ERR_SCRATCHPAD_DATA_CRC},
+            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            new ReadingError(Temp18B20.ERR_SCRATCHPAD_DATA_CRC)},
+        */
 
-        // STOPPED
-        // We do really need to divide based on negative vs positive tests. They can just be
-        // results some errors some not - if we expect a ReadingError then we can make one of
-        // those else we need to make a real result. That should make the testing clearer.
+        // success read 15.5c
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+                new DS18B20Scratchpad().getRawBytes(),
+                new DS18B20Scratchpad().setTempC(15.5F).getRawBytes()}))),
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
+            new ReadingData(15.5F, 1L)},
     };
   }
 
-  @Test(dataProvider = "getTemperatureNegativeCases")
-  public void testGetTemperatureNegativeCases(DSAddress dsAddress, BusMaster bm,
-      Temp18B20.PrecisionBits pBits, byte tempHAlarm, byte tempLAlarm, String readingError) {
+  @Test(dataProvider = "getTemperatureCases")
+  public void testGetTemperatureCases(DSAddress dsAddress, BusMaster bm, byte resolution,
+      byte tempHAlarm, byte tempLAlarm, Reading expectedReading) {
 
-    Temp18B20 t = new Temp18B20(dsAddress, pBits, tempHAlarm, tempLAlarm);
+    Temp18B20 t = new Temp18B20(dsAddress, resolution, tempHAlarm, tempLAlarm);
 
     t.setBusMaster(bm);
 
     Temp18B20.Reading r1 = t.getTemperature(0L);
     Assert.assertTrue(r1 != null);
-    Assert.assertTrue(r1 instanceof ReadingError);
-    Assert.assertEquals(r1.getError(), readingError);
+    Assert.assertEquals(r1.getClass(), expectedReading.getClass());
+    if (r1 instanceof ReadingError) {
+      Assert.assertEquals(r1.getError(), expectedReading.getError());
+    } else {
+      Assert.assertTrue(r1 instanceof ReadingData);
+      Assert.assertEquals(r1.getTempC(), expectedReading.getTempC());
+    }
   }
 
   /*
@@ -185,9 +223,9 @@ public class Temp18B20Test {
   @Test
   public void testSimpleGetTemperature() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
-    Temp18B20.PrecisionBits pBits = Temp18B20.PrecisionBits.Twelve;
 
-    Temp18B20 t = new Temp18B20(dsAddress, pBits, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    Temp18B20 t = new Temp18B20(dsAddress, DS18B20Scratchpad.DEFAULT_RESOLUTION,
+        DS18B20Scratchpad.DEFAULT_HALARM, DS18B20Scratchpad.DEFAULT_LALARM);
 
     DS18B20Scratchpad data_1 = new DS18B20Scratchpad();
     data_1.setTempC((float) 1.0);

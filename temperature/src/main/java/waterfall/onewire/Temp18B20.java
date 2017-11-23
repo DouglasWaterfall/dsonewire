@@ -21,7 +21,7 @@ public class Temp18B20 {
   public static String ERR_UNEXPECTED_INITSTATE = "Unexpected initState:"; // starts with
 
   private final DSAddress dsAddress;
-  private final PrecisionBits precisionBits;
+  private final byte resolution;
   private final byte tempHAlarm;
   private final byte tempLAlarm;
   private BusMaster bm;
@@ -33,18 +33,22 @@ public class Temp18B20 {
   private Thread pushingThread;
 
   /**
-   * Construct and instance around a specific dsAddress.
+   * Construct an instance around a specific dsAddress.
+   *
+   * @param dsAddress
+   * @param resolution Must be within 0-3
+   * @param tempHAlarm
+   * @param tempLAlarm
    */
-  public Temp18B20(DSAddress dsAddress, PrecisionBits precisionBits, byte tempHAlarm,
-      byte tempLAlarm) {
+  public Temp18B20(DSAddress dsAddress, byte resolution, byte tempHAlarm, byte tempLAlarm) {
     if (dsAddress == null) {
       throw new IllegalArgumentException("dsAddress");
     }
-    this.dsAddress = dsAddress;
-    if (precisionBits == null) {
-      throw new IllegalArgumentException("precisionBits");
+    if ((resolution < 0) || (resolution > 3)) {
+      throw new IllegalArgumentException("resolution");
     }
-    this.precisionBits = precisionBits;
+    this.dsAddress = dsAddress;
+    this.resolution = resolution;
     this.tempHAlarm = tempHAlarm;
     this.tempLAlarm = tempLAlarm;
 
@@ -70,13 +74,13 @@ public class Temp18B20 {
   /**
    * The temperature precision is based on 7 integer bits and 1-4 fractional bits. This provides a
    * theoretical range of +127 15/16 to -127 15/16 Celcius but the datasheet claims only a range of
-   * +125C to -55C. The amount of frational bits has a direct influence on the time it takes to
+   * +125C to -55C. The amount of fractional bits has a direct influence on the time it takes to
    * calculate the temperature.
    *
    * @return The number of temperature bits
    */
-  public PrecisionBits getPrecisionBits() {
-    return precisionBits;
+  public byte getResolution() {
+    return resolution;
   }
 
   /**
@@ -238,7 +242,7 @@ public class Temp18B20 {
       }
 
       // Looks okay. Now check configuration to see if it is the state we wanted.
-      if ((scratchpadData.getResolution() != precisionBits.ordinal()) ||
+      if ((scratchpadData.getResolution() != resolution) ||
           (scratchpadData.getTempHAlarm() != tempHAlarm) ||
           (scratchpadData.getTempLAlarm() != tempLAlarm)) {
         ReadingError readingError = Initialize();
@@ -250,7 +254,7 @@ public class Temp18B20 {
       initState = InitializationState.Ready;
     }
 
-    if (initState != InitializationState.ReInitialize) {
+    if (initState == InitializationState.ReInitialize) {
       ReadingError readingError = Initialize();
       if (readingError != null) {
         initState = InitializationState.Initialize;
@@ -312,7 +316,7 @@ public class Temp18B20 {
     // check that the device has the right setting - if not then there has been a reset and we
     // should clear the state to be needs-init and redo it. "check init" is different from
     // "do the init"
-    if ((data.getResolution() != precisionBits.ordinal()) ||
+    if ((data.getResolution() != resolution) ||
         (data.getTempHAlarm() != tempHAlarm) ||
         (data.getTempLAlarm() != tempLAlarm)) {
 
@@ -345,7 +349,7 @@ public class Temp18B20 {
     DS18B20Scratchpad scratchpadData = new DS18B20Scratchpad();
     scratchpadData.setTempHAlarm((byte) tempHAlarm);
     scratchpadData.setTempLAlarm((byte) tempLAlarm);
-    scratchpadData.setResolution((byte) precisionBits.ordinal());
+    scratchpadData.setResolution((byte) resolution);
 
     // write scratchpad cmd
 
@@ -359,42 +363,17 @@ public class Temp18B20 {
    * The time in MS we need to wait is dependent on the precision we are asking for.
    */
   private long calculateWaitDelayMSec() {
-    switch (precisionBits) {
-      case Nine:
+    switch (resolution) {
+      case 0:
         return 94L;
-      case Ten:
+      case 1:
         return 188L;
-      case Eleven:
+      case 2:
         return 375L;
-      case Twelve:
+      case 3:
       default:
         return 750L;
     }
-  }
-
-  /**
-   * Temperature is in C and we always have 8 bits of integer portion
-   */
-  public enum PrecisionBits {
-    /**
-     * 1 bit fractional => 0.5C
-     */
-    Nine,
-
-    /**
-     * 2 bits fractional => 0.25C
-     */
-    Ten,
-
-    /**
-     * 3 bits fractional => 0.125C
-     */
-    Eleven,
-
-    /**
-     * 4 bits fractional => 0.0625C
-     */
-    Twelve
   }
 
   private enum InitializationState {
@@ -480,7 +459,7 @@ public class Temp18B20 {
     }
   }
 
-  public class ReadingData extends Reading {
+  public static class ReadingData extends Reading {
 
     private final float tempC;
 
