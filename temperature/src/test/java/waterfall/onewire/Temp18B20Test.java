@@ -128,6 +128,20 @@ public class Temp18B20Test {
     t.setBusMasterRegistry(bmR);
   }
 
+  /*
+  * Tests
+  * Get temperature, device needs to be initialized
+  * Get temperature, device was powercycled re-initialized
+  *
+  * Get temperature, no previous temperature, get new temperature
+  * Get temperature, use previous temp
+  * Get temperature, get new temperature
+  * Get temperature, already in progress
+  *
+  * Bonus:
+  * Get temperature, Device not found, look for new BusMaster after certain number of retries?
+  */
+
   @DataProvider
   public Object[][] getTemperatureCases() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
@@ -140,36 +154,52 @@ public class Temp18B20Test {
     badCRCData.getRawBytes()[0] = (byte) ~badCRCData.getRawBytes()[0];
 
     return new Object[][]{
-        /*
         // busmaster not assigned
-        {dsAddress, nullBM, PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+        {dsAddress, nullBM,
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
             new ReadingError(Temp18B20.ERR_NO_BUSMASTER)},
+
         // device not found
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
-            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{deviceNotFoundRaw}))),
-            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+            deviceNotFoundRaw
+            }))),
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
             new ReadingError(Temp18B20.ERR_DEVICE_NOT_FOUND)},
+
         // bad data when reading the device scratchpad
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
-            .addDevice(
-                new DS18B20(dsAddress).setScratchPadData(new byte[][]{badCRCData.getRawBytes()}))),
-            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+                badCRCData.getRawBytes()
+                }))),
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
+
             new ReadingError(Temp18B20.ERR_SCRATCHPAD_DATA_NOT_VALID)},
         // device goes missing after convertT
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
             .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
                 new DS18B20Scratchpad().getRawBytes(),
                 deviceNotFoundRaw}))),
-            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
             new ReadingError(Temp18B20.ERR_DEVICE_NOT_FOUND)},
+
         // device gets permanent CRC after convertT
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
             .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
                 new DS18B20Scratchpad().getRawBytes(),
                 badCRCData.getRawBytes()}))),
-            PrecisionBits.Twelve, Byte.MIN_VALUE, Byte.MAX_VALUE,
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
             new ReadingError(Temp18B20.ERR_SCRATCHPAD_DATA_CRC)},
-        */
 
         // success read 15.5c
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
@@ -180,6 +210,56 @@ public class Temp18B20Test {
             DS18B20Scratchpad.DEFAULT_HALARM,
             DS18B20Scratchpad.DEFAULT_LALARM,
             new ReadingData(15.5F, 1L)},
+
+        // success read 77.125c
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+                new DS18B20Scratchpad().setTempC((float) 1.0).getRawBytes(),
+                new DS18B20Scratchpad().setTempC((float) 77.125).getRawBytes()
+            }))),
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
+            new ReadingData((float)77.125, 1L)},
+        // success read with CRC, recovered -79.375
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+                new DS18B20Scratchpad().setTempC((float) 1.0).getRawBytes(),
+                badCRCData.getRawBytes(), // CRC error
+                badCRCData.getRawBytes(), // CRC error
+                badCRCData.getRawBytes(), // CRC error
+                new DS18B20Scratchpad().setTempC((float)-79.375).getRawBytes()
+            }))),
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
+            new ReadingData((float)-79.375, 1L)},
+
+        // read with CRC, failed
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+                new DS18B20Scratchpad().setTempC((float) 1.0).getRawBytes(),
+                badCRCData.getRawBytes(), // CRC error
+                badCRCData.getRawBytes(), // CRC error
+                badCRCData.getRawBytes(), // CRC error
+                badCRCData.getRawBytes(), // CRC error
+                badCRCData.getRawBytes(), // CRC error
+            }))),
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
+            new ReadingError(Temp18B20.ERR_SCRATCHPAD_DATA_CRC)},
+
+        // read with device going missing, failed
+        {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+                new DS18B20Scratchpad().getRawBytes(),
+                deviceNotFoundRaw
+            }))),
+            DS18B20Scratchpad.DEFAULT_RESOLUTION,
+            DS18B20Scratchpad.DEFAULT_HALARM,
+            DS18B20Scratchpad.DEFAULT_LALARM,
+            new ReadingError(Temp18B20.ERR_DEVICE_NOT_FOUND)},
     };
   }
 
@@ -200,56 +280,6 @@ public class Temp18B20Test {
       Assert.assertTrue(r1 instanceof ReadingData);
       Assert.assertEquals(r1.getTempC(), expectedReading.getTempC());
     }
-  }
-
-  /*
-  * Tests
-  * Get temperature, device not found
-  * Get temperature, device needs to be initialized
-  * Get temperature, no previous temperature, get new temperature
-  * Get temperature, use previous temp
-  * Get temperature, get new temperature
-  * Get temperature, device was powercycled re-initialized
-  * Get temperature, device goes missing
-  * Get temperature, device CRC error, not fixed
-  * Get temperature, device CRC error, fixed
-  * Get temperature, already in progress
-  *
-  * Bonus:
-  * Get temperature, BusMaster not assigned yet
-  * Get temperature, Device not found, look for new BusMaster after certain number of retries?
-  */
-
-  @Test
-  public void testSimpleGetTemperature() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
-
-    Temp18B20 t = new Temp18B20(dsAddress, DS18B20Scratchpad.DEFAULT_RESOLUTION,
-        DS18B20Scratchpad.DEFAULT_HALARM, DS18B20Scratchpad.DEFAULT_LALARM);
-
-    DS18B20Scratchpad data_1 = new DS18B20Scratchpad();
-    data_1.setTempC((float) 1.0);
-
-    DS18B20Scratchpad data_2 = new DS18B20Scratchpad();
-    data_2.setTempC((float) 77.0);
-
-    DS18B20 dummyDS18B20 = new DS18B20(dsAddress)
-        .setScratchPadData(new byte[][]{
-            data_1.getRawBytes(),
-            data_1.getRawBytes(),
-            data_2.getRawBytes(),
-        });
-
-    t.setBusMaster(getStartedHA7S(new HA7SSerialDummy("port").addDevice(dummyDS18B20)));
-
-    Temp18B20.Reading r1 = t.getTemperature(0L);
-    Assert.assertTrue(r1 != null);
-    Assert.assertEquals(r1.getTempC(), (float) 1.0);
-
-    Temp18B20.Reading r2 = t.getTemperature(0L);
-    Assert.assertTrue(r2 != null);
-    Assert.assertNotEquals(r1.getTempC(), r2.getTempC());
-    Assert.assertEquals(r2.getTempC(), (float) 77.0);
   }
 
   private BusMaster getMockBMFor(DSAddress dsAddress,

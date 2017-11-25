@@ -78,24 +78,20 @@ public class DS18B20Scratchpad {
 
     byte msb = data[1];
 
-    return ((float) (((int) msb << 4) + ((lsb >> 4) & 0xf) + (float) ((lsb & 0xf) / 16.0)));
+    return (float)((((int)(msb << 4) | ((lsb >> 4) & 0xf)) << 4) | (lsb & 0xf)) / (float)16.0;
   }
 
   public DS18B20Scratchpad setTempC(float tempC) {
-    float fracPortion = Math.abs(tempC - (int) tempC);
-
-    int intPortion = (int) (tempC - fracPortion);
+    int v = (int)(tempC * 16.0);
 
     // 6 bytes
-    if ((intPortion > 127) || (intPortion < -127)) {
+    if (((v >> 4) > 127) || ((v >> 4) < -127)) {
       throw new IllegalArgumentException("tempC exceeds limits");
     }
 
     // possible loss of precision here...
-    int fracAsInt = (int) (fracPortion * 16);
-
-    data[0] = (byte) (((intPortion & 0xf) << 4) | fracAsInt);
-    data[1] = (byte) (intPortion >> 4);
+    data[0] = (byte)(v & 0xff);
+    data[1] = (byte)(v >> 8);
     data[8] = (byte) CRC8.compute(data, 0, 8);
 
     return this;

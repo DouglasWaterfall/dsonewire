@@ -82,9 +82,9 @@ public class DS18B20 implements HA7SDummyDevice {
     if ((end - start) > 2) { // hex for cmd
       throw new IllegalArgumentException("CONVERT_T extra data");
     }
-    if ((readIndex + 1) < readData.length) {
-      readIndex++;
-    }
+
+    // At one point we had the Convert be the way things were advanced, that turned out to be
+    // problematic when simulating CRC errors. So we have to advance each time we read.
   }
 
   public void readPowerSupply(byte[] data, short start, short end) {
@@ -115,6 +115,11 @@ public class DS18B20 implements HA7SDummyDevice {
       b &= readData[readIndex][y++];
       data[i] = Convert.fourBitsToHex(b >> 4);
       data[i + 1] = Convert.fourBitsToHex(b & 0xf);
+    }
+
+    // We advance on every read if we have something to advance to.
+    if ((readIndex + 1) < readData.length) {
+      readIndex++;
     }
 
     data.toString();
