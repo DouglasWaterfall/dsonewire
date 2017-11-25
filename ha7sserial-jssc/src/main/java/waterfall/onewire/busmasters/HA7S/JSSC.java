@@ -5,6 +5,7 @@ import jssc.SerialPortEvent;
 import jssc.SerialPortException;
 import jssc.SerialPortList;
 import waterfall.onewire.busmaster.Logger;
+import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult.ErrorCode;
 
 
 public class JSSC extends HA7SSerial {
@@ -139,6 +140,7 @@ public class JSSC extends HA7SSerial {
                     if (rbuf[i] == '\r') {
                       // found the terminator
                       sharedData.readComplete = true;
+                      sharedData.readCRCTM = System.currentTimeMillis();
                       if ((i + 1) != rbuf.length) {
                         sharedData.logError((rbuf.length - i - 1) + " extra bytes ignored");
                       }
@@ -187,8 +189,6 @@ public class JSSC extends HA7SSerial {
 
   @Override
   public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], long rTimeoutMSec, Logger optLogger) {
-    ReadResult result = new ReadResult();
-
     String logContext = null;
 
     if (optLogger != null) {
@@ -196,6 +196,11 @@ public class JSSC extends HA7SSerial {
           this.getClass().getSimpleName() + ".writeReadTilCR() " + ((portName != null) ? portName
               : "") + " ";
     }
+
+    ReadResult.ErrorCode error = null;
+    int readCount = 0;
+    long postWriteCTM = 0;
+    long readCRCTM = 0;
 
     synchronized (this) {
 
@@ -216,34 +221,35 @@ public class JSSC extends HA7SSerial {
                 serialPort.writeByte(wBuf[i]);
               }
 
-              result.postWriteCTM = new Long(System.currentTimeMillis());
+              postWriteCTM = System.currentTimeMillis();
 
               serialPort.wait(rTimeoutMSec);
 
               if (sharedData.readComplete) {
                 if (sharedData.readOverrun) {
-                  result.error = ReadResult.ErrorCode.RR_ReadOverrun;
+                  error = ReadResult.ErrorCode.RR_ReadOverrun;
                 } else {
-                  result.error = ReadResult.ErrorCode.RR_Success;
+                  error = ReadResult.ErrorCode.RR_Success;
                 }
-                result.readCount = sharedData.readCount;
+                readCount = sharedData.readCount;
+                readCRCTM = sharedData.readCRCTM;
               } else {
                 if (optLogger != null) {
                   optLogger.logError(logContext, "read not complete?");
                 }
-                result.error = ReadResult.ErrorCode.RR_Error;
+                error = ReadResult.ErrorCode.RR_Error;
               }
             } catch (SerialPortException ex) {
               if (optLogger != null) {
                 optLogger.logError(logContext, ex);
               }
-              result.error = ReadResult.ErrorCode.RR_Error;
+              error = ReadResult.ErrorCode.RR_Error;
             } catch (InterruptedException ex) {
               if (optLogger != null) {
                 optLogger.logError(logContext, ex);
               }
-              result.error = ReadResult.ErrorCode.RR_ReadTimeout;
-              result.readCount = sharedData.readCount;
+              error = ReadResult.ErrorCode.RR_ReadTimeout;
+              readCount = sharedData.readCount;
             }
           } finally {
             sharedData.clearWaitingThread();
@@ -253,14 +259,19 @@ public class JSSC extends HA7SSerial {
         if (optLogger != null) {
           optLogger.logInfo(logContext, "not started.");
         }
-        result.error = ReadResult.ErrorCode.RR_Error;
+        error = ReadResult.ErrorCode.RR_Error;
       }
     }
     if (optLogger != null) {
-      optLogger.logInfo(logContext, result.error.name());
+      optLogger.logInfo(logContext, error.name());
     }
 
-    return result;
+    if (error == ErrorCode.RR_Success) {
+      return new ReadResult(readCount, postWriteCTM, readCRCTM);
+    }
+    else {
+      return new ReadResult(error);
+    }
   }
 
   @Override
@@ -320,6 +331,7 @@ public class JSSC extends HA7SSerial {
     public int readCount = 0;
     public boolean readOverrun = false;
     public boolean readComplete = true;
+    public long readCRCTM = 0;
 
     public void addWaitingThread(Thread waitingThread, byte[] rBuf, Logger waitingThreadLogger,
         String waitingThreadLoggerContext) {
@@ -331,6 +343,7 @@ public class JSSC extends HA7SSerial {
       readCount = 0;
       readOverrun = false;
       readComplete = false;
+      readCRCTM = 0;
     }
 
     public void clearWaitingThread() {

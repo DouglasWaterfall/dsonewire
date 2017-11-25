@@ -78,7 +78,7 @@ public abstract class HA7SSerial {
       }
     }
 
-    return new NoDataResult().setSuccess(readResult.postWriteCTM, readResult.postWriteCTM);
+    return new NoDataResult().setSuccess(readResult.postWriteCTM, readResult.readCRCTM);
   }
 
   /**
@@ -134,7 +134,7 @@ public abstract class HA7SSerial {
     }
 
     return new HexByteArrayResult().setSuccess((readResult.readCount > 0) ? rbuf : new byte[0],
-        readResult.postWriteCTM, readResult.postWriteCTM);
+        readResult.postWriteCTM, readResult.readCRCTM);
   }
 
   public NoDataResult cmdReset(long rTimeoutMSec, Logger optLogger) {
@@ -147,7 +147,7 @@ public abstract class HA7SSerial {
       return new NoDataResult().setFailure(readResult.error.name());
     }
 
-    return new NoDataResult().setSuccess(readResult.postWriteCTM, readResult.postWriteCTM);
+    return new NoDataResult().setSuccess(readResult.postWriteCTM, readResult.readCRCTM);
   }
 
   public BooleanResult cmdReadBit(long rTimeoutMSec, Logger optLogger) {
@@ -174,7 +174,7 @@ public abstract class HA7SSerial {
       return new BooleanResult().setFailure("Data error - not 0 or 1");
     }
 
-    return new BooleanResult().setSuccess(v, readResult.postWriteCTM, readResult.postWriteCTM);
+    return new BooleanResult().setSuccess(v, readResult.postWriteCTM, readResult.readCRCTM);
   }
 
   public HexByteArrayResult cmdWriteBlock(HexByteArray wData, long rTimeoutMSec, Logger optLogger) {
@@ -216,7 +216,7 @@ public abstract class HA7SSerial {
     }
 
     return new HexByteArrayResult()
-        .setSuccess(rbuf, readResult.postWriteCTM, readResult.postWriteCTM);
+        .setSuccess(rbuf, readResult.postWriteCTM, readResult.readCRCTM);
   }
 
   public boolean isValidUpperCaseHex(byte[] buf, int count) {
@@ -275,34 +275,60 @@ public abstract class HA7SSerial {
     /**
      * Result of the call. Initialized to null.
      */
-    public ErrorCode error;
+    private ErrorCode error;
+
     /**
      * Number of bytes actually read, NOT including the terminating CR. So if the return returns
      * RR_Success and the readCount was zero then ONLY a CR return was read (and not returned). You
      * cannot read the CR through this API.
      */
-    public int readCount;
+    private int readCount;
+
     /**
      * To be filled in with System.currentTimeMillis() after the final write has completed.
      */
-    public Long postWriteCTM; // non null if valid
+    private Long postWriteCTM; // non null if valid
+
+    /**
+     * To be filled in with System.currentTimeMillis() after the CR has been read.
+     */
+    private Long readCRCTM; // non null if valid
 
     public ReadResult() {
       error = null;
       readCount = 0;
       postWriteCTM = null;
+      readCRCTM = null;
     }
 
     public ReadResult(ErrorCode error) {
       this.error = error;
       readCount = 0;
       postWriteCTM = null;
+      readCRCTM = null;
     }
 
-    public ReadResult(ErrorCode error, int readCount, long postWriteCTM) {
-      this.error = error;
+    public ReadResult(int readCount, long postWriteCTM, long readCRCTM) {
+      this.error = ErrorCode.RR_Success;
       this.readCount = readCount;
       this.postWriteCTM = postWriteCTM;
+      this.readCRCTM = readCRCTM;
+    }
+
+    public ErrorCode getError() {
+      return error;
+    }
+
+    public int getReadCount() {
+      return readCount;
+    }
+
+    public long getPostWriteCTM() {
+      return postWriteCTM;
+    }
+
+    public long getReadCRCTM() {
+      return readCRCTM;
     }
 
     public enum ErrorCode {

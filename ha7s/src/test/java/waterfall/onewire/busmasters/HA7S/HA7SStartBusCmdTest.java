@@ -131,7 +131,7 @@ public class HA7SStartBusCmdTest {
             null, null,
             StartBusCmd.Result.communication_error},
         // reset failure followed by error
-        {new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 1, 5),
+        {new HA7SSerial.ReadResult(1, 5, 7),
             new byte[]{0x7},
             new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Error), null,
             StartBusCmd.Result.communication_error},
@@ -144,8 +144,7 @@ public class HA7SStartBusCmdTest {
     HA7SSerial mockSerial = mock(HA7SSerial.class);
     when(mockSerial.start(any(Logger.class))).thenReturn(HA7SSerial.StartResult.SR_Success);
 
-    HA7SSerial.ReadResult readResult = new HA7SSerial.ReadResult(
-        HA7SSerial.ReadResult.ErrorCode.RR_Success, 0, 1);
+    HA7SSerial.ReadResult readResult = new HA7SSerial.ReadResult(0, 1, 3);
 
     when(mockSerial
         .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))

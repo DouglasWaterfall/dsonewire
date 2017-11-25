@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import waterfall.onewire.Convert;
 import waterfall.onewire.busmaster.Logger;
+import waterfall.onewire.busmaster.ReadScratchpadCmd;
 
 /**
  * Created by dwaterfa on 1/18/17.
@@ -64,63 +65,61 @@ public class HA7SSerialDummy extends HA7SSerial {
     int wStart = 0;
     int wEnd = 0;
 
-    ReadResult readResult = new ReadResult();
-
-    readResult.postWriteCTM = System.currentTimeMillis();
+    long postWriteCTM = System.currentTimeMillis();
+    int readCount = 0;
 
     try {
       for (; ; ) {
         wEnd = parse(wBuf, wStart);
 
         if (wEnd == wStart) {
-          if (readResult.error == null) {
-            readResult.error = ReadResult.ErrorCode.RR_Success;
-            if (readResult.postWriteCTM == System.currentTimeMillis()) {
-              try {
-                Thread.sleep(1);
-              } catch (InterruptedException e) {
-                optLogger.logError(logContext, "sleep delay interrupted!");
-              }
+          long readCRCTM;
+          while ((readCRCTM = System.currentTimeMillis()) == postWriteCTM) {
+            try {
+              Thread.sleep(1);
+            }
+            catch (InterruptedException e) {
+              ;
             }
           }
-          return readResult;
+          return new ReadResult(readCount, postWriteCTM, readCRCTM);
         }
 
         switch (wBuf[wStart]) {
           case 'A':
-            addressSelect(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += addressSelect(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'S':
-            search(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += search(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 's':
-            searchNext(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += searchNext(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'R':
-            reset(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += reset(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'F':
-            familySearch(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += familySearch(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'f':
-            familySearchNext(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += familySearchNext(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'C':
-            alarmSearch(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += alarmSearch(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'c':
-            alarmSearchNext(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += alarmSearchNext(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'W':
-            writeBlock(wBuf, wStart, wEnd, rBuf, optLogger, readResult);
+            readCount += writeBlock(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           default:
@@ -133,11 +132,10 @@ public class HA7SSerialDummy extends HA7SSerial {
         wStart = wEnd;
       }
     } catch (IllegalArgumentException e) {
-      readResult.error = ReadResult.ErrorCode.RR_Error;
       if (optLogger != null) {
         optLogger.logError(logContext, e.getMessage());
       }
-      return readResult;
+      return new ReadResult(ReadResult.ErrorCode.RR_Error);
     }
   }
 
@@ -178,8 +176,7 @@ public class HA7SSerialDummy extends HA7SSerial {
     return this;
   }
 
-  private void addressSelect(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int addressSelect(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 18) { // A {16} CR
       throw new IllegalArgumentException("address select must include address");
     }
@@ -205,24 +202,22 @@ public class HA7SSerialDummy extends HA7SSerial {
     }
 
     activeDeviceHexAddr = dsHexAddr;
-    readResult.readCount = 16;
+    return 16; // readCount
   }
 
-  private void search(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int search(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("search is single char cmd");
     }
 
     activeSearch = new ActiveSearch(ActiveSearchType.General,
         deviceDataList.keySet().toArray(new String[0]));
-    readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+    return activeSearch.nextDSHexAddr(rBuf);
 
     // never pass back the CR
   }
 
-  private void searchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int searchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("search next is single char cmd");
     }
@@ -230,13 +225,12 @@ public class HA7SSerialDummy extends HA7SSerial {
       throw new IllegalArgumentException("general search is not active");
     }
 
-    readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+    return activeSearch.nextDSHexAddr(rBuf);
 
     // never pass back the CR
   }
 
-  private void alarmSearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int alarmSearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("alarm search is single char cmd");
     }
@@ -249,13 +243,12 @@ public class HA7SSerialDummy extends HA7SSerial {
     }
     activeSearch = new ActiveSearch(ActiveSearchType.Alarm, alarms.toArray(new String[0]));
 
-    readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+    return activeSearch.nextDSHexAddr(rBuf);
 
     // never pass back the CR
   }
 
-  private void alarmSearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int alarmSearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("alarm search next is single char cmd");
     }
@@ -264,13 +257,12 @@ public class HA7SSerialDummy extends HA7SSerial {
       throw new IllegalArgumentException("alarm search is not active");
     }
 
-    readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+    return activeSearch.nextDSHexAddr(rBuf);
 
     // never pass back the CR
   }
 
-  private void familySearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int familySearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 3) {
       throw new IllegalArgumentException("family search cmd length must be three");
     }
@@ -286,13 +278,12 @@ public class HA7SSerialDummy extends HA7SSerial {
     }
     activeSearch = new ActiveSearch(ActiveSearchType.Family, families.toArray(new String[0]));
 
-    readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+    return activeSearch.nextDSHexAddr(rBuf);
 
     // never pass back the CR
   }
 
-  private void familySearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int familySearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("family search next is single char cmd");
     }
@@ -301,13 +292,12 @@ public class HA7SSerialDummy extends HA7SSerial {
       throw new IllegalArgumentException("family search is not active");
     }
 
-    readResult.readCount += activeSearch.nextDSHexAddr(rBuf);
+    return activeSearch.nextDSHexAddr(rBuf);
 
     // never pass back the CR
   }
 
-  private void reset(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int reset(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("Reset is single cmd char");
     }
@@ -316,10 +306,10 @@ public class HA7SSerialDummy extends HA7SSerial {
     activeDeviceHexAddr = null;
 
     // leave readCount alone
+    return 0;
   }
 
-  private void writeBlock(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger,
-      ReadResult readResult) throws IllegalArgumentException {
+  private int writeBlock(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
     if ((wEnd - wStart) < 3) {
       throw new IllegalArgumentException("Write block must be at least 3 chars");
     }
@@ -339,7 +329,7 @@ public class HA7SSerialDummy extends HA7SSerial {
     }
     try {
       dd.writeBlock(rBuf, (short) 0, end);
-      readResult.readCount += (end - 0);
+      return (end - 0);
     } catch (Exception e) {
       throw new RuntimeException("Write block device threw exception", e);
     }

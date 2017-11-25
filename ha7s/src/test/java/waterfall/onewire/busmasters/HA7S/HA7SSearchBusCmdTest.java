@@ -259,10 +259,10 @@ public class HA7SSearchBusCmdTest {
         {new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Error), null,
             SearchBusCmd.Result.communication_error},
         // invalid read count
-        {new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 1, 2L), null,
+        {new HA7SSerial.ReadResult(1, 2L, 4L), null,
             SearchBusCmd.Result.communication_error},
         // invalid address
-        {new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 16, 2L),
+        {new HA7SSerial.ReadResult(16, 2L, 5L),
             invalidAddress.getBytes(), SearchBusCmd.Result.communication_error}
     };
   }

@@ -33,8 +33,7 @@ public class HA7SStopBusCmdTest {
     HA7SSerial mockSerial = mock(HA7SSerial.class);
     when(mockSerial.start(any(Logger.class))).thenReturn(HA7SSerial.StartResult.SR_Success);
 
-    HA7SSerial.ReadResult readResult = new HA7SSerial.ReadResult(
-        HA7SSerial.ReadResult.ErrorCode.RR_Success, 0, 1);
+    HA7SSerial.ReadResult readResult = new HA7SSerial.ReadResult(0, 1, 2);
 
     when(mockSerial
         .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))
@@ -65,8 +64,7 @@ public class HA7SStopBusCmdTest {
     HA7SSerial mockSerial = mock(HA7SSerial.class);
     when(mockSerial.start(any(Logger.class))).thenReturn(HA7SSerial.StartResult.SR_Success);
 
-    HA7SSerial.ReadResult readResult = new HA7SSerial.ReadResult(
-        HA7SSerial.ReadResult.ErrorCode.RR_Success, 0, 1);
+    HA7SSerial.ReadResult readResult = new HA7SSerial.ReadResult(0, 1, 2);
 
     when(mockSerial
         .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))

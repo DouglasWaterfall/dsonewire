@@ -41,6 +41,7 @@ public class HA7SSerialTest {
 
     byte[] nullRBuf = null;
     long writeCTM = 5;
+    long readCRCTM = 7;
 
     byte[] mismatchDSAddress = dsAddress.toString().getBytes();
     mismatchDSAddress[1] = '0';
@@ -65,13 +66,13 @@ public class HA7SSerialTest {
         },
         // Success - Read underrun
         {dsAddress, rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 6, writeCTM),
+            new HA7SSerial.ReadResult(6, writeCTM, readCRCTM),
             nullRBuf, writeCTM,
             new HA7SSerial.NoDataResult().setFailure("Underrun - expected 16 got:6")
         },
         // Success - Bad hex chars
         {dsAddress, rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 16, writeCTM),
+            new HA7SSerial.ReadResult(16, writeCTM, readCRCTM),
             mismatchDSAddress, writeCTM,
             new HA7SSerial.NoDataResult().setFailure("Invalid char index:1")
         }
@@ -134,6 +135,7 @@ public class HA7SSerialTest {
 
     byte[] nullRBuf = null;
     long writeCTM = 5;
+    long readCRCTM = 8;
 
     byte[] mismatchDSAddress = ("EG0000065BC0AE28").getBytes();
 
@@ -157,13 +159,13 @@ public class HA7SSerialTest {
         },
         // Success - Read underrun
         {rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 6, writeCTM),
+            new HA7SSerial.ReadResult(6, writeCTM, readCRCTM),
             nullRBuf, writeCTM,
             new HA7SSerial.HexByteArrayResult().setFailure("Underrun - expected 0 or 16 got:6")
         },
         // Success - Bad hex chars
         {rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 16, writeCTM),
+            new HA7SSerial.ReadResult(16, writeCTM, readCRCTM),
             mismatchDSAddress, writeCTM,
             new HA7SSerial.HexByteArrayResult().setFailure("Not hex bytes")
         }
@@ -287,6 +289,7 @@ public class HA7SSerialTest {
 
     byte[] nullRBuf = null;
     long writeCTM = 5;
+    long readCRCTM = 9;
 
     return new Object[][]{
         // Error - ReadOverrun
@@ -309,13 +312,13 @@ public class HA7SSerialTest {
         },
         // Success - Bad count
         {rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 0, writeCTM),
+            new HA7SSerial.ReadResult(0, writeCTM, readCRCTM),
             new byte[]{0}, writeCTM,
             new HA7SSerial.BooleanResult().setFailure("Underrun - expected 1 byte")
         },
         // Success - Bad count
         {rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 1, writeCTM),
+            new HA7SSerial.ReadResult(1, writeCTM, readCRCTM),
             new byte[]{'A'}, writeCTM,
             new HA7SSerial.BooleanResult().setFailure("Data error - not 0 or 1")
         }
@@ -340,6 +343,7 @@ public class HA7SSerialTest {
 
     byte[] nullRBuf = null;
     long writeCTM = 5;
+    long readCRCTM = 10;
 
     return new Object[][]{
         // Error - ReadOverrun
@@ -361,13 +365,13 @@ public class HA7SSerialTest {
         },
         // Success - Read underrun
         {hexByteArray, rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 3, writeCTM),
+            new HA7SSerial.ReadResult(3, writeCTM, readCRCTM),
             nullRBuf, writeCTM,
             new HA7SSerial.HexByteArrayResult().setFailure("Underrun - expected:4 got:3")
         },
         // Success - Bad hex chars
         {hexByteArray, rTimeoutMSec, optLogger,
-            new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success, 4, writeCTM),
+            new HA7SSerial.ReadResult(4, writeCTM, readCRCTM),
             new byte[]{'f', 'f', 'f', 'f'}, writeCTM,
             new HA7SSerial.HexByteArrayResult().setFailure("Not hex bytes")
         }
