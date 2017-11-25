@@ -14,9 +14,6 @@
     <module>common</module>
     <module>ha7s</module>
     <module>ha7sserial-jssc</module>
-    <module>bm-httpclient</module>
-    <module>bm-httpcommon</module>
-    <module>bm-httpcontroller</module>
     <module>temperature</module>
   </modules>
 
