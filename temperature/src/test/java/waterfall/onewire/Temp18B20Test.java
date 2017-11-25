@@ -4,12 +4,14 @@
 
 package waterfall.onewire;
 
+import static org.mockito.Matchers.intThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyShort;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -29,7 +31,17 @@ import waterfall.onewire.device.DS18B20Scratchpad;
 
 public class Temp18B20Test {
 
-  private String validDSAddress = "EE0000065BC0AE28";
+  private static final String validDSAddress = "EE0000065BC0AE28";
+  private static final byte[] deviceNotFoundRaw;
+  private static final DS18B20Scratchpad badCRCData;
+
+  static {
+    deviceNotFoundRaw = new byte[9];
+    Arrays.fill(deviceNotFoundRaw, (byte) 0xff);
+
+    badCRCData = new DS18B20Scratchpad();
+    badCRCData.getRawBytes()[0] = (byte) ~badCRCData.getRawBytes()[0];
+  }
 
   @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "dsAddress")
   public void testConstructorNullAddress() {
@@ -133,11 +145,6 @@ public class Temp18B20Test {
   * Get temperature, device needs to be initialized
   * Get temperature, device was powercycled re-initialized
   *
-  * Get temperature, no previous temperature, get new temperature
-  * Get temperature, use previous temp
-  * Get temperature, get new temperature
-  * Get temperature, already in progress
-  *
   * Bonus:
   * Get temperature, Device not found, look for new BusMaster after certain number of retries?
   */
@@ -146,12 +153,6 @@ public class Temp18B20Test {
   public Object[][] getTemperatureCases() {
     DSAddress dsAddress = new DSAddress(validDSAddress);
     BusMaster nullBM = null;
-
-    byte[] deviceNotFoundRaw = new byte[9];
-    Arrays.fill(deviceNotFoundRaw, (byte) 0xff);
-
-    DS18B20Scratchpad badCRCData = new DS18B20Scratchpad();
-    badCRCData.getRawBytes()[0] = (byte) ~badCRCData.getRawBytes()[0];
 
     return new Object[][]{
         // busmaster not assigned
@@ -281,6 +282,108 @@ public class Temp18B20Test {
       Assert.assertEquals(r1.getTempC(), expectedReading.getTempC());
     }
   }
+
+  @Test
+  public void testGetTemperatureWithinTimeMSec(){
+    DSAddress dsAddress = new DSAddress(validDSAddress);
+
+    Temp18B20 t = new Temp18B20(dsAddress, DS18B20Scratchpad.DEFAULT_RESOLUTION,
+        DS18B20Scratchpad.DEFAULT_HALARM, DS18B20Scratchpad.DEFAULT_LALARM)
+        .setBusMaster(getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+            new DS18B20Scratchpad().setTempC((float) 1.0).getRawBytes(),
+                new DS18B20Scratchpad().setTempC((float) 5.0).getRawBytes(),
+                new DS18B20Scratchpad().setTempC((float) 99.0).getRawBytes(),
+        }))));
+
+    // first temperature will return a 5.0
+    Temp18B20.Reading r = t.getTemperature(0L);
+    Assert.assertTrue(r != null);
+    Assert.assertTrue(r instanceof ReadingData);
+    Assert.assertEquals(r.getTempC(), (float)5.0);
+
+    // the second get temperature is asking for a temperature between 5 seconds ago and NOW so we
+    // will get the same temperature again.
+    r = t.getTemperature(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(5));
+    Assert.assertTrue(r != null);
+    Assert.assertTrue(r instanceof ReadingData);
+    Assert.assertEquals(r.getTempC(), (float)5.0);
+
+    // the third temperature is asking for a temperature between NOW and NOW so we will have to
+    // generate a new temperature
+    r = t.getTemperature(System.currentTimeMillis());
+    Assert.assertTrue(r != null);
+    Assert.assertTrue(r instanceof ReadingData);
+    Assert.assertEquals(r.getTempC(), (float)99.0);
+  }
+
+  /**
+   * Tests that multiple threads can read the same temperature and only one will push and the others
+   * will return the same value.
+   */
+  @Test
+  public void testGetTemperatureThreaded() {
+    DSAddress dsAddress = new DSAddress(validDSAddress);
+
+    Temp18B20 t = new Temp18B20(dsAddress, DS18B20Scratchpad.DEFAULT_RESOLUTION,
+        DS18B20Scratchpad.DEFAULT_HALARM, DS18B20Scratchpad.DEFAULT_LALARM)
+        .setBusMaster(getStartedHA7S(new HA7SSerialDummy("port")
+            .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
+                new DS18B20Scratchpad().setTempC((float) 1.0).getRawBytes(),
+                new DS18B20Scratchpad().setTempC((float) 5.0).getRawBytes(),
+                badCRCData.getRawBytes()
+            }))));
+
+    Temp18B20.Reading[] readings = new Temp18B20.Reading[5];
+    Thread[] threads = new Thread[5];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread(new GetTemperatureThread(t, 2000, readings, i));
+    }
+    for (int i = 0; i < threads.length; i++) {
+      threads[i].start();
+    }
+    for (int i = 0; i < threads.length; i++) {
+      try {
+        threads[i].join();
+      }
+      catch (InterruptedException e) {
+        Assert.fail("join:" + i + " interrupted:" + e);
+      }
+      Assert.assertTrue(readings[i] != null);
+      Assert.assertTrue(readings[i] instanceof ReadingData);
+      Assert.assertEquals(readings[i].getTempC(), (float)5.0);
+      Assert.assertEquals(readings[i].getTimeMSec(), readings[0].getTimeMSec());
+    }
+  }
+
+  private static class GetTemperatureThread implements Runnable {
+    private final Temp18B20 t;
+    private final long withinTimeMSec;
+    private final Temp18B20.Reading[] array;
+    private final int index;
+
+    public GetTemperatureThread(Temp18B20 t, long withinTimeMSec, Temp18B20.Reading[] array, int index) {
+      this.t = t;
+      this.withinTimeMSec = withinTimeMSec;
+      this.array = array;
+      this.index = index;
+    }
+
+    public void run() {
+      try {
+        Thread.sleep(20 * index);
+      }
+      catch (InterruptedException e) {
+        ;
+      }
+
+      array[index] = t.getTemperature(withinTimeMSec);
+    }
+  }
+
+  /*
+   * Get temperature, already in progress
+   */
 
   private BusMaster getMockBMFor(DSAddress dsAddress,
       ConvertTCmd.Result convertTCmdResult,

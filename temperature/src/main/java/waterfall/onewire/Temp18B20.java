@@ -35,10 +35,7 @@ public class Temp18B20 {
   /**
    * Construct an instance around a specific dsAddress.
    *
-   * @param dsAddress
    * @param resolution Must be within 0-3
-   * @param tempHAlarm
-   * @param tempLAlarm
    */
   public Temp18B20(DSAddress dsAddress, byte resolution, byte tempHAlarm, byte tempLAlarm) {
     if (dsAddress == null) {
@@ -117,12 +114,14 @@ public class Temp18B20 {
    * explicitly set it.
    *
    * @param bm The BusMaster where the device is managed
+   * @return this
    */
-  public synchronized void setBusMaster(BusMaster bm) {
+  public synchronized Temp18B20 setBusMaster(BusMaster bm) {
     if (this.bm != null) {
       throw new IllegalArgumentException("dup bm");
     }
     this.bm = bm;
+    return this;
   }
 
   /**
@@ -131,34 +130,40 @@ public class Temp18B20 {
    * stop searching and then call setBusMaster() when it is found.
    *
    * @param bMR The BusMasterRegistry where the busmasters may be found
+   * @return this
    */
-  public synchronized void setBusMasterRegistry(BusMasterRegistry bMR) {
+  public synchronized Temp18B20 setBusMasterRegistry(BusMasterRegistry bMR) {
     if (this.waitForDeviceByAddress != null) {
       throw new IllegalArgumentException("dup bMR");
     }
     this.waitForDeviceByAddress = new WaitForDeviceByAddress(bMR, false,
         (TimeUnit.SECONDS.toMillis(15)));
     this.waitForDeviceByAddress.addAddress(new myWFDBAC(this), new String[]{dsAddress.toString()});
+    return this;
   }
 
   /**
-   * Read the temperature of the device.
+   * Read the temperature of the device. The device will only actually be sampled if the time
+   * request, if specified, is
    *
-   * @param withinMSec If non-null, if the instance has already read the temperature and time it was
-   * taken is equal to or greater than this argument then the previously read value will be
-   * returned. To force an update of the temperature just pass in null for this value.
+   * @param withinTimeMSec If non-null, then the time the last temperature was taken must be equal
+   * or AFTER the specified time for it to be returned, otherwise a new temperature will be taken.
+   * For example, if you wanted to get the temperature within 5 minutes of the current time, you
+   * would pass in the value for 5 minutes LESS than the current time which would mean that the
+   * last temperature read must have been taken between 5 minutes ago and now for it to be returned,
+   * otherwise a new temperature will be taken.
    * @return ReadingError instance if the BusMaster has not been located, or if the withinMSec time
    * exceeds the currentTimeMSec().
    */
-  public synchronized Reading getTemperature(Long withinMSec) {
-    if (withinMSec != null) {
-      if (withinMSec > System.currentTimeMillis()) {
-        return new ReadingError("withinMSec exceeds current time");
+  public synchronized Reading getTemperature(Long withinTimeMSec) {
+    if (withinTimeMSec != null) {
+      if (withinTimeMSec > System.currentTimeMillis()) {
+        return new ReadingError("withinTimeMSec exceeds current time");
       }
 
       // Maybe we already have the time we want.
-      if ((lastReading != null) && (!(lastReading instanceof ReadingError)) && (
-          lastReading.getTimeMSec() <= withinMSec)) {
+      if ((lastReading != null) && (lastReading instanceof ReadingData) &&
+          (lastReading.getTimeMSec() >= withinTimeMSec)) {
         return lastReading;
       }
     }
@@ -325,7 +330,7 @@ public class Temp18B20 {
       // so it is suspect. Better to just start over.
 
       // we wish to avoid recursion
-      if (wasReInitalize)  {
+      if (wasReInitalize) {
         // this is odd - we did the init, and then convert and then read and we are unhappy? We
         // do not want to cycle forever so we fail this and force it to try again from scratch.
         initState = InitializationState.Initialize;
