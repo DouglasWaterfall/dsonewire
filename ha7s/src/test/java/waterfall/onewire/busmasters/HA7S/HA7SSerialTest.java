@@ -428,7 +428,7 @@ public class HA7SSerialTest {
       Assert.assertTrue(wbuf.length > 0);
       Assert.assertNotNull(rbuf);
 
-      if ((readResult.error == ReadResult.ErrorCode.RR_Success) && (readRBufData != null)) {
+      if ((readResult.getError() == ReadResult.ErrorCode.RR_Success) && (readRBufData != null)) {
         for (int i = 0; i < readRBufData.length; i++) {
           rbuf[i] = readRBufData[i];
         }
