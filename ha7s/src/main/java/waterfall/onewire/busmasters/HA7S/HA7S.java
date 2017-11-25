@@ -180,8 +180,8 @@ public class HA7S implements BusMaster {
     HA7SSerial.ReadResult readResult = serialPort
         .writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getDeviceLevelLogger());
 
-    if ((readResult.error == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
-        (readResult.readCount == 1) &&
+    if ((readResult.getError() == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
+        (readResult.getReadCount() == 1) &&
         (rbuf[0] == 0x07)) {
       // This can occur during development when when the first thing read after open is
       // 0x07 0x0D. So we try this again once.
@@ -189,13 +189,13 @@ public class HA7S implements BusMaster {
           .writeReadTilCR(resetBusCmd, rbuf, defaultTimeoutMSec, cmd.getDeviceLevelLogger());
     }
 
-    if ((readResult.error != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
-        (readResult.readCount != 0)) {
-      cmd.logErrorInternal(readResult.error.name() + " readCount:" + readResult.readCount);
+    if ((readResult.getError() != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
+        (readResult.getReadCount() != 0)) {
+      cmd.logErrorInternal(readResult.getError().name() + " readCount:" + readResult.getReadCount());
 
-      cmd.logErrorInternal(readResult.error.name() + " stopping port");
+      cmd.logErrorInternal(readResult.getError().name() + " stopping port");
       HA7SSerial.StopResult stopResult = serialPort.stop((Logger) cmd);
-      cmd.logErrorInternal(readResult.error.name() + " stop result:" + stopResult.name());
+      cmd.logErrorInternal(readResult.getError().name() + " stop result:" + stopResult.name());
 
       return StartBusCmd.Result.communication_error;
     }
@@ -273,7 +273,7 @@ public class HA7S implements BusMaster {
     HA7SSerial.ReadResult readResult = serialPort
         .writeReadTilCR(wbuf, rbuf, defaultTimeoutMSec, optLogger);
 
-    switch (readResult.error) {
+    switch (readResult.getError()) {
       case RR_Success:
         break;
 
@@ -289,18 +289,18 @@ public class HA7S implements BusMaster {
       default:
         if (optLogger != null) {
           optLogger
-              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.error.name());
+              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.getError().name());
         }
         return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    if (readResult.readCount == 0) {
-      return logAndReturn(new cmdReturn(0, readResult.postWriteCTM), optLogger, logContext);
+    if (readResult.getReadCount() == 0) {
+      return logAndReturn(new cmdReturn(0, readResult.getPostWriteCTM()), optLogger, logContext);
     }
 
-    if (readResult.readCount != 16) {
+    if (readResult.getReadCount() != 16) {
       if (optLogger != null) {
-        optLogger.logError(logContext, "expected 16, readCount:" + readResult.readCount);
+        optLogger.logError(logContext, "expected 16, readCount:" + readResult.getReadCount());
       }
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
@@ -313,7 +313,7 @@ public class HA7S implements BusMaster {
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    return logAndReturn(new cmdReturn(readResult.readCount, readResult.postWriteCTM), optLogger,
+    return logAndReturn(new cmdReturn(readResult.getReadCount(), readResult.getPostWriteCTM()), optLogger,
         logContext);
   }
 
@@ -337,7 +337,7 @@ public class HA7S implements BusMaster {
     HA7SSerial.ReadResult readResult = serialPort
         .writeReadTilCR(selectCmdData, rbuf, defaultTimeoutMSec, optLogger);
 
-    switch (readResult.error) {
+    switch (readResult.getError()) {
       case RR_Success:
         break;
 
@@ -353,24 +353,24 @@ public class HA7S implements BusMaster {
       default:
         if (optLogger != null) {
           optLogger
-              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.error.name());
+              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.getError().name());
         }
         return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    if ((readResult.readCount == 1) && (rbuf[0] == 0x7)) {
+    if ((readResult.getReadCount() == 1) && (rbuf[0] == 0x7)) {
       // This is what the HA7S returns on an error, in this case the Address is unknown.
       return logAndReturn(new cmdReturn(cmdResult.DeviceNotFound), optLogger, logContext);
     }
 
-    if (readResult.readCount != 16) {
+    if (readResult.getReadCount() != 16) {
       if (optLogger != null) {
-        optLogger.logError(logContext, "expected 16, readCount:" + readResult.readCount);
+        optLogger.logError(logContext, "expected 16, readCount:" + readResult.getReadCount());
       }
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    return logAndReturn(new cmdReturn(0, readResult.postWriteCTM), optLogger, logContext);
+    return logAndReturn(new cmdReturn(0, readResult.getPostWriteCTM()), optLogger, logContext);
   }
 
   public cmdReturn cmdReadBit(byte[] rbuf, Logger optLogger) {
@@ -384,7 +384,7 @@ public class HA7S implements BusMaster {
     HA7SSerial.ReadResult readResult = serialPort
         .writeReadTilCR(wbuf, rbuf, defaultTimeoutMSec, optLogger);
 
-    switch (readResult.error) {
+    switch (readResult.getError()) {
       case RR_Success:
         break;
 
@@ -400,14 +400,14 @@ public class HA7S implements BusMaster {
       default:
         if (optLogger != null) {
           optLogger
-              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.error.name());
+              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.getError().name());
         }
         return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    if (readResult.readCount != 1) {
+    if (readResult.getReadCount() != 1) {
       if (optLogger != null) {
-        optLogger.logError(logContext, "expected 1, readCount:" + readResult.readCount);
+        optLogger.logError(logContext, "expected 1, readCount:" + readResult.getReadCount());
       }
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
@@ -419,7 +419,7 @@ public class HA7S implements BusMaster {
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    return logAndReturn(new cmdReturn(0, readResult.postWriteCTM), optLogger, logContext);
+    return logAndReturn(new cmdReturn(0, readResult.getPostWriteCTM()), optLogger, logContext);
   }
 
   public cmdReturn cmdWriteBlock(byte[] wbuf, byte[] rbuf, Logger optLogger) {
@@ -432,9 +432,9 @@ public class HA7S implements BusMaster {
     HA7SSerial.ReadResult readResult = serialPort
         .writeReadTilCR(wbuf, rbuf, defaultTimeoutMSec, optLogger);
 
-    switch (readResult.error) {
+    switch (readResult.getError()) {
       case RR_Success:
-        return logAndReturn(new cmdReturn(readResult.readCount, readResult.postWriteCTM), optLogger,
+        return logAndReturn(new cmdReturn(readResult.getReadCount(), readResult.getPostWriteCTM()), optLogger,
             logContext);
 
       case RR_ReadTimeout:
@@ -449,7 +449,7 @@ public class HA7S implements BusMaster {
       default:
         if (optLogger != null) {
           optLogger
-              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.error.name());
+              .logError(logContext, "unknown HA7SSerial.ReadResult:" + readResult.getError().name());
         }
         return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
