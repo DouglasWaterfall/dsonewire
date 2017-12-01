@@ -2,6 +2,7 @@ package waterfall.onewire.busmasters.HA7S;
 
 import java.util.ArrayList;
 import java.util.List;
+import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
@@ -30,70 +31,52 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
     return familyCode;
   }
 
-  protected SearchBusCmd.Result execute_internal() {
-    assert (result == SearchBusCmd.Result.busy);
+  protected Result execute_internal() {
+    assert (result == Result.busy);
     assert (resultData == null);
 
-    ArrayList<String> resultList = new ArrayList<String>();
-    long writeCTM = -1;
+    ArrayList<byte[]> hexByteArrayList = new ArrayList<byte[]>();
 
-    byte[] rbuf = new byte[16];
+    HA7S.cmdReturn ret;
 
-    for (int i = 0; true; i++) {
-      HA7S.cmdReturn ret;
-
-      if (isByFamilyCode()) {
-        if (i == 0) {
-          ret = ((HA7S) busMaster)
-              .cmdFamilySearch((byte) getFamilyCode(), rbuf, getDeviceLevelLogger());
-        } else {
-          ret = ((HA7S) busMaster).cmdNextFamilySearch(rbuf, getDeviceLevelLogger());
-        }
-      } else if (isByAlarm()) {
-        if (i == 0) {
-          ret = ((HA7S) busMaster).cmdConditionalSearch(rbuf, getDeviceLevelLogger());
-        } else {
-          ret = ((HA7S) busMaster).cmdNextConditionalSearch(rbuf, getDeviceLevelLogger());
-        }
-      } else {
-        if (i == 0) {
-          ret = ((HA7S) busMaster).cmdSearchROM(rbuf, getDeviceLevelLogger());
-        } else {
-          ret = ((HA7S) busMaster).cmdNextSearchROM(rbuf, getDeviceLevelLogger());
-        }
-      }
-
-      switch (ret.result) {
-        case NotStarted:
-          return SearchBusCmd.Result.bus_not_started;
-        case Success:
-          if ((ret.readCount == 0) || (ret.readCount == 16)) {
-            break;
-          }
-          logErrorInternal("Expected readCount of 0 or 16, got:" + ret.readCount);
-          // FALLTHROUGH
-        case DeviceNotFound:
-        case ReadTimeout:
-        case ReadOverrun:
-        case ReadError:
-        default:
-          return SearchBusCmd.Result.communication_error;
-      }
-
-      if (i == 0) {
-        writeCTM = ret.writeCTM;
-      }
-
-      if (ret.readCount == 0) {
-        setResultData(writeCTM, resultList);
-        return SearchBusCmd.Result.success;
-      }
-
-      resultList.add(new String(rbuf, 0, 16));
+    if (isByFamilyCode()) {
+      ret = ((HA7S) busMaster)
+          .cmdFamilySearch((byte) getFamilyCode(), hexByteArrayList, getDeviceLevelLogger());
+    } else if (isByAlarm()) {
+      ret = ((HA7S) busMaster).cmdConditionalSearch(hexByteArrayList, getDeviceLevelLogger());
+    } else {
+      ret = ((HA7S) busMaster).cmdSearchROM(hexByteArrayList, getDeviceLevelLogger());
     }
+
+    switch (ret.result) {
+      case NotStarted:
+        return Result.bus_not_started;
+      case Success:
+        break;
+      case DeviceNotFound:
+      case ReadTimeout:
+      case ReadOverrun:
+      case ReadError:
+      default:
+        return Result.communication_error;
+    }
+
+    ArrayList<DSAddress> resultList = new ArrayList<>();
+
+    try {
+      for (byte[] hexByteArray : hexByteArrayList) {
+        resultList.add(DSAddress.takeUncheckedHex(hexByteArray));
+      }
+    }
+    catch (IllegalArgumentException e) {
+      return Result.communication_error;
+    }
+
+    setResultData(ret.writeCTM, resultList);
+    return Result.success;
   }
 
-  public void setResultData(long resultWriteCTM, List<String> resultList) {
+  public void setResultData(long resultWriteCTM, List<DSAddress> resultList) {
     assert (result == SearchBusCmd.Result.busy);
     this.resultData = new ResultData(resultList, resultWriteCTM);
   }

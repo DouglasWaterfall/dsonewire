@@ -138,7 +138,7 @@ public class Temp18B20 {
     }
     this.waitForDeviceByAddress = new WaitForDeviceByAddress(bMR, false,
         (TimeUnit.SECONDS.toMillis(15)));
-    this.waitForDeviceByAddress.addAddress(new myWFDBAC(this), new String[]{dsAddress.toString()});
+    this.waitForDeviceByAddress.addAddress(new myWFDBAC(this), new DSAddress[]{dsAddress});
     return this;
   }
 
@@ -416,7 +416,7 @@ public class Temp18B20 {
     }
 
     @Override
-    public boolean deviceFound(BusMaster bm, String dsAddress, boolean typeByAlarm) {
+    public boolean deviceFound(BusMaster bm, DSAddress dsAddress, boolean typeByAlarm) {
       _this.setBusMaster(bm);
       return true; // cancel the search
     }

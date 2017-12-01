@@ -75,12 +75,12 @@ public class HA7SStartBusCmdTest {
       Answer<HA7SSerial.ReadResult> secondAnswer = makeAnswerForReadResult(second_serialReadResult,
           second_rbuf_data);
       when(mockSerial
-          .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))
+          .writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
           .thenAnswer(firstAnswer)
           .thenAnswer(secondAnswer);
     } else {
       when(mockSerial
-          .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))
+          .writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
           .thenAnswer(firstAnswer);
     }
 
@@ -147,7 +147,7 @@ public class HA7SStartBusCmdTest {
     HA7SSerial.ReadResult readResult = new HA7SSerial.ReadResult(0, 1, 3);
 
     when(mockSerial
-        .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))
+        .writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
         .thenReturn(readResult);
 
     HA7S ha7s = new HA7S(mockSerial);

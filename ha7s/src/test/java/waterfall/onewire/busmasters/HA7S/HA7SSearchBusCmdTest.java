@@ -4,10 +4,12 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import org.mockito.stubbing.Answer;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.SearchBusCmd;
 import waterfall.onewire.busmaster.StartBusCmd;
@@ -19,7 +21,7 @@ import waterfall.onewire.busmaster.StartBusCmd;
 public class HA7SSearchBusCmdTest {
 
   @Test(dataProvider = "createPositiveCases")
-  public void testNotByAlarmPositive(String[] deviceAddresses) {
+  public void testNotByAlarmPositive(DSAddress[] deviceAddresses) {
 
     Assert.assertNotNull(deviceAddresses);
     Assert.assertTrue(deviceAddresses.length <= 2);
@@ -37,31 +39,23 @@ public class HA7SSearchBusCmdTest {
     if (deviceAddresses.length == 0) {
       Answer<HA7S.cmdReturn> answer = HA7STest
           .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, firstWriteCTM);
-      when(mockHA7S.cmdSearchROM(any(byte[].class), any(Logger.class))).thenAnswer(answer);
+      when(mockHA7S.cmdSearchROM(any(ArrayList.class), any(Logger.class))).thenAnswer(answer);
+
     } else if (deviceAddresses.length == 1) {
-      byte[] addr1 = deviceAddresses[0].getBytes();
+      ArrayList<byte[]> ret = new ArrayList<byte[]>();
+      ret.add(deviceAddresses[0].copyHexBytesTo(new byte[16], 0));
       Answer<HA7S.cmdReturn> answer = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr1, firstWriteCTM);
-      when(mockHA7S.cmdSearchROM(any(byte[].class), any(Logger.class))).thenAnswer(answer);
+          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, ret, firstWriteCTM);
+      when(mockHA7S.cmdSearchROM(any(ArrayList.class), any(Logger.class))).thenAnswer(answer);
 
-      Answer<HA7S.cmdReturn> answer2 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, secondWriteCTM);
-      when(mockHA7S.cmdNextSearchROM(any(byte[].class), any(Logger.class))).thenAnswer(answer2);
     } else if (deviceAddresses.length == 2) {
-      byte[] addr1 = deviceAddresses[0].getBytes();
+      ArrayList<byte[]> ret = new ArrayList<byte[]>();
+      ret.add(deviceAddresses[0].copyHexBytesTo(new byte[16], 0));
+      ret.add(deviceAddresses[1].copyHexBytesTo(new byte[16], 0));
       Answer<HA7S.cmdReturn> answer = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr1, firstWriteCTM);
-      when(mockHA7S.cmdSearchROM(any(byte[].class), any(Logger.class))).thenAnswer(answer);
+          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, ret, firstWriteCTM);
+      when(mockHA7S.cmdSearchROM(any(ArrayList.class), any(Logger.class))).thenAnswer(answer);
 
-      byte[] addr2 = deviceAddresses[1].getBytes();
-      Answer<HA7S.cmdReturn> answer2 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr2, secondWriteCTM);
-      Answer<HA7S.cmdReturn> answer3 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, secondWriteCTM);
-
-      when(mockHA7S.cmdNextSearchROM(any(byte[].class), any(Logger.class)))
-          .thenAnswer(answer2)
-          .thenAnswer(answer3);
     }
 
     Assert.assertEquals(cmd.execute(), SearchBusCmd.Result.success);
@@ -77,7 +71,7 @@ public class HA7SSearchBusCmdTest {
   }
 
   @Test(dataProvider = "createPositiveCases")
-  public void testByAlarmPositive(String[] deviceAddresses) {
+  public void testByAlarmPositive(DSAddress[] deviceAddresses) {
 
     Assert.assertNotNull(deviceAddresses);
     Assert.assertTrue(deviceAddresses.length <= 2);
@@ -95,32 +89,26 @@ public class HA7SSearchBusCmdTest {
     if (deviceAddresses.length == 0) {
       Answer<HA7S.cmdReturn> answer = HA7STest
           .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, firstWriteCTM);
-      when(mockHA7S.cmdConditionalSearch(any(byte[].class), any(Logger.class))).thenAnswer(answer);
+      when(mockHA7S.cmdConditionalSearch(any(ArrayList.class), any(Logger.class)))
+          .thenAnswer(answer);
+
     } else if (deviceAddresses.length == 1) {
-      byte[] addr1 = deviceAddresses[0].getBytes();
+      ArrayList<byte[]> ret = new ArrayList<byte[]>();
+      ret.add(deviceAddresses[0].copyHexBytesTo(new byte[16], 0));
       Answer<HA7S.cmdReturn> answer = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr1, firstWriteCTM);
-      when(mockHA7S.cmdConditionalSearch(any(byte[].class), any(Logger.class))).thenAnswer(answer);
+          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, ret, firstWriteCTM);
+      when(mockHA7S.cmdConditionalSearch(any(ArrayList.class), any(Logger.class)))
+          .thenAnswer(answer);
 
-      Answer<HA7S.cmdReturn> answer2 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, secondWriteCTM);
-      when(mockHA7S.cmdNextConditionalSearch(any(byte[].class), any(Logger.class)))
-          .thenAnswer(answer2);
     } else if (deviceAddresses.length == 2) {
-      byte[] addr1 = deviceAddresses[0].getBytes();
+      ArrayList<byte[]> ret = new ArrayList<byte[]>();
+      ret.add(deviceAddresses[0].copyHexBytesTo(new byte[16], 0));
+      ret.add(deviceAddresses[1].copyHexBytesTo(new byte[16], 0));
       Answer<HA7S.cmdReturn> answer = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr1, firstWriteCTM);
-      when(mockHA7S.cmdConditionalSearch(any(byte[].class), any(Logger.class))).thenAnswer(answer);
+          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, ret, firstWriteCTM);
+      when(mockHA7S.cmdConditionalSearch(any(ArrayList.class), any(Logger.class)))
+          .thenAnswer(answer);
 
-      byte[] addr2 = deviceAddresses[1].getBytes();
-      Answer<HA7S.cmdReturn> answer2 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr2, secondWriteCTM);
-      Answer<HA7S.cmdReturn> answer3 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, secondWriteCTM);
-
-      when(mockHA7S.cmdNextConditionalSearch(any(byte[].class), any(Logger.class)))
-          .thenAnswer(answer2)
-          .thenAnswer(answer3);
     }
 
     Assert.assertEquals(cmd.execute(), SearchBusCmd.Result.success);
@@ -136,7 +124,7 @@ public class HA7SSearchBusCmdTest {
   }
 
   @Test(dataProvider = "createPositiveCases")
-  public void testByFamilyCodePositive(String[] deviceAddresses) {
+  public void testByFamilyCodePositive(DSAddress[] deviceAddresses) {
 
     Assert.assertNotNull(deviceAddresses);
     Assert.assertTrue(deviceAddresses.length <= 2);
@@ -156,34 +144,25 @@ public class HA7SSearchBusCmdTest {
     if (deviceAddresses.length == 0) {
       Answer<HA7S.cmdReturn> answer = HA7STest
           .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, firstWriteCTM);
-      when(mockHA7S.cmdFamilySearch(any(byte.class), any(byte[].class), any(Logger.class)))
+      when(mockHA7S.cmdFamilySearch(any(byte.class), any(ArrayList.class), any(Logger.class)))
           .thenAnswer(answer);
+
     } else if (deviceAddresses.length == 1) {
-      byte[] addr1 = deviceAddresses[0].getBytes();
+      ArrayList<byte[]> ret = new ArrayList<byte[]>();
+      ret.add(deviceAddresses[0].copyHexBytesTo(new byte[16], 0));
       Answer<HA7S.cmdReturn> answer = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr1, firstWriteCTM);
-      when(mockHA7S.cmdFamilySearch(any(byte.class), any(byte[].class), any(Logger.class)))
+          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, ret, firstWriteCTM);
+      when(mockHA7S.cmdFamilySearch(any(byte.class), any(ArrayList.class), any(Logger.class)))
           .thenAnswer(answer);
 
-      Answer<HA7S.cmdReturn> answer2 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, secondWriteCTM);
-      when(mockHA7S.cmdNextFamilySearch(any(byte[].class), any(Logger.class))).thenAnswer(answer2);
     } else if (deviceAddresses.length == 2) {
-      byte[] addr1 = deviceAddresses[0].getBytes();
+      ArrayList<byte[]> ret = new ArrayList<byte[]>();
+      ret.add(deviceAddresses[0].copyHexBytesTo(new byte[16], 0));
+      ret.add(deviceAddresses[1].copyHexBytesTo(new byte[16], 0));
       Answer<HA7S.cmdReturn> answer = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr1, firstWriteCTM);
-      when(mockHA7S.cmdFamilySearch(any(byte.class), any(byte[].class), any(Logger.class)))
+          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, ret, firstWriteCTM);
+      when(mockHA7S.cmdFamilySearch(any(byte.class), any(ArrayList.class), any(Logger.class)))
           .thenAnswer(answer);
-
-      byte[] addr2 = deviceAddresses[1].getBytes();
-      Answer<HA7S.cmdReturn> answer2 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, addr2, secondWriteCTM);
-      Answer<HA7S.cmdReturn> answer3 = HA7STest
-          .makeSearchCmdReturnAnswer(HA7S.cmdResult.Success, null, secondWriteCTM);
-
-      when(mockHA7S.cmdNextFamilySearch(any(byte[].class), any(Logger.class)))
-          .thenAnswer(answer2)
-          .thenAnswer(answer3);
     }
 
     Assert.assertEquals(cmd.execute(), SearchBusCmd.Result.success);
@@ -200,12 +179,12 @@ public class HA7SSearchBusCmdTest {
 
   @DataProvider
   public Object[][] createPositiveCases() {
-    String one = "0123456789ABCDEF";
-    String two = "FEDCBA9876543210";
+    DSAddress one = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    DSAddress two = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
 
-    String[] nothingFound = {};
-    String[] oneFound = {one};
-    String[] twoFound = {one, two};
+    DSAddress[] nothingFound = {};
+    DSAddress[] oneFound = {one};
+    DSAddress[] twoFound = {one, two};
 
     return new Object[][]{
         {nothingFound},
@@ -226,7 +205,7 @@ public class HA7SSearchBusCmdTest {
 
     // for starting
     when(mockSerial
-        .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))
+        .writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
         .thenReturn(new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Success));
 
     StartBusCmd startCmd = mockHA7S.queryStartBusCmd();
@@ -238,13 +217,12 @@ public class HA7SSearchBusCmdTest {
     Assert.assertFalse(searchCmd.isByFamilyCode());
 
     when(mockSerial
-        .writeReadTilCR(any(byte[].class), any(byte[].class), any(Long.TYPE), any(Logger.class)))
+        .writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
         .thenAnswer(HA7SSerialTest.makeWriteReadTilCRResult(
             new HA7SSerialTest.TestHA7SSerial(readResult, rbuf_data, 5L)));
 
     Assert.assertEquals(searchCmd.execute(), expectedResult);
   }
-
 
   @DataProvider
   public Object[][] createNegativeCases() {

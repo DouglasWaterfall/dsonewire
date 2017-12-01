@@ -1,5 +1,6 @@
 package waterfall.onewire.busmasters.HA7S;
 
+import java.util.ArrayList;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.Assert;
@@ -51,28 +52,28 @@ public class HA7STest {
   }
 
   public static Answer<HA7S.cmdReturn> makeSearchCmdReturnAnswer(HA7S.cmdResult result,
-      byte[] rbuf_data, long writeCTM) {
+      ArrayList<byte[]> hexByteArrayList_data, long writeCTM) {
     return new Answer<HA7S.cmdReturn>() {
       @Override
       public HA7S.cmdReturn answer(final InvocationOnMock invocation) {
         Byte familyCode = null;
-        byte[] rbuf = null;
+        ArrayList<byte[]> hexByteArrayList = null;
         Logger logger = null;
         if (invocation.getArguments().length == 2) {
-          rbuf = (byte[]) (invocation.getArguments())[0];
+          hexByteArrayList = (ArrayList<byte[]>) (invocation.getArguments())[0];
           logger = (Logger) (invocation.getArguments())[1];
         } else {
           familyCode = (Byte) (invocation.getArguments())[0];
-          rbuf = (byte[]) (invocation.getArguments())[1];
+          hexByteArrayList = (ArrayList<byte[]>) (invocation.getArguments())[1];
           logger = (Logger) (invocation.getArguments())[2];
         }
 
         if (result == HA7S.cmdResult.Success) {
           int read_count = 0;
-          if (rbuf_data != null) {
-            read_count = rbuf_data.length;
+          if (hexByteArrayList_data != null) {
+            read_count = hexByteArrayList_data.size();
             for (int i = 0; i < read_count; i++) {
-              rbuf[i] = rbuf_data[i];
+              hexByteArrayList.add(hexByteArrayList_data.get(i));
             }
           }
           return new HA7S.cmdReturn(read_count, writeCTM);
@@ -240,13 +241,13 @@ public class HA7STest {
 
     long lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final String dev_A = "EE0000065BC0AE28";
-    final String dev_B = "090000065BD53528";
-    final String dev_C = "5F0000065CCD1A28";
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
 
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_A)));
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_B)));
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_C)));
+    serialDummy.addDevice(new DS18B20(dev_A));
+    serialDummy.addDevice(new DS18B20(dev_B));
+    serialDummy.addDevice(new DS18B20(dev_C));
 
     try {
       SearchBusCmd.Result result = searchBusCmd.execute();
@@ -370,13 +371,13 @@ public class HA7STest {
 
     long lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final String dev_A = "EE0000065BC0AE28";
-    final String dev_B = "090000065BD53528";
-    final String dev_C = "5F0000065CCD1A28";
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
 
-    DS18B20 dev_A_dev = new DS18B20(new DSAddress(dev_A));
-    DS18B20 dev_B_dev = new DS18B20(new DSAddress(dev_B));
-    DS18B20 dev_C_dev = new DS18B20(new DSAddress(dev_C));
+    DS18B20 dev_A_dev = new DS18B20(dev_A);
+    DS18B20 dev_B_dev = new DS18B20(dev_B);
+    DS18B20 dev_C_dev = new DS18B20(dev_C);
 
     dev_B_dev.setHasAlarm(true);
     dev_C_dev.setHasAlarm(true);
@@ -536,13 +537,13 @@ public class HA7STest {
 
     long lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final String dev_A = "EE0000065BC0AE28";
-    final String dev_B = "090000065BD53528";
-    final String dev_C = "5F0000065CCD1A28";
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
 
-    DS18B20 dev_A_dev = new DS18B20(new DSAddress(dev_A));
-    DS18B20 dev_B_dev = new DS18B20(new DSAddress(dev_B));
-    DS18B20 dev_C_dev = new DS18B20(new DSAddress(dev_C));
+    DS18B20 dev_A_dev = new DS18B20(dev_A);
+    DS18B20 dev_B_dev = new DS18B20(dev_B);
+    DS18B20 dev_C_dev = new DS18B20(dev_C);
 
     serialDummy.addDevice(dev_A_dev);
     serialDummy.addDevice(dev_B_dev);
@@ -563,8 +564,8 @@ public class HA7STest {
 
     lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final String dev_D = "7B0000063B759F27";
-    DS18B20 dev_D_dev = new DS18B20(new DSAddress(dev_D));
+    final DSAddress dev_D = DSAddress.fromUncheckedHex("7B0000063B759F27");
+    DS18B20 dev_D_dev = new DS18B20(dev_D);
     serialDummy.addDevice(dev_D_dev);
 
     try {
@@ -674,9 +675,9 @@ public class HA7STest {
     Assert.assertFalse(waitResult);
 
     // add a device to the bus
-    final String dev_A = "EE0000065BC0AE28";
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
 
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_A)));
+    serialDummy.addDevice(new DS18B20(dev_A));
 
     for (int i = 0; i < 2; i++) {
       waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -697,11 +698,11 @@ public class HA7STest {
     Assert.assertTrue(notifyData.searchResultData.getList().contains(dev_A));
 
     // add more devices to the bus
-    final String dev_B = "090000065BD53528";
-    final String dev_C = "5F0000065CCD1A28";
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
 
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_B)));
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_C)));
+    serialDummy.addDevice(new DS18B20(dev_B));
+    serialDummy.addDevice(new DS18B20(dev_C));
 
     for (int i = 0; i < 2; i++) {
       waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -818,9 +819,9 @@ public class HA7STest {
     Assert.assertFalse(waitResult);
 
     // add a device to the bus
-    final String dev_A = "EE0000065BC0AE28";
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
 
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_A)).setHasAlarm(true));
+    serialDummy.addDevice(new DS18B20(dev_A).setHasAlarm(true));
 
     for (int i = 0; i < 2; i++) {
       waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -841,11 +842,11 @@ public class HA7STest {
     Assert.assertTrue(notifyData.searchResultData.getList().contains(dev_A));
 
     // add more devices to the bus
-    final String dev_B = "090000065BD53528";
-    final String dev_C = "5F0000065CCD1A28";
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
 
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_B)));
-    serialDummy.addDevice(new DS18B20(new DSAddress(dev_C)).setHasAlarm(true));
+    serialDummy.addDevice(new DS18B20(dev_B));
+    serialDummy.addDevice(new DS18B20(dev_C));
 
     for (int i = 0; i < 2; i++) {
       waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -908,7 +909,7 @@ public class HA7STest {
     myNotifySearchBusCmdResult callback = new myNotifySearchBusCmdResult();
     Assert.assertNull(callback.getData());
 
-    final String dev_A = "EE0000065BC0AE28";
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
 
     // this will ensure that we get a callback on every search by adding/removing a device to the search list
     callback.setAddRemoveEveryNotify(serialDummy, dev_A, byAlarm);
@@ -1071,7 +1072,7 @@ public class HA7STest {
     private int notifyCount;
     private Data data;
     private HA7SSerialDummy serialDummy;
-    private String updateOnNotifyDev;
+    private DSAddress updateOnNotifyDev;
     private boolean updateOnNotifyAlarm;
     private boolean updateOnNotifyDoAdd;
     public myNotifySearchBusCmdResult() {
@@ -1089,8 +1090,7 @@ public class HA7STest {
 
       if (serialDummy != null) {
         if (updateOnNotifyDoAdd) {
-          serialDummy.addDevice(
-              new DS18B20(new DSAddress(updateOnNotifyDev)).setHasAlarm(updateOnNotifyAlarm));
+          serialDummy.addDevice(new DS18B20(updateOnNotifyDev).setHasAlarm(updateOnNotifyAlarm));
         } else {
           serialDummy.removeDevice(updateOnNotifyDev);
         }
@@ -1125,7 +1125,7 @@ public class HA7STest {
       return false;
     }
 
-    public synchronized void setAddRemoveEveryNotify(HA7SSerialDummy serialDummy, String dev,
+    public synchronized void setAddRemoveEveryNotify(HA7SSerialDummy serialDummy, DSAddress dev,
         boolean activeAlarm) {
       if (this.serialDummy != null) {
         throw new IllegalArgumentException("already registered");

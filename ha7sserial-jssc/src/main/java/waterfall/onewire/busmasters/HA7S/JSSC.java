@@ -11,11 +11,14 @@ import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult.ErrorCode;
 public class JSSC extends HA7SSerial {
 
   SharedData sharedData = new SharedData();
-  private String portName;
+  private final String portName;
+  private final long readTimeoutMSec;
+  
   private SerialPort serialPort = null;
 
-  public JSSC(String portName) {
+  public JSSC(String portName, long readTimeoutMSec) {
     this.portName = portName;
+    this.readTimeoutMSec = readTimeoutMSec;
   }
 
   public static String byteToSafeString(byte[] buf, int bOffset, int bCount) {
@@ -188,7 +191,7 @@ public class JSSC extends HA7SSerial {
   }
 
   @Override
-  public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], long rTimeoutMSec, Logger optLogger) {
+  public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], Logger optLogger) {
     String logContext = null;
 
     if (optLogger != null) {
@@ -223,7 +226,7 @@ public class JSSC extends HA7SSerial {
 
               postWriteCTM = System.currentTimeMillis();
 
-              serialPort.wait(rTimeoutMSec);
+              serialPort.wait(readTimeoutMSec);
 
               if (sharedData.readComplete) {
                 if (sharedData.readOverrun) {

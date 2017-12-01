@@ -3,6 +3,7 @@ package waterfall.onewire.busmasters.HA7S;
 import java.util.ArrayList;
 import java.util.HashMap;
 import waterfall.onewire.Convert;
+import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
 
@@ -25,7 +26,7 @@ public class HA7SSerialDummy extends HA7SSerial {
       'c', 1,
       'W', -1
   };
-  private final HashMap<String, HA7SDummyDevice> deviceDataList = new HashMap<>();
+  private final HashMap<DSAddress, HA7SDummyDevice> deviceDataList = new HashMap<>();
   private String portName;
   private boolean started = false;
   private ActiveSearch activeSearch = null;
@@ -52,7 +53,7 @@ public class HA7SSerialDummy extends HA7SSerial {
   }
 
   @Override
-  public ReadResult writeReadTilCR(byte[] wBuf, byte[] rBuf, long rTimeoutMSec, Logger optLogger) {
+  public ReadResult writeReadTilCR(byte[] wBuf, byte[] rBuf, Logger optLogger) {
     final String logContext = "writeReadTilCR()";
 
     if (wBuf == null) {
@@ -155,19 +156,18 @@ public class HA7SSerialDummy extends HA7SSerial {
     if (device == null) {
       throw new IllegalArgumentException("device is null");
     }
-    String hexAddr = device.getDSAddress().toString();
-    if (deviceDataList.containsKey(hexAddr)) {
-      throw new IllegalArgumentException("duplicate device " + hexAddr);
+    if (deviceDataList.containsKey(device.getDSAddress())) {
+      throw new IllegalArgumentException("duplicate device " + device.getDSAddress().toString());
     }
-    deviceDataList.put(hexAddr, device);
+    deviceDataList.put(device.getDSAddress(), device);
     return this;
   }
 
-  public HA7SSerialDummy removeDevice(String dsHexAddr) {
-    if (!deviceDataList.containsKey(dsHexAddr)) {
-      throw new IllegalArgumentException("dsAddr not found " + dsHexAddr);
+  public HA7SSerialDummy removeDevice(DSAddress dsAddress) {
+    if (!deviceDataList.containsKey(dsAddress)) {
+      throw new IllegalArgumentException("dsAddress not found " + dsAddress.toString());
     }
-    deviceDataList.remove(dsHexAddr);
+    deviceDataList.remove(dsAddress);
     return this;
   }
 

@@ -23,7 +23,7 @@ public class HA7SReadPowerSupplyCmdTest {
       ReadPowerSupplyCmd.Result expectedResult) {
 
     HA7S mockHA7S = mock(HA7S.class);
-    DSAddress dsAddr = new DSAddress("AAAAAAAAAA");
+    DSAddress dsAddr = DSAddress.fromUncheckedHex("AAAAAAAAAA");
 
     HA7S.cmdReturn cmdReturn = new HA7S.cmdReturn(cmdResult);
 
@@ -57,7 +57,7 @@ public class HA7SReadPowerSupplyCmdTest {
       ReadPowerSupplyCmd.Result expectedResult,
       Boolean parasitic) {
     HA7S mockHA7S = mock(HA7S.class);
-    DSAddress dsAddr = new DSAddress("AAAAAAAAAA");
+    DSAddress dsAddr = DSAddress.fromUncheckedHex("AAAAAAAAAA");
 
     when(mockHA7S.getIsStarted()).thenReturn(true);
     when(mockHA7S.cmdAddressSelect(any(DSAddress.class), any(Logger.class)))

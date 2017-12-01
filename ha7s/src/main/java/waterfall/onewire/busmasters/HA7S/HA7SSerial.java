@@ -1,5 +1,7 @@
 package waterfall.onewire.busmasters.HA7S;
 
+import java.util.ArrayList;
+import java.util.List;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HexByteArray;
@@ -27,11 +29,9 @@ public abstract class HA7SSerial {
    * @param wBuf array of byte buffers to write from
    * @param rBuf byte buffer to place read bytes into, expected length, including space for CR is
    * what is expected to be read.
-   * @param rTimeoutMSec positive time to wait for a read reply
    * @return ReadResult
    */
-  public abstract ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], long rTimeoutMSec,
-      Logger optLogger);
+  public abstract ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], Logger optLogger);
 
   /**
    * Stop the serial connector.
@@ -42,26 +42,28 @@ public abstract class HA7SSerial {
 
   /**
    * @param dsAddress
-   * @param rTimeoutMSec
    * @param optLogger
    * @return
    */
-  public NoDataResult cmdAddress(DSAddress dsAddress, long rTimeoutMSec, Logger optLogger) {
+  public NoDataResult cmdAddress(DSAddress dsAddress, Logger optLogger) {
     if (dsAddress == null) {
       throw new NullPointerException("dsAddress");
     }
 
-    byte[] selectCmdData = new byte[1 + 16 + 1];
-    selectCmdData[0] = 'A';
+    final byte[] selectCmdData = new byte[]{
+        'A',
+        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F',
+        0x0D
+    };
+
     String s = dsAddress.toString();
     for (int i = 0; i < 16; i++) {
       selectCmdData[1 + i] = (byte) s.charAt(i);
     }
-    selectCmdData[17] = 0x0D;
 
     byte[] rbuf = new byte[16];
 
-    HA7SSerial.ReadResult readResult = writeReadTilCR(selectCmdData, rbuf, rTimeoutMSec, optLogger);
+    HA7SSerial.ReadResult readResult = writeReadTilCR(selectCmdData, rbuf, optLogger);
 
     if (readResult.error != ReadResult.ErrorCode.RR_Success) {
       return new NoDataResult().setFailure(readResult.error.name());
@@ -82,66 +84,97 @@ public abstract class HA7SSerial {
   }
 
   /**
-   * @param rTimeoutMSec
    * @param optLogger
    * @return
    */
-  public HexByteArrayResult cmdSearch(long rTimeoutMSec, Logger optLogger) {
-    return cmdSearchInternal(new byte[]{'S'}, rTimeoutMSec, optLogger);
+  public HexByteArrayListResult cmdSearch(Logger optLogger) {
+    return cmdSearchInternal(new byte[]{'S'}, new byte[] {'s'}, optLogger);
   }
 
-  public HexByteArrayResult cmdSearchNext(long rTimeoutMSec, Logger optLogger) {
-    return cmdSearchInternal(new byte[]{'s'}, rTimeoutMSec, optLogger);
+  /**
+   *
+   * @param optLogger
+   * @return
+   */
+  public HexByteArrayListResult cmdConditionalSearch(Logger optLogger) {
+    return cmdSearchInternal(new byte[]{'C'}, new byte[] {'c'}, optLogger);
   }
 
-  public HexByteArrayResult cmdConditionalSearch(long rTimeoutMSec, Logger optLogger) {
-    return cmdSearchInternal(new byte[]{'C'}, rTimeoutMSec, optLogger);
-  }
-
-  public HexByteArrayResult cmdConditionalSearchNext(long rTimeoutMSec, Logger optLogger) {
-    return cmdSearchInternal(new byte[]{'c'}, rTimeoutMSec, optLogger);
-  }
-
-  public HexByteArrayResult cmdFamilySearch(short familyCode, long rTimeoutMSec, Logger optLogger) {
+  /**
+   *
+   * @param familyCode
+   * @param optLogger
+   * @return
+   */
+  public HexByteArrayListResult cmdFamilySearch(short familyCode, Logger optLogger) {
     if ((familyCode < 0) || (familyCode > 255)) {
       throw new IllegalArgumentException("Bad familyCode");
     }
-    return cmdSearchInternal(new byte[]{'F', Convert.fourBitsToHex(familyCode >> 4),
-        Convert.fourBitsToHex(familyCode & 0xf)}, rTimeoutMSec, optLogger);
+    byte[] cmdData = new byte[] {'F',
+        Convert.fourBitsToHex(familyCode >> 4),
+        Convert.fourBitsToHex(familyCode & 0xf)};
+    byte[] cmdNextData = new byte[] {'f'};
+    return cmdSearchInternal(cmdData, cmdNextData, optLogger);
   }
 
-  public HexByteArrayResult cmdFamilySearchNext(long rTimeoutMSec, Logger optLogger) {
-    return cmdSearchInternal(new byte[]{'f'}, rTimeoutMSec, optLogger);
-  }
-
-  private HexByteArrayResult cmdSearchInternal(byte[] cmdData, long rTimeoutMSec,
+  /**
+   *
+   * @param cmdData
+   * @param optLogger
+   * @return
+   */
+  private HexByteArrayListResult cmdSearchInternal(byte[] cmdData, byte[] nextCmdData,
       Logger optLogger) {
-    byte[] rbuf = new byte[16];
+    ArrayList<byte[]> resultList = new ArrayList<>();
 
-    HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+    long firstPostWriteCTM = 0;
 
-    if (readResult.error != ReadResult.ErrorCode.RR_Success) {
-      return new HexByteArrayResult().setFailure(readResult.error.name());
+    int index = 0;
+    while (true) {
+      byte[] rHexBuf = new byte[16];
+
+      boolean first = (index == 0);
+
+      HA7SSerial.ReadResult readResult = writeReadTilCR((first ? cmdData : nextCmdData), rHexBuf,
+          optLogger);
+
+      if (readResult.error != ReadResult.ErrorCode.RR_Success) {
+        return new HexByteArrayListResult().setFailure(readResult.error.name());
+      }
+
+      if (first) {
+        firstPostWriteCTM = readResult.postWriteCTM;
+      }
+
+      if (readResult.readCount == 0) {
+        return new HexByteArrayListResult().setSuccess(resultList, firstPostWriteCTM,
+            readResult.readCRCTM);
+      }
+
+      if (readResult.readCount != 16) {
+        return new HexByteArrayListResult()
+            .setFailure("Underrun - expected 0 or 16 got:" + readResult.readCount);
+      }
+
+      if (!isValidUpperCaseHex(rHexBuf, readResult.readCount)) {
+        return new HexByteArrayListResult().setFailure("Not hex bytes");
+      }
+
+      resultList.add(rHexBuf);
+      index++;
     }
-
-    if ((readResult.readCount != 0) && (readResult.readCount != 16)) {
-      return new HexByteArrayResult()
-          .setFailure("Underrun - expected 0 or 16 got:" + readResult.readCount);
-    }
-
-    if ((readResult.readCount > 0) && (!isValidUpperCaseHex(rbuf, readResult.readCount))) {
-      return new HexByteArrayResult().setFailure("Not hex bytes");
-    }
-
-    return new HexByteArrayResult().setSuccess((readResult.readCount > 0) ? rbuf : new byte[0],
-        readResult.postWriteCTM, readResult.readCRCTM);
   }
 
-  public NoDataResult cmdReset(long rTimeoutMSec, Logger optLogger) {
+  /**
+   *
+   * @param optLogger
+   * @return
+   */
+  public NoDataResult cmdReset(Logger optLogger) {
     byte[] cmdData = new byte[]{'R'};
     byte[] rbuf = new byte[0];
 
-    HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+    HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, optLogger);
 
     if (readResult.error != ReadResult.ErrorCode.RR_Success) {
       return new NoDataResult().setFailure(readResult.error.name());
@@ -150,11 +183,16 @@ public abstract class HA7SSerial {
     return new NoDataResult().setSuccess(readResult.postWriteCTM, readResult.readCRCTM);
   }
 
-  public BooleanResult cmdReadBit(long rTimeoutMSec, Logger optLogger) {
+  /**
+   *
+   * @param optLogger
+   * @return
+   */
+  public BooleanResult cmdReadBit(Logger optLogger) {
     byte[] cmdData = new byte[]{'O'};
     byte[] rbuf = new byte[1];
 
-    HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+    HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, optLogger);
 
     if (readResult.error != ReadResult.ErrorCode.RR_Success) {
       return new BooleanResult().setFailure(readResult.error.name());
@@ -177,7 +215,13 @@ public abstract class HA7SSerial {
     return new BooleanResult().setSuccess(v, readResult.postWriteCTM, readResult.readCRCTM);
   }
 
-  public HexByteArrayResult cmdWriteBlock(HexByteArray wData, long rTimeoutMSec, Logger optLogger) {
+  /**
+   *
+   * @param wData
+   * @param optLogger
+   * @return
+   */
+  public HexByteArrayResult cmdWriteBlock(HexByteArray wData, Logger optLogger) {
     if (wData == null) {
       throw new NullPointerException("wData");
     }
@@ -200,7 +244,7 @@ public abstract class HA7SSerial {
 
     byte[] rbuf = new byte[bCount];
 
-    HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, rTimeoutMSec, optLogger);
+    HA7SSerial.ReadResult readResult = writeReadTilCR(cmdData, rbuf, optLogger);
 
     if (readResult.error != ReadResult.ErrorCode.RR_Success) {
       return new HexByteArrayResult().setFailure(readResult.error.name());
@@ -219,9 +263,15 @@ public abstract class HA7SSerial {
         .setSuccess(rbuf, readResult.postWriteCTM, readResult.readCRCTM);
   }
 
+  /**
+   *
+   * @param buf
+   * @param count
+   * @return
+   */
   public boolean isValidUpperCaseHex(byte[] buf, int count) {
     for (int i = 0; i < count; i++) {
-      if (!((buf[i] >= 'A') && (buf[i] <= 'F')) || ((buf[i] >= '0') && (buf[i] <= '9'))) {
+      if (!(((buf[i] >= 'A') && (buf[i] <= 'F')) || ((buf[i] >= '0') && (buf[i] <= '9')))) {
         return false;
       }
     }
@@ -460,6 +510,47 @@ public abstract class HA7SSerial {
     }
   }
 
+  public static class HexByteArrayListResult extends BaseCmdResult {
+
+    private List<byte[]> value;
+
+    public HexByteArrayListResult() {
+      super();
+      value = null;
+    }
+
+    public HexByteArrayListResult setSuccess(List<byte[]> hexByteArrayList, long writeCTM,
+        long readCRCTM) {
+      super.setSuccess(writeCTM, readCRCTM);
+      if ((hexByteArrayList != null) && (hexByteArrayList.size() > 0)) {
+        this.value = hexByteArrayList;
+      }
+      return this;
+    }
+
+    public HexByteArrayListResult setFailure(String errorMsg) {
+      super.setFailure(errorMsg);
+      return this;
+    }
+
+    // may return null if none
+    public List<byte[]> getValue() {
+      if (!success) {
+        throw new IllegalArgumentException("getValue() not success");
+      }
+      return value;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return (super.equals(other) &&
+          (other instanceof HexByteArrayListResult) &&
+          (((((HexByteArrayListResult) other).value == null) && (value == null)) ||
+              ((((HexByteArrayListResult) other).value != null) && (value != null)
+                  && (((HexByteArrayListResult) other).value.equals(value)))));
+    }
+  }
+
   public static class HexByteArrayResult extends BaseCmdResult {
 
     private HexByteArray value;
@@ -496,7 +587,7 @@ public abstract class HA7SSerial {
           (other instanceof HexByteArrayResult) &&
           (((((HexByteArrayResult) other).value == null) && (value == null)) ||
               ((((HexByteArrayResult) other).value != null) && (value != null)
-                  && (((HexByteArrayResult) other).value.equals(errorMsg)))));
+                  && (((HexByteArrayResult) other).value.equals(value)))));
     }
   }
 
