@@ -53,17 +53,18 @@ public class HexByteArray {
   }
 
   /**
+   * Translates from two character hex bytes to the equivalent byte value.
    * @param hexByteIndex Must be >= 0 and < size()
    * @return The value of the hexByte at the specified index
    */
-  public short get(short hexByteIndex) {
+  public byte get(short hexByteIndex) {
     short index = (short) (hexByteIndex * 2);
 
     if ((index < 0) || (index >= data.length)) {
       throw new ArrayIndexOutOfBoundsException("hexByteIndex not good");
     }
 
-    return (short) Convert.hexTo8bits(data[index], data[index + 1]);
+    return (byte)Convert.hexTo8bits(data[index], data[index + 1]);
   }
 
   /**
@@ -87,7 +88,7 @@ public class HexByteArray {
    * @return Count of HexData bytes.
    */
   public short size() {
-    return (short) (data.length * 2);
+    return (short)data.length;
   }
 
   /**

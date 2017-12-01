@@ -9,6 +9,7 @@ import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import waterfall.onewire.DSAddress;
 
 /**
  * Created by dwaterfa on 8/6/17.
@@ -69,7 +70,7 @@ public class SearchPusherByBusCmdTest {
 
     ;
 
-    protected void setResultData(long resultWriteCTM, List<String> resultList) {
+    protected void setResultData(long resultWriteCTM, List<DSAddress> resultList) {
       this.resultData = new ResultData(resultList, resultWriteCTM);
     }
 

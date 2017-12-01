@@ -122,9 +122,7 @@ public class Convert {
       return (byte) (10 + (hex - 'A'));
     }
 
-    Thread.dumpStack();
-    System.exit(1);
-    return -1;
+    throw new IllegalArgumentException("hex is not upper case hex chars");
   }
 
   public static int hexTo8bits(byte msbHex, byte lsbHex) {

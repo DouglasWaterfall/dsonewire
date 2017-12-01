@@ -23,7 +23,7 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
   private final boolean typeByAlarm;
   private final long bmSearchPeriodMSec;
   private final ArrayList<BusMaster> bmScheduledList;
-  private final HashMap<String, WaitForDeviceByAddressCallback> waitMap;
+  private final HashMap<DSAddress, WaitForDeviceByAddressCallback> waitMap;
 
   public WaitForDeviceByAddress(BusMasterRegistry bmRegistry, boolean typeByAlarm,
       long bmSearchPeriodMSec) {
@@ -97,7 +97,7 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
   @Override // NotifySearchBusCmdResult
   public synchronized void notify(BusMaster bm, boolean byAlarm,
       SearchBusCmd.ResultData searchResultData) {
-    for (String addr : searchResultData.getList()) {
+    for (DSAddress addr : searchResultData.getList()) {
       if (waitMap.isEmpty()) {
         break;
       }
@@ -115,13 +115,13 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
     }
   }
 
-  public void addAddress(WaitForDeviceByAddressCallback callback, String[] addresses) {
+  public void addAddress(WaitForDeviceByAddressCallback callback, DSAddress[] dsAddresses) {
     if (callback == null) {
       throw new IllegalArgumentException("callback");
     }
 
-    if (addresses == null) {
-      throw new IllegalArgumentException("addresses");
+    if (dsAddresses == null) {
+      throw new IllegalArgumentException("dsAddresses");
     }
 
     boolean mapWasEmpty, mapNowEmpty;
@@ -129,12 +129,12 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
     synchronized (this) {
       mapWasEmpty = waitMap.isEmpty();
 
-      for (String address : addresses) {
-        if (waitMap.containsKey(address)) {
-          throw new IllegalArgumentException("dup " + address);
+      for (DSAddress dsAddress : dsAddresses) {
+        if (waitMap.containsKey(dsAddress)) {
+          throw new IllegalArgumentException("dup " + dsAddress);
         }
 
-        waitMap.put(address, callback);
+        waitMap.put(dsAddress, callback);
       }
 
       mapNowEmpty = waitMap.isEmpty();
@@ -146,24 +146,24 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
     }
   }
 
-  public void cancelAddress(WaitForDeviceByAddressCallback callback, String address) {
+  public void cancelAddress(WaitForDeviceByAddressCallback callback, DSAddress dsAddress) {
     if (callback == null) {
       throw new IllegalArgumentException("callback");
     }
 
-    if (address == null) {
+    if (dsAddress == null) {
       throw new IllegalArgumentException("address");
     }
 
     synchronized (this) {
-      WaitForDeviceByAddressCallback t_callback = waitMap.get(address);
+      WaitForDeviceByAddressCallback t_callback = waitMap.get(dsAddress);
       if (t_callback == null) {
         throw new IllegalArgumentException("address not found");
       }
       if (t_callback != callback) {
         throw new IllegalArgumentException("not your address");
       }
-      waitMap.remove(address);
+      waitMap.remove(dsAddress);
 
       if (waitMap.isEmpty()) {
         bmRegistry.deleteObserver(this);

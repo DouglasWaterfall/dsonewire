@@ -2,6 +2,7 @@ package waterfall.onewire.busmaster;
 
 import java.util.List;
 import java.util.zip.CRC32;
+import waterfall.onewire.DSAddress;
 
 /**
  * Created by dwaterfa on 6/9/16.
@@ -119,7 +120,7 @@ public abstract class SearchBusCmd extends BaseCmd {
    * @return List of devices Addresses.
    * @throws NoResultException if the current result is not success.
    */
-  public List<String> getResultList() throws NoResultDataException {
+  public List<DSAddress> getResultList() throws NoResultDataException {
     return getResultData().getList();
   }
 
@@ -144,8 +145,7 @@ public abstract class SearchBusCmd extends BaseCmd {
   /**
    * Protected Methods and Constructors
    */
-
-  protected abstract void setResultData(long resultWriteCTM, List<String> resultList);
+  protected abstract void setResultData(long resultWriteCTM, List<DSAddress> resultList);
 
   /**
    *
@@ -162,11 +162,11 @@ public abstract class SearchBusCmd extends BaseCmd {
    */
   public static class ResultData {
 
-    private final List<String> list;
+    private final List<DSAddress> list;
     private final long listCRC32;
     private final long writeCTM;
 
-    public ResultData(final List<String> list, final long writeCTM) {
+    public ResultData(final List<DSAddress> list, final long writeCTM) {
       this.list = list;
       if (list == null) {
         throw new IllegalArgumentException("list");
@@ -176,8 +176,9 @@ public abstract class SearchBusCmd extends BaseCmd {
       }
       this.writeCTM = writeCTM;
       CRC32 crc = new CRC32();
-      for (String string : list) {
-        crc.update(string.getBytes());
+      byte[] b = new byte[8];
+      for (DSAddress dsAddress : list) {
+        crc.update(dsAddress.copyRawBytesTo(b, 0));
       }
       this.listCRC32 = crc.getValue();
     }
@@ -185,12 +186,12 @@ public abstract class SearchBusCmd extends BaseCmd {
     /**
      * Return list of devices Addresses.
      */
-    public List<String> getList() {
+    public List<DSAddress> getList() {
       return list;
     }
 
     /**
-     * Return CRC32 calcualation on the list of devices Addresses.
+     * Return CRC32 calculation on the list of devices Addresses.
      */
     public long getListCRC32() {
       return listCRC32;

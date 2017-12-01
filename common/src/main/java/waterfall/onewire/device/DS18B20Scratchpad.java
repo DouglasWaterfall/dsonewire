@@ -13,8 +13,8 @@ public class DS18B20Scratchpad {
   public static final int RESOLUTION_11 = 2;
   public static final int RESOLUTION_12 = 3;
 
-  public static final byte DEFAULT_HALARM = 10;
-  public static final byte DEFAULT_LALARM = 5;
+  public static final byte DEFAULT_HALARM = 75;
+  public static final byte DEFAULT_LALARM = 70;
   public static final byte DEFAULT_RESOLUTION = RESOLUTION_12;
 
   /**
@@ -23,7 +23,7 @@ public class DS18B20Scratchpad {
   public static final byte MASK_BYTE_4 = (byte) 0x1f;
   public static final byte RESERVED_BYTE_5 = (byte) 0xff;
   // byte 6 is reserved, but value not specified
-  public static final byte RESERVED_BYTE_7 = (byte) 0x1f;
+  public static final byte RESERVED_BYTE_7 = (byte) 0x10;
 
   private static final byte[] powerOnDefault = getFactoryDefault();
   public final byte[] data;

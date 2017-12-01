@@ -14,10 +14,12 @@ public interface WaitForDeviceByAddressCallback {
    * The callee is free to call cancelAddress() from this method if it wishes, alternately it can
    * return true from the method which will do the same thing.
    *
+   * @param bm
+   * @param dsAddress
    * @param typeByAlarm this comes from an alarm search
    * @return true if the device wait should be cancelled, false otherwise. This is the same as
    * calling cancel()
    */
-  boolean deviceFound(BusMaster bm, String dsAddress, boolean typeByAlarm);
+  boolean deviceFound(BusMaster bm, DSAddress dsAddress, boolean typeByAlarm);
 
 }

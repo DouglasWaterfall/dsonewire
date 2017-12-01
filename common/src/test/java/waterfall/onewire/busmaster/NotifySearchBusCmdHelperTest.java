@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import waterfall.onewire.DSAddress;
 
 /**
  * Created by dwaterfa on 7/31/17.
@@ -343,9 +344,8 @@ public class NotifySearchBusCmdHelperTest {
     boolean isByAlarm = true;
     when(mockSearchPusher.isAlarmSearch()).thenReturn(isByAlarm);
 
-    String oneDevice = "123456";
-    List<String> resultList = new ArrayList<String>();
-    resultList.add(oneDevice);
+    List<DSAddress> resultList = new ArrayList<>();
+    resultList.add(DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1));
     long writeCTM = 54321;
 
     mySearchBusCmd mySearchBusCmd = new mySearchBusCmd(mockBM, isByAlarm);
@@ -378,8 +378,7 @@ public class NotifySearchBusCmdHelperTest {
     }
 
     // now let us change the data a bit which will trigger a new instance of
-    String twoDevice = "78910";
-    resultList.add(twoDevice);
+    resultList.add(DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2));
     long writeCTM_update = 654321;
     mySearchBusCmd.setExpectedReturn(SearchBusCmd.Result.success, resultList, writeCTM_update);
     mySearchBusCmd.execute();
@@ -411,7 +410,7 @@ public class NotifySearchBusCmdHelperTest {
   private class mySearchBusCmd extends SearchBusCmd {
 
     SearchBusCmd.Result expected_result = null;
-    List<String> expected_resultList = null;
+    List<DSAddress> expected_resultList = null;
     long expected_writeCTM = 0;
 
     public mySearchBusCmd(BusMaster bm, boolean byAlarm) {
@@ -430,13 +429,13 @@ public class NotifySearchBusCmdHelperTest {
       return result;
     }
 
-    public void setResultData(long writeCTM, List<String> list) {
+    public void setResultData(long writeCTM, List<DSAddress> list) {
       resultData = new ResultData(expected_resultList, expected_writeCTM);
     }
 
     // class specific
     public void setExpectedReturn(SearchBusCmd.Result expected_result,
-        List<String> expected_resultList,
+        List<DSAddress> expected_resultList,
         long expected_writeCTM) {
       this.expected_result = expected_result;
       this.expected_resultList = expected_resultList;

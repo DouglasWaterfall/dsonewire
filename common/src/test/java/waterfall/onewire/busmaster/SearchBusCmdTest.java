@@ -8,6 +8,7 @@ import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import waterfall.onewire.DSAddress;
 
 /**
  * Created by dwaterfa on 7/29/17.
@@ -62,7 +63,6 @@ public class SearchBusCmdTest {
         {new TestSearchBusCmd(mockBM, false), false, false},
         // not byAlarm, byFamilyCode
         {new TestSearchBusCmd(mockBM, (short) 5), false, true}
-
     };
 
   }
@@ -136,7 +136,7 @@ public class SearchBusCmdTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
-    new SearchBusCmd.ResultData(new ArrayList<String>(), 0);
+    new SearchBusCmd.ResultData(new ArrayList<DSAddress>(), 0);
   }
 
   @Test
@@ -151,7 +151,7 @@ public class SearchBusCmdTest {
   }
 
   @Test(dataProvider = "createExecuteInternalResultData")
-  public void testExecuteInternalResult(SearchBusCmd.Result setResult, List<String> setResultList,
+  public void testExecuteInternalResult(SearchBusCmd.Result setResult, List<DSAddress> setResultList,
       long setResultWriteCTM) {
     BusMaster mockBM = mock(BusMaster.class);
     when(mockBM.getIsStarted()).thenReturn(true);
@@ -182,7 +182,7 @@ public class SearchBusCmdTest {
 
     private Result execute_internal_result = null;
     private long execute_internal_resultWriteCTM = 0;
-    private List<String> execute_internal_resultList = null;
+    private List<DSAddress> execute_internal_resultList = null;
     private RuntimeException execute_internal_exception = null;
 
     public TestSearchBusCmd(BusMaster bm, short familyCode) {
@@ -201,9 +201,7 @@ public class SearchBusCmdTest {
       return execute_internal_result;
     }
 
-    ;
-
-    protected void setResultData(long resultWriteCTM, List<String> resultList) {
+    protected void setResultData(long resultWriteCTM, List<DSAddress> resultList) {
       this.resultData = new ResultData(resultList, resultWriteCTM);
     }
 
@@ -211,7 +209,7 @@ public class SearchBusCmdTest {
       this.result = result;
     }
 
-    public void setExecuteResult(Result result, long resultWriteCTM, List<String> resultList) {
+    public void setExecuteResult(Result result, long resultWriteCTM, List<DSAddress> resultList) {
       this.execute_internal_result = result;
       this.execute_internal_resultWriteCTM = resultWriteCTM;
       this.execute_internal_resultList = resultList;

@@ -71,6 +71,36 @@ public class DS18B20ScratchpadTest {
     data.setTempLAlarm(tempC);
     Assert.assertTrue(data.checkValid());
     Assert.assertEquals(data.getTempLAlarm(), tempC);
+
+    // 94004B467FFF0C101B
+
+    byte[] db = new byte[] {
+        (byte)0x94,
+        0x00,
+        0x4B,
+        0x46,
+        0x7F,
+        (byte)0xFF,
+        0x0C,
+        0x10,
+        0x1B
+    };
+    DS18B20Scratchpad data2 = new DS18B20Scratchpad(db);
+    Assert.assertTrue(data2.checkValid());
+
+    byte[] db2 = new byte[] {
+        (byte)0x92,
+        0x00,
+        0x4B,
+        0x46,
+        0x7F,
+        (byte)0xFF,
+        0x0E,
+        0x10,
+        0x19
+    };
+    DS18B20Scratchpad data3 = new DS18B20Scratchpad(db2);
+    Assert.assertTrue(data3.checkValid());
   }
 
   @Test(dataProvider = "tempAlarmPositiveCases")
