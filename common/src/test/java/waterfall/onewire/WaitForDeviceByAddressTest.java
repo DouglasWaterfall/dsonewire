@@ -82,8 +82,8 @@ public class WaitForDeviceByAddressTest {
     new WaitForDeviceByAddress(new BusMasterRegistry(), typeByAlarm, 1)
         .addAddress(new myCallback(),
             new DSAddress[] {
-                DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1),
-                DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1)
+                DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28),
+                DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28)
             });
 
     Assert.fail("expected exception");
@@ -120,8 +120,8 @@ public class WaitForDeviceByAddressTest {
     Assert.assertEquals(bmR.getBusMasters()[0].getName(), MOCK_BM_NAME);
     Assert.assertTrue(bmR.hasBusMasterByName(MOCK_BM_NAME));
 
-    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
 
     // this will call right away
     Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
@@ -170,8 +170,8 @@ public class WaitForDeviceByAddressTest {
     Assert.assertEquals(bmR.getBusMasters()[0].getName(), MOCK_BM_NAME);
     Assert.assertTrue(bmR.hasBusMasterByName(MOCK_BM_NAME));
 
-    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
 
     // this will call right away
     Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
@@ -220,8 +220,8 @@ public class WaitForDeviceByAddressTest {
     Assert.assertEquals(bmR.getBusMasters()[0].getName(), MOCK_BM_NAME);
     Assert.assertTrue(bmR.hasBusMasterByName(MOCK_BM_NAME));
 
-    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
 
     // this will call right away
     Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
@@ -284,9 +284,9 @@ public class WaitForDeviceByAddressTest {
     Assert.assertEquals(bmR.getBusMasters()[0].getName(), MOCK_BM_NAME);
     Assert.assertTrue(bmR.hasBusMasterByName(MOCK_BM_NAME));
 
-    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
-    DSAddress SEARCH_ADDRESS_3 = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
+    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
+    DSAddress SEARCH_ADDRESS_3 = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     // this will call back with one additional address every 100ms
     Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
@@ -329,9 +329,9 @@ public class WaitForDeviceByAddressTest {
     // We will wait tenth of second to add the busmaster
     new SleepAddBusMasterToRegistry(bmR, mockBM, 100L);
 
-    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
-    DSAddress SEARCH_ADDRESS_3 = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
+    DSAddress SEARCH_ADDRESS = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
+    DSAddress SEARCH_ADDRESS_3 = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     // this will call back with one additional address every 100ms
     Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,

@@ -34,7 +34,7 @@ public class HA7SSerialTest {
 
   @DataProvider
   public Object[][] cmdAddressNegativeCasesProvider() {
-    DSAddress dsAddress = DSAddress.fromUncheckedHex("EE0000065BC0AE28");
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
     Logger optLogger = null;
 
     byte[] nullRBuf = null;
@@ -140,38 +140,37 @@ public class HA7SSerialTest {
         {optLogger,
             new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_ReadOverrun), nullRBuf,
             writeCTM,
-            new HA7SSerial.HexByteArrayResult().setFailure("RR_ReadOverrun")
+            new HA7SSerial.HexByteArrayListResult().setFailure("RR_ReadOverrun")
         },
         // Error - ReadTimeout
         {optLogger,
             new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_ReadTimeout), nullRBuf,
             writeCTM,
-            new HA7SSerial.HexByteArrayResult().setFailure("RR_ReadTimeout")
+            new HA7SSerial.HexByteArrayListResult().setFailure("RR_ReadTimeout")
         },
         // Error - Error
         {optLogger,
             new HA7SSerial.ReadResult(HA7SSerial.ReadResult.ErrorCode.RR_Error), nullRBuf, writeCTM,
-            new HA7SSerial.HexByteArrayResult().setFailure("RR_Error")
+            new HA7SSerial.HexByteArrayListResult().setFailure("RR_Error")
         },
         // Success - Read underrun
         {optLogger,
             new HA7SSerial.ReadResult(6, writeCTM, readCRCTM),
             nullRBuf, writeCTM,
-            new HA7SSerial.HexByteArrayResult().setFailure("Underrun - expected 0 or 16 got:6")
+            new HA7SSerial.HexByteArrayListResult().setFailure("Underrun - expected 0 or 16 got:6")
         },
         // Success - Bad hex chars
         {optLogger,
             new HA7SSerial.ReadResult(16, writeCTM, readCRCTM),
             mismatchDSAddress, writeCTM,
-            new HA7SSerial.HexByteArrayResult().setFailure("Not hex bytes")
+            new HA7SSerial.HexByteArrayListResult().setFailure("Not hex bytes")
         }
     };
   }
 
   @Test(dataProvider = "cmdSearchNegativeCasesProvider")
-  public void cmdSearchNegativeTests(Logger optLogger,
-      HA7SSerial.ReadResult readResult, byte[] readRBufData, long readWriteCTM,
-      HA7SSerial.HexByteArrayResult expectedResult) {
+  public void cmdSearchNegativeTests(Logger optLogger, HA7SSerial.ReadResult readResult,
+      byte[] readRBufData, long readWriteCTM, HA7SSerial.HexByteArrayListResult expectedResult) {
 
     TestHA7SSerial serial = new TestHA7SSerial(readResult, readRBufData, readWriteCTM);
     HA7SSerial.HexByteArrayListResult result = serial.cmdSearch(optLogger);
@@ -179,9 +178,8 @@ public class HA7SSerialTest {
   }
 
   @Test(dataProvider = "cmdSearchNegativeCasesProvider")
-  public void cmdConditionalSearchNegativeTests(Logger optLogger,
-      HA7SSerial.ReadResult readResult, byte[] readRBufData, long readWriteCTM,
-      HA7SSerial.HexByteArrayResult expectedResult) {
+  public void cmdConditionalSearchNegativeTests(Logger optLogger, HA7SSerial.ReadResult readResult,
+      byte[] readRBufData, long readWriteCTM, HA7SSerial.HexByteArrayListResult expectedResult) {
 
     TestHA7SSerial serial = new TestHA7SSerial(readResult, readRBufData, readWriteCTM);
     HA7SSerial.HexByteArrayListResult result = serial.cmdConditionalSearch(optLogger);
@@ -228,7 +226,7 @@ public class HA7SSerialTest {
   @Test(dataProvider = "cmdFamilySearchNegativeCasesProvider")
   public void cmdFamilySearchNegativeTests(short familyCode, Logger optLogger,
       HA7SSerial.ReadResult readResult, byte[] readRBufData, long readWriteCTM,
-      HA7SSerial.HexByteArrayResult expectedResult) {
+      HA7SSerial.HexByteArrayListResult expectedResult) {
 
     TestHA7SSerial serial = new TestHA7SSerial(readResult, readRBufData, readWriteCTM);
     HA7SSerial.HexByteArrayListResult result = serial.cmdFamilySearch(familyCode, optLogger);

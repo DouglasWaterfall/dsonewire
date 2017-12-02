@@ -65,7 +65,7 @@ public class HA7SSearchBusCmd extends SearchBusCmd {
 
     try {
       for (byte[] hexByteArray : hexByteArrayList) {
-        resultList.add(DSAddress.takeUncheckedHex(hexByteArray));
+        resultList.add(DSAddress.takeUnCRCCheckedHex(hexByteArray));
       }
     }
     catch (IllegalArgumentException e) {

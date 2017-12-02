@@ -217,7 +217,9 @@ public class HA7S implements BusMaster {
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    hexByteArrayList.addAll(result.getValue());
+    if (result.getValue() != null) {
+      hexByteArrayList.addAll(result.getValue());
+    }
 
     return logAndReturn(new cmdReturn(hexByteArrayList.size(), result.getWriteCTM()), optLogger,
         logContext);
@@ -235,7 +237,9 @@ public class HA7S implements BusMaster {
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    hexByteArrayList.addAll(result.getValue());
+    if (result.getValue() != null) {
+      hexByteArrayList.addAll(result.getValue());
+    }
 
     return logAndReturn(new cmdReturn(hexByteArrayList.size(), result.getWriteCTM()), optLogger,
         logContext);
@@ -252,7 +256,9 @@ public class HA7S implements BusMaster {
       return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
     }
 
-    hexByteArrayList.addAll(result.getValue());
+    if (result.getValue() != null) {
+      hexByteArrayList.addAll(result.getValue());
+    }
 
     return logAndReturn(new cmdReturn(hexByteArrayList.size(), result.getWriteCTM()), optLogger,
         logContext);

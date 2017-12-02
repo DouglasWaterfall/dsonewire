@@ -56,10 +56,7 @@ public abstract class HA7SSerial {
         0x0D
     };
 
-    String s = dsAddress.toString();
-    for (int i = 0; i < 16; i++) {
-      selectCmdData[1 + i] = (byte) s.charAt(i);
-    }
+    dsAddress.copyHexBytesTo(selectCmdData, 1);
 
     byte[] rbuf = new byte[16];
 
@@ -75,7 +72,7 @@ public abstract class HA7SSerial {
 
     // Expect to match what we passed in
     for (int i = 0; i < 16; i++) {
-      if (rbuf[i] != s.charAt(i)) {
+      if (rbuf[i] != selectCmdData[i + 1]) {
         return new NoDataResult().setFailure("Invalid char index:" + i);
       }
     }

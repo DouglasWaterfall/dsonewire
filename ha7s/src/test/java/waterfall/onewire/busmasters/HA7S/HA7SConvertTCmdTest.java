@@ -22,7 +22,7 @@ public class HA7SConvertTCmdTest {
       ConvertTCmd.Result expectedResult) {
 
     HA7S mockHA7S = mock(HA7S.class);
-    DSAddress dsAddr = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    DSAddress dsAddr = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     HA7S.cmdReturn cmdReturn = new HA7S.cmdReturn(cmdResult);
 
@@ -53,7 +53,7 @@ public class HA7SConvertTCmdTest {
   public void testCmdWriteBlock(HA7S.cmdReturn cmdReturn,
       ConvertTCmd.Result expectedResult) {
     HA7S mockHA7S = mock(HA7S.class);
-    DSAddress dsAddr = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    DSAddress dsAddr = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     when(mockHA7S.getIsStarted()).thenReturn(true);
     when(mockHA7S.cmdAddressSelect(any(DSAddress.class), any(Logger.class)))

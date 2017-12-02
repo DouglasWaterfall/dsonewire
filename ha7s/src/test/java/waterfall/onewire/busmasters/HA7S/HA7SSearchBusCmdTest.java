@@ -179,8 +179,8 @@ public class HA7SSearchBusCmdTest {
 
   @DataProvider
   public Object[][] createPositiveCases() {
-    DSAddress one = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    DSAddress two = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
+    DSAddress one = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    DSAddress two = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
 
     DSAddress[] nothingFound = {};
     DSAddress[] oneFound = {one};

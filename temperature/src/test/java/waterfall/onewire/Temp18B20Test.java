@@ -31,7 +31,6 @@ import waterfall.onewire.device.DS18B20Scratchpad;
 
 public class Temp18B20Test {
 
-  private static final String validDSAddress = "EE0000065BC0AE28";
   private static final byte[] deviceNotFoundRaw;
   private static final DS18B20Scratchpad badCRCData;
 
@@ -60,12 +59,12 @@ public class Temp18B20Test {
       expectedExceptions = IllegalArgumentException.class,
       expectedExceptionsMessageRegExp = "resolution")
   public void testConstructorResolutionNegativeCases(byte resolution) {
-    new Temp18B20(new DSAddress(validDSAddress), resolution, Byte.MIN_VALUE, Byte.MAX_VALUE);
+    new Temp18B20(DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28), resolution, Byte.MIN_VALUE, Byte.MAX_VALUE);
   }
 
   @DataProvider
   public Object[][] constructorPositiveCases() {
-    DSAddress valid = new DSAddress(validDSAddress);
+    DSAddress valid = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     return new Object[][]{
         {valid, (byte) 0, Byte.MAX_VALUE, Byte.MIN_VALUE},
@@ -93,7 +92,7 @@ public class Temp18B20Test {
 
   @Test
   public void testGetTemperatureNoBM() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     Temp18B20 t = new Temp18B20(dsAddress, (byte)3, Byte.MIN_VALUE, Byte.MAX_VALUE);
 
@@ -104,7 +103,7 @@ public class Temp18B20Test {
 
   @Test
   public void testSetBusMaster() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     Temp18B20 t = new Temp18B20(dsAddress, (byte)2, Byte.MIN_VALUE, Byte.MAX_VALUE);
     Assert.assertNull(t.getBusMaster());
@@ -117,7 +116,7 @@ public class Temp18B20Test {
 
   @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "dup bm")
   public void testSetDuplicateBusMaster() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     Temp18B20 t = new Temp18B20(dsAddress, (byte)2, Byte.MIN_VALUE, Byte.MAX_VALUE);
     Assert.assertNull(t.getBusMaster());
@@ -130,7 +129,7 @@ public class Temp18B20Test {
 
   @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "dup bMR")
   public void testSetBusMasterRegistry() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     Temp18B20 t = new Temp18B20(dsAddress, (byte)2, Byte.MIN_VALUE, Byte.MAX_VALUE);
     Assert.assertNull(t.getBusMaster());
@@ -151,7 +150,7 @@ public class Temp18B20Test {
 
   @DataProvider
   public Object[][] getTemperatureCases() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
     BusMaster nullBM = null;
 
     return new Object[][]{
@@ -285,7 +284,7 @@ public class Temp18B20Test {
 
   @Test
   public void testGetTemperatureWithinTimeMSec(){
-    DSAddress dsAddress = new DSAddress(validDSAddress);
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     Temp18B20 t = new Temp18B20(dsAddress, DS18B20Scratchpad.DEFAULT_RESOLUTION,
         DS18B20Scratchpad.DEFAULT_HALARM, DS18B20Scratchpad.DEFAULT_LALARM)
@@ -323,7 +322,7 @@ public class Temp18B20Test {
    */
   @Test
   public void testGetTemperatureThreaded() {
-    DSAddress dsAddress = new DSAddress(validDSAddress);
+    DSAddress dsAddress = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     Temp18B20 t = new Temp18B20(dsAddress, DS18B20Scratchpad.DEFAULT_RESOLUTION,
         DS18B20Scratchpad.DEFAULT_HALARM, DS18B20Scratchpad.DEFAULT_LALARM)

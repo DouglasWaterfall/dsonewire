@@ -26,16 +26,17 @@ public class DSAddressTest {
         {null, new NullPointerException("uncheckedHexAddr")},
         {"foofoofoofoofoo", new IllegalArgumentException("uncheckedHexAddr bad length")},
         {"foofoofoofoofoofo", new IllegalArgumentException("uncheckedHexAddr bad length")},
-        {"FFFFFFFFFFFFFFFG", new IllegalArgumentException("uncheckedHexAddr bad chars")},
+        {"FFFFFFFFFFFFFFFG", new IllegalArgumentException("uncheckedHexAddr not hex")},
+        {"AbCdEf0123x56789", new IllegalArgumentException("uncheckedHexAddr not hex")},
         {"ABCDEF0123456789",
-            new IllegalArgumentException("uncheckedHexAddr bad CRC8 ABCDEF0123456789")}
+            new IllegalArgumentException("uncheckedHexAddr bad CRC8 ABCDEF0123456789")},
     };
   }
 
-  @Test(dataProvider = "takeUncheckedHexNegativeCases")
+  @Test(dataProvider = "takeUnCRCCheckedHexNegativeCases")
   public void testTakeUncheckedHexNegative(byte[] hexAddr, Exception expectedException) {
     try {
-      DSAddress.takeUncheckedHex(hexAddr);
+      DSAddress.takeUnCRCCheckedHex(hexAddr);
       Assert.fail("expected exception");
     } catch (Exception e) {
       Assert.assertEquals(e.getClass(), expectedException.getClass());
@@ -44,7 +45,7 @@ public class DSAddressTest {
   }
 
   @DataProvider
-  public Object[][] takeUncheckedHexNegativeCases() {
+  public Object[][] takeUnCRCCheckedHexNegativeCases() {
     byte[] shortLength = new byte[]{'f', 'o', 'o', 'f', 'o', 'o', 'f', 'o', 'o', 'f', 'o', 'o', 'f',
         'o', 'o'};
     byte[] longLength = new byte[]{'f', 'o', 'o', 'f', 'o', 'o', 'f', 'o', 'o', 'f', 'o', 'o', 'f',
@@ -54,11 +55,11 @@ public class DSAddressTest {
     byte[] badCRC = new byte[]{'F', 'A', '0', '1', '2', 'C', 'E', 'D', '5', '7', '6', '8', '9',
         'B', 'F', '4'};
     return new Object[][]{
-        {null, new NullPointerException("uncheckedHexAddr")},
-        {shortLength, new IllegalArgumentException("uncheckedHexAddr bad length")},
-        {longLength, new IllegalArgumentException("uncheckedHexAddr bad length")},
+        {null, new NullPointerException("takeUnCRCCheckedHexAddr")},
+        {shortLength, new IllegalArgumentException("takeUnCRCCheckedHexAddr bad length")},
+        {longLength, new IllegalArgumentException("takeUnCRCCheckedHexAddr bad length")},
         {badHex, new IllegalArgumentException("hex is not upper case hex chars")},
-        {badCRC, new IllegalArgumentException("uncheckedHexAddr bad CRC8")}
+        {badCRC, new IllegalArgumentException("takeUnCRCCheckedHexAddr bad CRC8")}
     };
   }
 

@@ -26,7 +26,7 @@ public class HA7SSerialDummy extends HA7SSerial {
       'c', 1,
       'W', -1
   };
-  private final HashMap<DSAddress, HA7SDummyDevice> deviceDataList = new HashMap<>();
+  private final HashMap<String, HA7SDummyDevice> deviceDataList = new HashMap<>();
   private String portName;
   private boolean started = false;
   private ActiveSearch activeSearch = null;
@@ -156,18 +156,18 @@ public class HA7SSerialDummy extends HA7SSerial {
     if (device == null) {
       throw new IllegalArgumentException("device is null");
     }
-    if (deviceDataList.containsKey(device.getDSAddress())) {
+    if (deviceDataList.containsKey(device.getDSAddress().toString())) {
       throw new IllegalArgumentException("duplicate device " + device.getDSAddress().toString());
     }
-    deviceDataList.put(device.getDSAddress(), device);
+    deviceDataList.put(device.getDSAddress().toString(), device);
     return this;
   }
 
   public HA7SSerialDummy removeDevice(DSAddress dsAddress) {
-    if (!deviceDataList.containsKey(dsAddress)) {
+    if (!deviceDataList.containsKey(dsAddress.toString())) {
       throw new IllegalArgumentException("dsAddress not found " + dsAddress.toString());
     }
-    deviceDataList.remove(dsAddress);
+    deviceDataList.remove(dsAddress.toString());
     return this;
   }
 

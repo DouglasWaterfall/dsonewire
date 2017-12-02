@@ -345,7 +345,7 @@ public class NotifySearchBusCmdHelperTest {
     when(mockSearchPusher.isAlarmSearch()).thenReturn(isByAlarm);
 
     List<DSAddress> resultList = new ArrayList<>();
-    resultList.add(DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1));
+    resultList.add(DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28));
     long writeCTM = 54321;
 
     mySearchBusCmd mySearchBusCmd = new mySearchBusCmd(mockBM, isByAlarm);
@@ -378,7 +378,7 @@ public class NotifySearchBusCmdHelperTest {
     }
 
     // now let us change the data a bit which will trigger a new instance of
-    resultList.add(DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2));
+    resultList.add(DSAddress.fromUncheckedHex(DSAddress._090000065BD53528));
     long writeCTM_update = 654321;
     mySearchBusCmd.setExpectedReturn(SearchBusCmd.Result.success, resultList, writeCTM_update);
     mySearchBusCmd.execute();

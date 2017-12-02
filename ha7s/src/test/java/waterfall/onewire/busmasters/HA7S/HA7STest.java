@@ -241,9 +241,9 @@ public class HA7STest {
 
     long lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
-    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     serialDummy.addDevice(new DS18B20(dev_A));
     serialDummy.addDevice(new DS18B20(dev_B));
@@ -371,9 +371,9 @@ public class HA7STest {
 
     long lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
-    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     DS18B20 dev_A_dev = new DS18B20(dev_A);
     DS18B20 dev_B_dev = new DS18B20(dev_B);
@@ -537,9 +537,9 @@ public class HA7STest {
 
     long lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
-    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
-    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     DS18B20 dev_A_dev = new DS18B20(dev_A);
     DS18B20 dev_B_dev = new DS18B20(dev_B);
@@ -564,7 +564,7 @@ public class HA7STest {
 
     lastResultWriteCTM = searchBusCmd.getResultWriteCTM();
 
-    final DSAddress dev_D = DSAddress.fromUncheckedHex("7B0000063B759F27");
+    final DSAddress dev_D = DSAddress.fromUncheckedHex(DSAddress._7B0000063B759F27);
     DS18B20 dev_D_dev = new DS18B20(dev_D);
     serialDummy.addDevice(dev_D_dev);
 
@@ -675,7 +675,7 @@ public class HA7STest {
     Assert.assertFalse(waitResult);
 
     // add a device to the bus
-    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     serialDummy.addDevice(new DS18B20(dev_A));
 
@@ -698,8 +698,8 @@ public class HA7STest {
     Assert.assertTrue(notifyData.searchResultData.getList().contains(dev_A));
 
     // add more devices to the bus
-    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
-    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     serialDummy.addDevice(new DS18B20(dev_B));
     serialDummy.addDevice(new DS18B20(dev_C));
@@ -819,7 +819,7 @@ public class HA7STest {
     Assert.assertFalse(waitResult);
 
     // add a device to the bus
-    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     serialDummy.addDevice(new DS18B20(dev_A).setHasAlarm(true));
 
@@ -842,11 +842,11 @@ public class HA7STest {
     Assert.assertTrue(notifyData.searchResultData.getList().contains(dev_A));
 
     // add more devices to the bus
-    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress2);
-    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress3);
+    final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
+    final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     serialDummy.addDevice(new DS18B20(dev_B));
-    serialDummy.addDevice(new DS18B20(dev_C));
+    serialDummy.addDevice(new DS18B20(dev_C).setHasAlarm(true));
 
     for (int i = 0; i < 2; i++) {
       waitResult = callback.wait500MSecForNotifyChange(notifyData.notifyCount);
@@ -909,7 +909,7 @@ public class HA7STest {
     myNotifySearchBusCmdResult callback = new myNotifySearchBusCmdResult();
     Assert.assertNull(callback.getData());
 
-    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress.goodHexAddress1);
+    final DSAddress dev_A = DSAddress.fromUncheckedHex(DSAddress._EE0000065BC0AE28);
 
     // this will ensure that we get a callback on every search by adding/removing a device to the search list
     callback.setAddRemoveEveryNotify(serialDummy, dev_A, byAlarm);
