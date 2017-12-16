@@ -64,17 +64,14 @@ public class SearchPusherByBusCmdTest {
     }
 
     protected Result execute_internal() {
-      setResultData(0, null);
+      setResultData(new ResultData(null, 0L));
       return Result.success;
     }
 
-    ;
-
-    protected void setResultData(long resultWriteCTM, List<DSAddress> resultList) {
-      this.resultData = new ResultData(resultList, resultWriteCTM);
+    protected void setResultData(ResultData resultData) {
+      this.resultData = resultData;
     }
 
   }
-
 
 }

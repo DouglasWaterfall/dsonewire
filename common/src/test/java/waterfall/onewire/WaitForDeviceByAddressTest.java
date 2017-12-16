@@ -460,8 +460,7 @@ public class WaitForDeviceByAddressTest {
       return null;
     }
 
-    protected void setResultData(long resultWriteCTM, List<DSAddress> resultList) {
-    }
+    protected void setResultData(ResultData resultData) { }
   }
 
   private static class SleepAddBusMasterToRegistry implements Runnable {

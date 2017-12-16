@@ -7,6 +7,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
+import waterfall.onewire.busmaster.ReadScratchpadCmd.Result;
 
 /**
  * Created by dwaterfa on 7/29/17.
@@ -47,7 +48,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    cmd.setResult(ReadScratchpadCmd.Result.busy);
+    cmd.setResult(ReadScratchpadCmd.Result.cmdBusy);
     cmd.getResultWriteCTM();
     Assert.fail("exception expected");
   }
@@ -59,7 +60,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    cmd.setResult(ReadScratchpadCmd.Result.communication_error);
+    cmd.setResult(Result.deviceFault);
     cmd.getResultWriteCTM();
     Assert.fail("exception expected");
   }
@@ -71,7 +72,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    cmd.setResult(ReadScratchpadCmd.Result.busy);
+    cmd.setResult(ReadScratchpadCmd.Result.cmdBusy);
     cmd.getResultData();
     Assert.fail("exception expected");
   }
@@ -83,7 +84,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    cmd.setResult(ReadScratchpadCmd.Result.communication_error);
+    cmd.setResult(Result.deviceFault);
     cmd.getResultData();
     Assert.fail("exception expected");
   }
@@ -95,7 +96,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    cmd.setResult(ReadScratchpadCmd.Result.busy);
+    cmd.setResult(ReadScratchpadCmd.Result.cmdBusy);
     cmd.getResultHexData();
     Assert.fail("exception expected");
   }
@@ -107,7 +108,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    cmd.setResult(ReadScratchpadCmd.Result.communication_error);
+    cmd.setResult(Result.deviceFault);
     cmd.getResultHexData();
     Assert.fail("exception expected");
   }
@@ -119,7 +120,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    cmd.setResult(ReadScratchpadCmd.Result.busy);
+    cmd.setResult(ReadScratchpadCmd.Result.cmdBusy);
     cmd.execute();
 
     Assert.fail("should have thrown exception");
@@ -133,7 +134,7 @@ public class ReadScratchpadCmdTest {
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    Assert.assertEquals(cmd.execute(), ReadScratchpadCmd.Result.bus_not_started);
+    Assert.assertEquals(cmd.execute(), Result.busFault);
   }
 
   @Test
@@ -146,7 +147,7 @@ public class ReadScratchpadCmdTest {
     TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
     cmd.setExecuteException(new RuntimeException("foo"));
     ReadScratchpadCmd.Result r = cmd.execute();
-    Assert.assertEquals(r, ReadScratchpadCmd.Result.communication_error);
+    Assert.assertEquals(r, Result.deviceFault);
   }
 
   @Test(dataProvider = "createExecuteInternalResultData")
@@ -175,13 +176,11 @@ public class ReadScratchpadCmdTest {
     byte[] twoHexData = {0, 0, 0, 0};
 
     return new Object[][]{
-        {ReadScratchpadCmd.Result.bus_not_started, (short) 2, -1, twoData, twoHexData},
-        {ReadScratchpadCmd.Result.communication_error, (short) 2, -1, twoData, twoHexData},
-        {ReadScratchpadCmd.Result.device_not_found, (short) 2, -1, twoData, twoHexData},
-        {ReadScratchpadCmd.Result.device_error, (short) 2, -1, twoData, twoHexData},
-        {ReadScratchpadCmd.Result.success, (short) 2, -1, twoData, twoHexData},
-        {ReadScratchpadCmd.Result.success, (short) 2, 0, twoData, twoHexData},
-        {ReadScratchpadCmd.Result.success, (short) 2, 1, twoData, twoHexData},
+        {Result.busFault, (short) 2, -1, twoData, twoHexData},
+        {Result.deviceFault, (short) 2, -1, twoData, twoHexData},
+        {Result.success, (short) 2, -1, twoData, twoHexData},
+        {Result.success, (short) 2, 0, twoData, twoHexData},
+        {Result.success, (short) 2, 1, twoData, twoHexData},
     };
   }
 

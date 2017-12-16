@@ -3,9 +3,9 @@ package waterfall.onewire;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import waterfall.onewire.busmaster.BusMaster.StartBusResult;
+import waterfall.onewire.busmaster.BusMaster.StopBusResult;
 import waterfall.onewire.busmaster.Logger;
-import waterfall.onewire.busmaster.StartBusCmd;
-import waterfall.onewire.busmaster.StopBusCmd;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 
@@ -82,17 +82,20 @@ public class HA7SBusMasterManager {
         throw new IllegalArgumentException("cannot instantiate");
       }
 
-      StartBusCmd startCmd = ha7s.queryStartBusCmd();
-      startCmd.setLogLevel(logLevel);
-      StartBusCmd.Result startResult = startCmd.execute();
+      StartBusResult startResult = ha7s.startBus(null);
 
       // dumpLog(startCmd.getLogger());
 
-      if (startResult == StartBusCmd.Result.started) {
+      if (startResult.getCode() == StartBusResult.Code.started) {
         bmRegistry.addBusMaster(ha7s);
         addedList.add(ha7s);
       } else {
-        System.err.println("Failed on " + ha7s.getName() + ": " + startResult.name());
+        System.err.println("Failed on "
+            + ha7s.getName()
+            + ": "
+            + startResult.getCode().name()
+            + " "
+            + startResult.getMessage());
       }
     }
 
@@ -110,11 +113,13 @@ public class HA7SBusMasterManager {
 
     bmRegistry.removeBusMaster(ha7s);
 
-    StopBusCmd stopCmd = ha7s.queryStopBusCmd();
-    StopBusCmd.Result stopResult = stopCmd.execute();
+    StopBusResult stopResult = ha7s.stopBus(null);
 
-    if (stopResult != StopBusCmd.Result.stopped) {
-      System.err.println("Stop failed result:" + stopResult.name());
+    if (stopResult.getCode() != StopBusResult.Code.stopped) {
+      System.err.println("Stop failed result:"
+          + stopResult.getCode().name()
+          + " "
+          + stopResult.getMessage());
     }
   }
 

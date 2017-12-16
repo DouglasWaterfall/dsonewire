@@ -28,12 +28,64 @@ public interface BusMaster {
   /**
    * @return
    */
-  public StartBusCmd queryStartBusCmd();
+  public static class StartBusResult {
+    public enum Code {
+      already_started,
+      busy,
+      bus_not_found,
+      communication_error,
+      started
+    }
+
+    protected final Code code;
+    protected final String message;
+
+    public StartBusResult(StartBusResult.Code code, String message) {
+      this.code = code;
+      this.message = message;
+    }
+
+    public Code getCode() {
+      return code;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+  }
+
+  public StartBusResult startBus(Logger optLogger);
 
   /**
    * @return
    */
-  public StopBusCmd queryStopBusCmd();
+  public static class StopBusResult {
+
+    public enum Code {
+      not_started,
+      busy,
+      communication_error,
+      stopped
+    }
+
+    protected final Code code;
+    protected final String message;
+
+    public StopBusResult(StopBusResult.Code code, String message) {
+      this.code = code;
+      this.message = message;
+    }
+
+    public Code getCode() {
+      return code;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+  }
+
+  public StopBusResult stopBus(Logger optLogger);
 
   /**
    * @return
@@ -95,16 +147,6 @@ public interface BusMaster {
   public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(
       NotifySearchBusCmdResult obj,
       boolean typeByAlarm);
-
-  /**
-   * This method will be called by any instances of the SearchBusCmd and SearchBusByAlarmCmd
-   * generated from this BusMaster after they have executed with success and right before they
-   * return to the caller. The callback will be on the thread of whoever is executing the SearchCmd
-   * so minimize what you do there.
-   *
-   * @param cmd Command instance from this BusMaster with a successful result.
-   */
-  public void searchBusCmdExecuteCallback(SearchBusCmd cmd);
 
   /**
    * @param dsAddr

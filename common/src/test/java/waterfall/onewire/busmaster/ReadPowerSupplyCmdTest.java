@@ -7,6 +7,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
+import waterfall.onewire.busmaster.ReadPowerSupplyCmd.Result;
 
 /**
  * Created by dwaterfa on 7/29/17.
@@ -35,7 +36,7 @@ public class ReadPowerSupplyCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
-    cmd.setResult(ReadPowerSupplyCmd.Result.busy);
+    cmd.setResult(ReadPowerSupplyCmd.Result.cmdBusy);
     cmd.getResultWriteCTM();
     Assert.fail("exception expected");
   }
@@ -46,7 +47,7 @@ public class ReadPowerSupplyCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
-    cmd.setResult(ReadPowerSupplyCmd.Result.busy);
+    cmd.setResult(ReadPowerSupplyCmd.Result.cmdBusy);
     cmd.getResultIsParasitic();
     Assert.fail("exception expected");
   }
@@ -57,7 +58,7 @@ public class ReadPowerSupplyCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
-    cmd.setResult(ReadPowerSupplyCmd.Result.communication_error);
+    cmd.setResult(ReadPowerSupplyCmd.Result.busFault);
     cmd.getResultIsParasitic();
     Assert.fail("exception expected");
   }
@@ -68,7 +69,7 @@ public class ReadPowerSupplyCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
-    cmd.setResult(ReadPowerSupplyCmd.Result.busy);
+    cmd.setResult(ReadPowerSupplyCmd.Result.cmdBusy);
     cmd.execute();
 
     Assert.fail("should have thrown exception");
@@ -81,7 +82,7 @@ public class ReadPowerSupplyCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
-    Assert.assertEquals(cmd.execute(), ReadPowerSupplyCmd.Result.bus_not_started);
+    Assert.assertEquals(cmd.execute(), ReadPowerSupplyCmd.Result.busFault);
   }
 
   @Test
@@ -93,7 +94,7 @@ public class ReadPowerSupplyCmdTest {
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
     cmd.setExecuteException(new RuntimeException("foo"));
     ReadPowerSupplyCmd.Result r = cmd.execute();
-    Assert.assertEquals(r, ReadPowerSupplyCmd.Result.communication_error);
+    Assert.assertEquals(r, Result.deviceFault);
   }
 
   @Test(dataProvider = "createExecuteInternalResultData")
@@ -116,10 +117,8 @@ public class ReadPowerSupplyCmdTest {
   @DataProvider
   public Object[][] createExecuteInternalResultData() {
     return new Object[][]{
-        {ReadPowerSupplyCmd.Result.bus_not_started, -1, false},
-        {ReadPowerSupplyCmd.Result.communication_error, -1, false},
-        {ReadPowerSupplyCmd.Result.device_not_found, -1, false},
-        {ReadPowerSupplyCmd.Result.device_error, -1, false},
+        {ReadPowerSupplyCmd.Result.busFault, -1, false},
+        {ReadPowerSupplyCmd.Result.busFault, -1, false},
         {ReadPowerSupplyCmd.Result.success, -1, false},
         {ReadPowerSupplyCmd.Result.success, 0, true},
         {ReadPowerSupplyCmd.Result.success, 1, true},

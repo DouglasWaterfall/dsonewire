@@ -1,5 +1,6 @@
 package waterfall.onewire.busmasters.HA7S;
 
+import java.util.concurrent.TimeUnit;
 import jssc.SerialPort;
 import jssc.SerialPortEvent;
 import jssc.SerialPortException;
@@ -8,7 +9,7 @@ import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult.ErrorCode;
 
 
-public class JSSC extends HA7SSerial {
+public class JSSC implements HA7SSerial {
 
   SharedData sharedData = new SharedData();
   private final String portName;
@@ -19,6 +20,11 @@ public class JSSC extends HA7SSerial {
   public JSSC(String portName, long readTimeoutMSec) {
     this.portName = portName;
     this.readTimeoutMSec = readTimeoutMSec;
+  }
+
+  public JSSC(String portName) {
+    this.portName = portName;
+    this.readTimeoutMSec = TimeUnit.SECONDS.toMillis(15);
   }
 
   public static String byteToSafeString(byte[] buf, int bOffset, int bCount) {

@@ -10,7 +10,7 @@ import waterfall.onewire.busmaster.ReadScratchpadCmd;
 /**
  * Created by dwaterfa on 1/18/17.
  */
-public class HA7SSerialDummy extends HA7SSerial {
+public class HA7SSerialDummy implements HA7SSerial {
 
   // Even values are the char code, odd values are the expected total chars for the command data, -1 means terminated
   // with CR.
@@ -24,6 +24,7 @@ public class HA7SSerialDummy extends HA7SSerial {
       'f', 1,
       'C', 1,
       'c', 1,
+      'O', 1,
       'W', -1
   };
   private final HashMap<String, HA7SDummyDevice> deviceDataList = new HashMap<>();
@@ -117,6 +118,10 @@ public class HA7SSerialDummy extends HA7SSerial {
 
           case 'c':
             readCount += alarmSearchNext(wBuf, wStart, wEnd, rBuf, optLogger);
+            break;
+
+          case 'O':
+            readCount += readBit(wBuf, wStart, wEnd, rBuf, optLogger);
             break;
 
           case 'W':
@@ -307,6 +312,15 @@ public class HA7SSerialDummy extends HA7SSerial {
 
     // leave readCount alone
     return 0;
+  }
+
+  private int readBit(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+    if ((wEnd - wStart) != 1) {
+      throw new IllegalArgumentException("ReadBit is single cmd char");
+    }
+
+    rBuf[0] = '0';
+    return 1;
   }
 
   private int writeBlock(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {

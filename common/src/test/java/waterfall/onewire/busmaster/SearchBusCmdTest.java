@@ -197,12 +197,12 @@ public class SearchBusCmdTest {
       if (execute_internal_exception != null) {
         throw execute_internal_exception;
       }
-      setResultData(execute_internal_resultWriteCTM, execute_internal_resultList);
+      setResultData(new ResultData(execute_internal_resultList, execute_internal_resultWriteCTM));
       return execute_internal_result;
     }
 
-    protected void setResultData(long resultWriteCTM, List<DSAddress> resultList) {
-      this.resultData = new ResultData(resultList, resultWriteCTM);
+    protected void setResultData(ResultData resultData) {
+      this.resultData = resultData;
     }
 
     public void setResult(Result result) {

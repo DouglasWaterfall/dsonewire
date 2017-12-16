@@ -7,6 +7,33 @@ import waterfall.onewire.DSAddress;
  */
 public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
 
+  /**
+   *
+   */
+  public enum Result {
+    /**
+     * The cmd is busy performing the operation.
+     */
+    cmdBusy,
+
+    /**
+     * The cmd executed successfully.
+     */
+    success,
+
+    /**
+     * The bus has failed to perform the cmd. This may be because the bus is not started, or
+     * it is in a fault state. Regardless the cmd did not execute.
+     */
+    busFault,
+
+    /**
+     * The device did not respond correctly and is believed to be in error.
+     */
+    deviceFault
+
+  }
+
   protected short requestByteCount;
 
   protected Result result = null;
@@ -38,18 +65,18 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
     clearLog();
 
     synchronized (this) {
-      if (result == Result.busy) {
+      if (result == Result.cmdBusy) {
         throw new NoResultException("busy");
       }
 
-      result = Result.busy;
+      result = Result.cmdBusy;
       resultData = null;
       resultHexData = null;
       resultWriteCTM = 0;
     }
 
     if (!getBusMaster().getIsStarted()) {
-      result = Result.bus_not_started;
+      result = Result.busFault;
     } else {
       try {
         logInfo("execute(dsAddr:" + getAddress().toString() + ")");
@@ -58,7 +85,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
 
       } catch (Exception e) {
         logError(e);
-        result = Result.communication_error;
+        result = Result.deviceFault;
       }
     }
 
@@ -79,7 +106,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
    * @throws NoResultException if the current result is not done.
    */
   public byte[] getResultData() throws NoResultException {
-    if ((result == null) || (result == Result.busy)) {
+    if ((result == null) || (result == Result.cmdBusy)) {
       throw new NoResultException();
     }
     if (result != Result.success) {
@@ -94,7 +121,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
    * @throws NoResultException if the current result is not done.
    */
   public byte[] getResultHexData() throws NoResultException, NoResultDataException {
-    if ((result == null) || (result == Result.busy)) {
+    if ((result == null) || (result == Result.cmdBusy)) {
       throw new NoResultException();
     }
     if (result != Result.success) {
@@ -112,7 +139,7 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
    * @throws NoResultException if the current result is not done.
    */
   public long getResultWriteCTM() throws NoResultException {
-    if ((result == null) || (result == Result.busy)) {
+    if ((result == null) || (result == Result.cmdBusy)) {
       throw new NoResultException();
     }
     if (result != Result.success) {
@@ -126,17 +153,5 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
 
   protected abstract void setResultData(long resultWriteCTM, byte[] resultData,
       byte[] resultHexData);
-
-  /**
-   *
-   */
-  public enum Result {
-    busy,
-    bus_not_started,
-    communication_error,
-    device_not_found,
-    device_error,
-    success
-  }
 
 }

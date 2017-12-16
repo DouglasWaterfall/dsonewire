@@ -4,7 +4,6 @@
 
 package waterfall.onewire;
 
-import static org.mockito.Matchers.intThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyShort;
 import static org.mockito.Mockito.mock;
@@ -19,12 +18,12 @@ import waterfall.onewire.Temp18B20.Reading;
 import waterfall.onewire.Temp18B20.ReadingData;
 import waterfall.onewire.Temp18B20.ReadingError;
 import waterfall.onewire.busmaster.BusMaster;
+import waterfall.onewire.busmaster.BusMaster.StartBusResult;
 import waterfall.onewire.busmaster.ConvertTCmd;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 import waterfall.onewire.busmasters.HA7S.HA7SSerialDummy;
-import waterfall.onewire.busmasters.HA7S.HA7SStartBusCmd;
 import waterfall.onewire.busmasters.HA7S.part.DS18B20;
 import waterfall.onewire.device.DS18B20Scratchpad;
 
@@ -416,7 +415,7 @@ public class Temp18B20Test {
     BusMaster ha7s = new HA7S(ha7SSerial);
 
     Assert.assertFalse(ha7s.getIsStarted());
-    Assert.assertEquals(HA7SStartBusCmd.Result.started, ha7s.queryStartBusCmd().execute());
+    Assert.assertEquals(StartBusResult.Code.started, ha7s.startBus(null).getCode());
 
     return ha7s;
   }

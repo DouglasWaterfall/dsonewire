@@ -424,13 +424,13 @@ public class NotifySearchBusCmdHelperTest {
     public SearchBusCmd.Result execute_internal() {
       result = expected_result;
       if (result == Result.success) {
-        setResultData(expected_writeCTM, expected_resultList);
+        setResultData(new ResultData(expected_resultList, expected_writeCTM));
       }
       return result;
     }
 
-    public void setResultData(long writeCTM, List<DSAddress> list) {
-      resultData = new ResultData(expected_resultList, expected_writeCTM);
+    public void setResultData(ResultData resultData) {
+      this.resultData = resultData;
     }
 
     // class specific

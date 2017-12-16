@@ -7,9 +7,11 @@
     <groupId>waterfall.dsonewire</groupId>
     <version>1.0</version>
   </parent>
+
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>temperature</artifactId>
+  <version>1.0-SNAPSHOT</version>
 
   <dependencies>
 
@@ -18,6 +20,7 @@
       <artifactId>common</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>waterfall.dsonewire</groupId>
       <artifactId>ha7s</artifactId>

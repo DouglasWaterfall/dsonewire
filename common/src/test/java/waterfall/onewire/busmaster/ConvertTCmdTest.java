@@ -35,7 +35,7 @@ public class ConvertTCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
-    cmd.setResult(ConvertTCmd.Result.busy);
+    cmd.setResult(ConvertTCmd.Result.cmdBusy);
     cmd.getResultWriteCTM();
     Assert.fail("exception expected");
   }
@@ -46,7 +46,7 @@ public class ConvertTCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
-    cmd.setResult(ConvertTCmd.Result.busy);
+    cmd.setResult(ConvertTCmd.Result.cmdBusy);
     cmd.execute();
 
     Assert.fail("should have thrown exception");
@@ -59,7 +59,7 @@ public class ConvertTCmdTest {
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
-    Assert.assertEquals(cmd.execute(), ConvertTCmd.Result.bus_not_started);
+    Assert.assertEquals(cmd.execute(), ConvertTCmd.Result.busFault);
   }
 
   @Test
@@ -71,7 +71,7 @@ public class ConvertTCmdTest {
     TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
     cmd.setExecuteException(new RuntimeException("foo"));
     ConvertTCmd.Result r = cmd.execute();
-    Assert.assertEquals(r, ConvertTCmd.Result.communication_error);
+    Assert.assertEquals(r, ConvertTCmd.Result.deviceFault);
   }
 
   @Test(dataProvider = "createExecuteInternalResultData")
@@ -92,10 +92,9 @@ public class ConvertTCmdTest {
   @DataProvider
   public Object[][] createExecuteInternalResultData() {
     return new Object[][]{
-        {ConvertTCmd.Result.bus_not_started, -1},
-        {ConvertTCmd.Result.communication_error, -1},
-        {ConvertTCmd.Result.device_not_found, -1},
-        {ConvertTCmd.Result.device_error, -1},
+        {ConvertTCmd.Result.busFault, -1},
+        {ConvertTCmd.Result.deviceFault, -1},
+        {ConvertTCmd.Result.deviceNotFound, -1},
         {ConvertTCmd.Result.success, -1},
         {ConvertTCmd.Result.success, 0},
         {ConvertTCmd.Result.success, 1},

@@ -87,10 +87,6 @@ public abstract class SearchBusCmd extends BaseCmd {
       }
     }
 
-    if (result == Result.success) {
-      getBusMaster().searchBusCmdExecuteCallback(this);
-    }
-
     return result;
   }
 
@@ -145,7 +141,7 @@ public abstract class SearchBusCmd extends BaseCmd {
   /**
    * Protected Methods and Constructors
    */
-  protected abstract void setResultData(long resultWriteCTM, List<DSAddress> resultList);
+  protected abstract void setResultData(ResultData resultData);
 
   /**
    *
