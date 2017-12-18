@@ -66,28 +66,18 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
     }
 
     if (added) {
-      BusMaster.ScheduleNotifySearchBusCmdResult result = null;
       try {
-        result = bm.scheduleNotifySearchBusCmd(this, typeByAlarm, bmSearchPeriodMSec);
+        bm.scheduleNotifySearchBusCmd(this, typeByAlarm, bmSearchPeriodMSec);
       } catch (Exception e) {
         System.err
             .println(bm.getName() + ": WaitForDeviceAddress() scheduleNotifySearchBusCmd:" + e);
       }
-      if (result != BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success) {
-        throw new IllegalArgumentException(
-            bm.getName() + ": scheduleNotifySearchBusCmd returned " + result.name());
-      }
     } else if (removed) {
-      BusMaster.CancelScheduledNotifySearchBusCmdResult result = null;
       try {
-        result = bm.cancelScheduledNotifySearchBusCmd(this, typeByAlarm);
+        bm.cancelScheduledNotifySearchBusCmd(this, typeByAlarm);
       } catch (Exception e) {
         System.err.println(
             bm.getName() + ": WaitForDeviceAddress() cancelScheduledNotifySearchBusCmd:" + e);
-      }
-      if (result != BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success) {
-        throw new IllegalArgumentException(
-            bm.getName() + ": cancelScheduledNotifySearchBusCmd returned " + result.name());
       }
     }
   }

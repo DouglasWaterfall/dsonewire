@@ -43,22 +43,22 @@ public class NotifySearchBusCmdHelper {
   /**
    * Called from the owning BusMaster to schedule a search push.
    */
-  public synchronized BusMaster.ScheduleNotifySearchBusCmdResult scheduleSearchNotifyFor(
-      NotifySearchBusCmdResult obj, long minPeriodMSec) {
+  public synchronized void scheduleSearchNotifyFor(NotifySearchBusCmdResult obj,
+      long minPeriodMSec) throws IllegalArgumentException {
     if (obj == null) {
-      return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull;
+      throw new IllegalArgumentException("SNSBCR_NotifyObjNull");
     }
 
     if (minPeriodMSec <= 0) {
-      return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_MinPeriodInvalid;
+      throw new IllegalArgumentException("SNSBCR_MinPeriodInvalid");
     }
 
     if (!bm.getIsStarted()) {
-      return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted;
+      throw new IllegalArgumentException("SNSBCR_BusMasterNotStarted");
     }
 
     if ((notifyMap != null) && (notifyMap.get(obj) != null)) {
-      return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjAlreadyScheduled;
+      throw new IllegalArgumentException("SNSBCR_NotifyObjAlreadyScheduled");
     }
 
     notifyMap.put(obj, new Long(minPeriodMSec));
@@ -87,44 +87,40 @@ public class NotifySearchBusCmdHelper {
       NotifyHelper notifyHelper = new NotifyHelper(bm, obj, lastNotifySearchResultData,
           searchPusher.isAlarmSearch());
     }
-
-    return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success;
   }
 
   /**
    * Called from the owning BusMaster to update the period of an existing search push.
    */
-  public synchronized BusMaster.UpdateScheduledNotifySearchBusCmdResult updateScheduledSearchNotifyFor(
-      NotifySearchBusCmdResult obj, long minPeriodMSec) {
+  public synchronized void updateScheduledSearchNotifyFor(NotifySearchBusCmdResult obj,
+      long minPeriodMSec) throws IllegalArgumentException {
 
     if ((obj == null) || (notifyMap != null) && (notifyMap.get(obj) == null)) {
-      return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_NotifyObjNotAlreadyScheduled;
+      throw new IllegalArgumentException("USNSBC_NotifyObjNotAlreadyScheduled");
     }
 
     if (minPeriodMSec <= 0) {
-      return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodInvalid;
+      throw new IllegalArgumentException("USNSBC_MinPeriodInvalid");
     }
 
     Long currentMinPeriodMSec = notifyMap.get(obj);
     if (currentMinPeriodMSec == minPeriodMSec) {
-      return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_MinPeriodUnchanged;
+      throw new IllegalArgumentException("USNSBC_MinPeriodUnchanged");
     }
 
     notifyMap.put(obj, minPeriodMSec);
 
     searchPusher.adjustPeriod(calculateMinPeriodMSecFromMap(notifyMap));
-
-    return BusMaster.UpdateScheduledNotifySearchBusCmdResult.USNSBC_Success;
   }
 
   /**
    * Called from the owning BusMaster to cancel an existing search push.
    */
-  public synchronized BusMaster.CancelScheduledNotifySearchBusCmdResult cancelScheduledSearchNotifyFor(
-      NotifySearchBusCmdResult obj) {
+  public synchronized void cancelScheduledSearchNotifyFor(NotifySearchBusCmdResult obj)
+      throws IllegalArgumentException {
 
     if ((obj == null) || (notifyMap != null) && (notifyMap.get(obj) == null)) {
-      return BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_NotifyObjNotAlreadyScheduled;
+      throw new IllegalArgumentException("CSNSBC_NotifyObjNotAlreadyScheduled");
     }
 
     notifyMap.remove(obj);
@@ -135,8 +131,6 @@ public class NotifySearchBusCmdHelper {
     } else {
       searchPusher.adjustPeriod(calculateMinPeriodMSecFromMap(notifyMap));
     }
-
-    return BusMaster.CancelScheduledNotifySearchBusCmdResult.CSNSBC_Success;
   }
 
   /**

@@ -26,14 +26,25 @@ public interface BusMaster {
   public boolean getIsStarted();
 
   /**
-   * @return
+   * Response class returned from attempting to start the bus.
    */
   public static class StartBusResult {
+
     public enum Code {
-      already_started,
-      busy,
-      bus_not_found,
-      communication_error,
+      /**
+       * The bus could not start because the device(s) used to access the bus were either already
+       * in use or there was some problem. The message will contain more details.
+       */
+      deviceFault,
+
+      /**
+       * The bus failed to start due to some internal fault. The message will contain more details
+       */
+      busFault,
+
+      /**
+       * The bus was successfully started, or it was already started. Message will be null.
+       */
       started
     }
 
@@ -54,52 +65,38 @@ public interface BusMaster {
     }
   }
 
+  /**
+   * Start the bus. If it was already started this is a no-op.
+   * @param optLogger
+   */
   public StartBusResult startBus(Logger optLogger);
 
   /**
-   * @return
+   * Stop the bus. If it was already stopped this is a no-op and if was already started it will
+   * be stopped no matter what.
+   * @param optLogger
    */
-  public static class StopBusResult {
-
-    public enum Code {
-      not_started,
-      busy,
-      communication_error,
-      stopped
-    }
-
-    protected final Code code;
-    protected final String message;
-
-    public StopBusResult(StopBusResult.Code code, String message) {
-      this.code = code;
-      this.message = message;
-    }
-
-    public Code getCode() {
-      return code;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-  }
-
-  public StopBusResult stopBus(Logger optLogger);
+  public void stopBus(Logger optLogger);
 
   /**
-   * @return
+   * Get a searchBusCmd for this busmaster.
+   *
+   * @return searchBusCmd
    */
   public SearchBusCmd querySearchBusCmd();
 
   /**
+   * Get a searchBusCmd by family code for this busmaster.
+   *
    * @param familyCode
-   * @return
+   * @return searchBusCmd
    */
   public SearchBusCmd querySearchBusByFamilyCmd(short familyCode);
 
   /**
-   * @return
+   * Get a searchBusCmd by alarm for this busmaster.
+   *
+   * @return searchBusCmd
    */
   public SearchBusCmd querySearchBusByAlarmCmd();
 
@@ -114,10 +111,10 @@ public interface BusMaster {
    * @param obj obj with SearchBusNotify interface.
    * @param typeByAlarm true if the search should be by active alarms, otherwise it will be a
    * general bus search
-   * @return ScheduleNotifySearchBusCmdResult
+   * @throws IllegalArgumentException if the arguments are illegal
    */
-  public ScheduleNotifySearchBusCmdResult scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj,
-      boolean typeByAlarm, long minPeriodMSec);
+  public void scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm,
+      long minPeriodMSec) throws IllegalArgumentException;
 
   /**
    * This method will ask the BusMaster to update previously scheduled search bus with a new
@@ -130,124 +127,45 @@ public interface BusMaster {
    * different since the last time it was called back. The search itself will be performed but no
    * callback will occur.
    * @param typeByAlarm true if the search was active alarms, otherwise general bus search
-   * @return UpdateScheduledSearchBusCmdResult
+   * @throws IllegalArgumentException if the arguments are illegal
    */
-  public UpdateScheduledNotifySearchBusCmdResult updateScheduledNotifySearchBusCmd(
-      NotifySearchBusCmdResult obj,
-      boolean typeByAlarm,
-      long minPeriodMSec);
+  public void updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm,
+      long minPeriodMSec) throws IllegalArgumentException;
 
   /**
    * Cancel a previously scheduled search notification.
    *
    * @param obj Instance which had successfully called scheduleSearchNotify()
    * @param typeByAlarm true if the search was active alarms, otherwise general bus search
-   * @return CancelScheduleSearchBusCmdResult
+   * @throws IllegalArgumentException if the arguments are illegal
    */
-  public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(
-      NotifySearchBusCmdResult obj,
-      boolean typeByAlarm);
+  public void cancelScheduledNotifySearchBusCmd( NotifySearchBusCmdResult obj, boolean typeByAlarm)
+      throws IllegalArgumentException;
 
   /**
+   * Get a ConvertTCmd for the specified DSAddress from this busmaster.
+   *
    * @param dsAddr
-   * @return
+   * @return ConvertTCmd
    */
   public ConvertTCmd queryConvertTCmd(final DSAddress dsAddr);
 
   /**
+   * Get a ReadPowerSupplyCmd for the specified DSAddress from this busmaster.
+   *
    * @param dsAddr
-   * @return
+   * @return ReadPowerSupplyCmd
    */
   public ReadPowerSupplyCmd queryReadPowerSupplyCmd(final DSAddress dsAddr);
 
   /**
+   * Get a ReadScratchpadCmd for the specified DSAddress from this busmaster.
+   *
    * @param dsAddr
    * @param requestByteCount
-   * @return
+   * @return ReadScratchpadCmd
    */
   public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount);
-
-  /**
-   *
-   */
-  public enum ScheduleNotifySearchBusCmdResult {
-    /**
-     * The obj specified to notify back on is null.
-     */
-    SNSBCR_NotifyObjNull,
-
-    /**
-     * The value for minPeriodMSec is equal to or less than zero.
-     */
-    SNSBCR_MinPeriodInvalid,
-
-    /**
-     * The obj specified to notify back on is already scheduled.
-     */
-    SNSBCR_NotifyObjAlreadyScheduled,
-
-    /**
-     * The specified BusMaster is not started.
-     */
-    SNSBCR_BusMasterNotStarted,
-
-    /**
-     * The obj has been scheduled for search callback.
-     */
-    SNSBCR_Success
-  }
-
-  /**
-   *
-   */
-  public enum UpdateScheduledNotifySearchBusCmdResult {
-    /**
-     * The obj specified to notify back on has not been previously scheduled for the specified
-     * search type.
-     */
-    USNSBC_NotifyObjNotAlreadyScheduled,
-
-    /**
-     * The value for minPeriodMSec is equal to or less than zero.
-     */
-    USNSBC_MinPeriodInvalid,
-
-    /**
-     * The value for minPeriodMSec is equal to the currently period for this object.
-     */
-    USNSBC_MinPeriodUnchanged,
-
-    /**
-     * The specified BusMaster is not started.
-     */
-    USNSBC_BusMasterNotStarted,
-
-    /**
-     * The scheduled search callback period has been updated with the new period.
-     */
-    USNSBC_Success;
-  }
-
-  /**
-   *
-   */
-  public enum CancelScheduledNotifySearchBusCmdResult {
-    /**
-     * The obj specified to notify back on has not been previously scheduled for the specified
-     * search type.
-     */
-    CSNSBC_NotifyObjNotAlreadyScheduled,
-
-    /**
-     * The specified BusMaster is not started.
-     */
-    CSNSBC_BusMasterNotStarted,
-
-    /**
-     * The scheduled search callback period has been cancelled.
-     */
-    CSNSBC_Success
-  }
 
   // ReadStatusCmd
   // AA {0000 index} FFFFFFFFFF00007F {EDC1 crc}, so write 1 + 2 + 8 + 2 = 13 = 0D

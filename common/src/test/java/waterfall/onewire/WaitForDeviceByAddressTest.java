@@ -9,11 +9,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doAnswer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Observable;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.Assert;
@@ -124,11 +126,10 @@ public class WaitForDeviceByAddressTest {
     DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
 
     // this will call right away
-    Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
-        new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
+    Answer answer = makeSearchBusCmdAnswerFor(mockBM, new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
 
-    when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
-        any(Long.class))).thenAnswer(answer);
+    doAnswer(answer).when(mockBM).scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class),
+        any(Boolean.class), any(Long.class));
 
     // we will NOT cancel the search for each device after it is returned
     myCallback myCallback = new myCallback();
@@ -174,11 +175,10 @@ public class WaitForDeviceByAddressTest {
     DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
 
     // this will call right away
-    Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
-        new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
+    Answer answer = makeSearchBusCmdAnswerFor(mockBM, new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
 
-    when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
-        any(Long.class))).thenAnswer(answer);
+    doAnswer(answer).when(mockBM).scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
+        any(Long.class));
 
     // we will cancel the search for each device after it is returned
     myCallback myCallback = new myCallback(true);
@@ -224,11 +224,10 @@ public class WaitForDeviceByAddressTest {
     DSAddress SEARCH_ADDRESS_2 = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
 
     // this will call right away
-    Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
-        new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
+    Answer answer = makeSearchBusCmdAnswerFor(mockBM, new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2}, 0);
 
-    when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
-        any(Long.class))).thenAnswer(answer);
+    doAnswer(answer).when(mockBM).scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class),
+        any(Boolean.class), any(Long.class));
 
     // we will cancel the search for each device after it is returned
     myCallback myCallback = new myCallback(true);
@@ -289,11 +288,11 @@ public class WaitForDeviceByAddressTest {
     DSAddress SEARCH_ADDRESS_3 = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     // this will call back with one additional address every 100ms
-    Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
+    Answer answer = makeSearchBusCmdAnswerFor(mockBM,
         new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3}, 100);
 
-    when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class),
-        any(Boolean.class), any(Long.class))).thenAnswer(answer);
+    doAnswer(answer).when(mockBM).scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class),
+        any(Boolean.class), any(Long.class));
 
     myCallback myCallback = new myCallback();
 
@@ -334,11 +333,11 @@ public class WaitForDeviceByAddressTest {
     DSAddress SEARCH_ADDRESS_3 = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
     // this will call back with one additional address every 100ms
-    Answer<BusMaster.ScheduleNotifySearchBusCmdResult> answer = makeSearchBusCmdAnswerFor(mockBM,
+    Answer answer = makeSearchBusCmdAnswerFor(mockBM,
         new DSAddress[]{SEARCH_ADDRESS, SEARCH_ADDRESS_2, SEARCH_ADDRESS_3}, 100);
 
-    when(mockBM.scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class), any(Boolean.class),
-        any(Long.class))).thenAnswer(answer);
+    doAnswer(answer).when(mockBM).scheduleNotifySearchBusCmd(any(NotifySearchBusCmdResult.class),
+        any(Boolean.class), any(Long.class));
 
     myCallback myCallback = new myCallback();
 
@@ -370,12 +369,12 @@ public class WaitForDeviceByAddressTest {
   // This method will schedule search command returns, one for each resultAddress provided with an increment between
   // equal to the delayTimeMSec. Each return will incremently add one address without removing any of the others.
   //
-  private Answer<BusMaster.ScheduleNotifySearchBusCmdResult> makeSearchBusCmdAnswerFor(BusMaster bm,
+  private Answer makeSearchBusCmdAnswerFor(BusMaster bm,
       DSAddress[] resultAddresses,
       long delayTimeMSec) {
-    return new Answer<BusMaster.ScheduleNotifySearchBusCmdResult>() {
+    return new Answer() {
       @Override
-      public BusMaster.ScheduleNotifySearchBusCmdResult answer(final InvocationOnMock invocation) {
+      public Object answer(final InvocationOnMock invocation) {
         NotifySearchBusCmdResult obj = (NotifySearchBusCmdResult) (invocation.getArguments())[0];
         Boolean typeByAlarm = (Boolean) (invocation.getArguments())[1];
         Long minPeriodMSec = (Long) (invocation.getArguments())[2];
@@ -388,8 +387,7 @@ public class WaitForDeviceByAddressTest {
           new SleepNotifySearchBusCmdResult(obj, bm, typeByAlarm,
               new mySearchBusCmd(bm, list).getResultData(), delayTimeMSec);
         }
-
-        return BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_Success;
+        return null;
       }
     };
   }

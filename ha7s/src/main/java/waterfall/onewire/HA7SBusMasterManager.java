@@ -4,7 +4,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import waterfall.onewire.busmaster.BusMaster.StartBusResult;
-import waterfall.onewire.busmaster.BusMaster.StopBusResult;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial;
@@ -113,14 +112,7 @@ public class HA7SBusMasterManager {
 
     bmRegistry.removeBusMaster(ha7s);
 
-    StopBusResult stopResult = ha7s.stopBus(null);
-
-    if (stopResult.getCode() != StopBusResult.Code.stopped) {
-      System.err.println("Stop failed result:"
-          + stopResult.getCode().name()
-          + " "
-          + stopResult.getMessage());
-    }
+    ha7s.stopBus(null);
   }
 
 }

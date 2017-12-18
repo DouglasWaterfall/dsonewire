@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.BusMaster;
+import waterfall.onewire.busmaster.BusMaster.StartBusResult.Code;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.NotifySearchBusCmdHelper;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
@@ -53,13 +54,14 @@ public class HA7S implements BusMaster {
     final byte[] resetBusCmd = {'R'};
 
     if (started != null) {
-      return new StartBusResult(StartBusResult.Code.already_started, null);
+      return new StartBusResult(StartBusResult.Code.started, null);
     }
 
     HA7SSerial.StartResult startResult = serialPort.start(optLogger);
 
     if (startResult != HA7SSerial.StartResult.SR_Success) {
-      return new StartBusResult(StartBusResult.Code.communication_error, null);
+      String message = serialPort.getPortName() + ":" + startResult.name();
+      return new StartBusResult(Code.deviceFault, message);
     }
 
     byte[] rbuf = new byte[8];
@@ -68,7 +70,7 @@ public class HA7S implements BusMaster {
 
     if ((readResult.getError() == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
         (readResult.getReadCount() == 1) &&
-        (rbuf[0] == 0x07)) {
+        (rbuf[0] == 0x07)) { // bell
       // This can occur during development when when the first thing read after open is
       // 0x07 0x0D. So we try this again once.
       readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, optLogger);
@@ -78,8 +80,7 @@ public class HA7S implements BusMaster {
         (readResult.getReadCount() != 0)) {
       String message = readResult.getError().name() + " readCount:" + readResult.getReadCount();
       HA7SSerial.StopResult stopResult = serialPort.stop(optLogger);
-
-      return new StartBusResult(StartBusResult.Code.communication_error, message);
+      return new StartBusResult(Code.busFault, message);
     }
 
     started = new Boolean(true);
@@ -88,23 +89,20 @@ public class HA7S implements BusMaster {
   }
 
   @Override
-  public synchronized StopBusResult stopBus(Logger optLogger) {
-    if (started == null) {
-      return new StopBusResult(StopBusResult.Code.not_started, null);
-    }
+  public synchronized void stopBus(Logger optLogger) {
+    if (started != null) {
+      HA7SSerial.StopResult stopResult = serialPort.stop(optLogger);
 
-    HA7SSerial.StopResult stopResult = serialPort.stop(optLogger);
-
-    if (stopResult != HA7SSerial.StopResult.SR_Success) {
-      return new StopBusResult(StopBusResult.Code.communication_error,
+      /* This would be a good log opportunity
+      if (stopResult != HA7SSerial.StopResult.SR_Success) {
+        return new StopBusResult(StopBusResult.Code.communication_error,
           "HA7SSerial.StopResult:" + stopResult.name());
+      */
+
+      started = null;
+      searchHelper.cancelAllScheduledSearchNotifyFor();
+      searchByAlarmHelper.cancelAllScheduledSearchNotifyFor();
     }
-
-    started = null;
-    searchHelper.cancelAllScheduledSearchNotifyFor();
-    searchByAlarmHelper.cancelAllScheduledSearchNotifyFor();
-
-    return new StopBusResult(StopBusResult.Code.stopped, null);
   }
 
   @Override
@@ -123,41 +121,40 @@ public class HA7S implements BusMaster {
   }
 
   @Override
-  public ScheduleNotifySearchBusCmdResult scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj,
+  public void scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj,
       boolean typeByAlarm, long minPeriodMSec) {
     if (!getIsStarted()) {
-      return ScheduleNotifySearchBusCmdResult.SNSBCR_BusMasterNotStarted;
+      throw new IllegalArgumentException("SNSBCR_BusMasterNotStarted");
     }
     if (!typeByAlarm) {
-      return searchHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
+      searchHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
     } else {
-      return searchByAlarmHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
+      searchByAlarmHelper.scheduleSearchNotifyFor(obj, minPeriodMSec);
     }
   }
 
   @Override
-  public UpdateScheduledNotifySearchBusCmdResult updateScheduledNotifySearchBusCmd(
-      NotifySearchBusCmdResult obj, boolean typeByAlarm, long minPeriodMSec) {
+  public void updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm,
+      long minPeriodMSec) {
     if (!getIsStarted()) {
-      return UpdateScheduledNotifySearchBusCmdResult.USNSBC_BusMasterNotStarted;
+      throw new IllegalArgumentException("USNSBC_BusMasterNotStarted");
     }
     if (!typeByAlarm) {
-      return searchHelper.updateScheduledSearchNotifyFor(obj, minPeriodMSec);
+      searchHelper.updateScheduledSearchNotifyFor(obj, minPeriodMSec);
     } else {
-      return searchByAlarmHelper.updateScheduledSearchNotifyFor(obj, minPeriodMSec);
+      searchByAlarmHelper.updateScheduledSearchNotifyFor(obj, minPeriodMSec);
     }
   }
 
   @Override
-  public CancelScheduledNotifySearchBusCmdResult cancelScheduledNotifySearchBusCmd(
-      NotifySearchBusCmdResult obj, boolean typeByAlarm) {
+  public void cancelScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm) {
     if (!getIsStarted()) {
-      return CancelScheduledNotifySearchBusCmdResult.CSNSBC_BusMasterNotStarted;
+      throw new IllegalArgumentException("CSNSBC_BusMasterNotStarted");
     }
     if (!typeByAlarm) {
-      return searchHelper.cancelScheduledSearchNotifyFor(obj);
+      searchHelper.cancelScheduledSearchNotifyFor(obj);
     } else {
-      return searchByAlarmHelper.cancelScheduledSearchNotifyFor(obj);
+      searchByAlarmHelper.cancelScheduledSearchNotifyFor(obj);
     }
   }
 
