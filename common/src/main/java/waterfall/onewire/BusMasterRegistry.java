@@ -42,10 +42,6 @@ public class BusMasterRegistry extends Observable {
       throw new IllegalArgumentException("bm does not have a name");
     }
 
-    if (!bm.getIsStarted()) {
-      throw new IllegalArgumentException("bm not started");
-    }
-
     synchronized (this) {
       if (!bmMap.containsKey(bm.getName())) {
         bmMap.put(bm.getName(), bm);

@@ -7,7 +7,6 @@ import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.BusMaster.StartBusResult;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
 
@@ -26,36 +25,29 @@ public class ReadScratchpadCmdTests extends TestBase {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', // 5
         '0', 'A', 'F', '0', '1', '2', '3', '4'};         // 4
 
-    HA7SSerial mockSerial = getReadyToStartMockSerial();
+    HA7SSerial mockSerial = getStartedMockSerial();
     HA7S ha7s = new HA7S(mockSerial);
 
     ReadScratchpadCmd cmd = ha7s.queryReadScratchpadCmd(dsAddr, (short) 9);
     Assert.assertNotNull(cmd);
 
     try {
-      ReadScratchpadCmd.Result result = cmd.execute();
-      Assert.assertEquals(result, ReadScratchpadCmd.Result.busFault);
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
 
-    try {
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-      Assert.assertTrue(ha7s.getIsStarted());
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+          .thenAnswer(makeAnswerForAddress(3L, 4L))
+          .thenAnswer(makeAnswerForReadResult(
+              new HA7SSerial.ReadResult(read_data.length, cmdWriteCTM, cmdReadCRCTM), read_data));
 
-    when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
-        .thenAnswer(makeAnswerForAddress(3L, 4L))
-        .thenAnswer(makeAnswerForReadResult(
-            new HA7SSerial.ReadResult(read_data.length, cmdWriteCTM, cmdReadCRCTM), read_data));
-
-    try {
       Assert.assertEquals(cmd.execute(), ReadScratchpadCmd.Result.success);
       Assert.assertEquals(cmd.getResultWriteCTM(), cmdWriteCTM);
       Assert.assertTrue(Arrays.equals(cmd.getResultHexData(),
           Arrays.copyOfRange(read_data, 2, read_data.length)));
+
+      ha7s.stopBus(null);
+
+      ReadScratchpadCmd.Result result = cmd.execute();
+      Assert.assertEquals(result, ReadScratchpadCmd.Result.busFault);
+
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }

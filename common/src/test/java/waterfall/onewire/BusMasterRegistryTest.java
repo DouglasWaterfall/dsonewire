@@ -58,21 +58,6 @@ public class BusMasterRegistryTest {
   }
 
   @Test(expectedExceptions = {
-      IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "bm not started")
-  public void testAddNotStartedBusMaster() {
-    BusMasterRegistry bmR = new BusMasterRegistry();
-
-    BusMaster mockBM = mock(BusMaster.class);
-
-    when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(false);
-
-    bmR.addBusMaster(mockBM);
-
-    Assert.fail("should have thrown exception");
-  }
-
-  @Test(expectedExceptions = {
       IllegalArgumentException.class}, expectedExceptionsMessageRegExp = "bm already known to the registry")
   public void testAddNotDuplicateBusMaster() {
     BusMasterRegistry bmR = new BusMasterRegistry();
@@ -80,7 +65,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     bmR.addBusMaster(mockBM);
 
@@ -100,7 +84,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     Assert.assertFalse(((Observable) bmR).hasChanged());
 
@@ -125,7 +108,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     Assert.assertNotNull(bmR.getBusMasters());
     Assert.assertEquals(bmR.getBusMasters().length, 0);
@@ -157,7 +139,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     Assert.assertNotNull(bmR.getBusMasters());
     Assert.assertEquals(bmR.getBusMasters().length, 0);
@@ -180,7 +161,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM_2 = mock(BusMaster.class);
 
     when(mockBM_2.getName()).thenReturn(MOCK_BM_NAME + 2);
-    when(mockBM_2.getIsStarted()).thenReturn(true);
 
     bmR.addBusMaster(mockBM_2);
 
@@ -219,7 +199,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     Assert.assertNotNull(bmR.getBusMasters());
     Assert.assertEquals(bmR.getBusMasters().length, 0);
@@ -237,7 +216,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     Assert.assertNotNull(bmR.getBusMasters());
     Assert.assertEquals(bmR.getBusMasters().length, 0);
@@ -255,7 +233,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM_2 = mock(BusMaster.class);
 
     when(mockBM_2.getName()).thenReturn(MOCK_BM_NAME + 2);
-    when(mockBM_2.getIsStarted()).thenReturn(true);
 
     bmR.addBusMaster(mockBM_2);
 
@@ -283,7 +260,6 @@ public class BusMasterRegistryTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     Assert.assertNotNull(bmR.getBusMasters());
     Assert.assertEquals(bmR.getBusMasters().length, 0);

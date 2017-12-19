@@ -8,6 +8,7 @@ import org.testng.annotations.Test;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmasters.HA7S.HA7S;
+import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 import waterfall.onewire.busmasters.HA7S.HA7SSerialDummy;
 
 /**
@@ -134,7 +135,6 @@ public class HA7SBusMasterManagerTest {
     int fooCount = 0;
     int barCount = 0;
     for (BusMaster bm : bmRegistry.getBusMasters()) {
-      Assert.assertTrue(bm.getIsStarted());
       if (bm.getName().equals("HA7S on " + foo)) {
         fooCount++;
       } else if (bm.getName().equals("HA7S on " + bar)) {
@@ -146,7 +146,6 @@ public class HA7SBusMasterManagerTest {
 
     for (BusMaster bm : bmRegistry.getBusMasters()) {
       ha7sBMM.stop((HA7S) bm);
-      Assert.assertFalse(bm.getIsStarted());
     }
 
     Assert.assertNotNull(bmRegistry.getBusMasters());

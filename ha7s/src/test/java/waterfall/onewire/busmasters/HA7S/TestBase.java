@@ -40,15 +40,9 @@ public class TestBase {
   public static final long period750MSec = 750;
 
 
-  protected HA7SSerial getReadyToStartMockSerial() {
+  protected HA7SSerial getStartedMockSerial() {
     HA7SSerial mockSerial = mock(HA7SSerial.class);
-
-    when(mockSerial.start(any(Logger.class))).thenReturn(HA7SSerial.StartResult.SR_Success);
-
-    // We are actually writing a Reset Bus 'R' cmd here
-    when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
-        .thenAnswer(makeAnswerForReadZero(1L, 2L));
-
+    when(mockSerial.isStarted()).thenReturn(true);
     return mockSerial;
   }
 

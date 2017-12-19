@@ -6,18 +6,15 @@ import java.util.function.BiConsumer;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.BusMaster;
-import waterfall.onewire.busmaster.BusMaster.StartBusResult.Code;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.NotifySearchBusCmdHelper;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchPusherByBusCmd;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial.HexByteArrayListResult;
-import waterfall.onewire.busmasters.HA7S.HA7SSerial.NoDataResult;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult;
 
 public class HA7S implements BusMaster {
 
-  private Boolean started = null;
   private HA7SSerial serialPort = null;
   private NotifySearchBusCmdHelper searchHelper = null;
   private NotifySearchBusCmdHelper searchByAlarmHelper = null;
@@ -26,8 +23,8 @@ public class HA7S implements BusMaster {
   * Begin HA7S specific methods
   */
   public HA7S(HA7SSerial serial) {
-    if (serial == null) {
-      throw new IllegalArgumentException("serial must non-null");
+    if ((serial == null) || (!serial.isStarted())) {
+      throw new IllegalArgumentException("serial must non-null and started");
     }
     searchHelper = new NotifySearchBusCmdHelper(new SearchPusherByBusCmd(this, false), this);
     searchByAlarmHelper = new NotifySearchBusCmdHelper(new SearchPusherByBusCmd(this, true), this);
@@ -36,73 +33,17 @@ public class HA7S implements BusMaster {
 
   @Override
   public String getName() {
-    return "HA7S on " + serialPort.getPortName();
+    if (serialPort != null) {
+      return "HA7S on " + serialPort.getPortName();
+    } else {
+      // must have been stopped.
+      return "HA7S on STOPPED";
+    }
   }
 
   @Override
   public long getCurrentTimeMillis() {
     return System.currentTimeMillis();
-  }
-
-  @Override
-  public boolean getIsStarted() {
-    return ((started != null) && started);
-  }
-
-  @Override
-  public synchronized StartBusResult startBus(Logger optLogger) {
-    final byte[] resetBusCmd = {'R'};
-
-    if (started != null) {
-      return new StartBusResult(StartBusResult.Code.started, null);
-    }
-
-    HA7SSerial.StartResult startResult = serialPort.start(optLogger);
-
-    if (startResult != HA7SSerial.StartResult.SR_Success) {
-      String message = serialPort.getPortName() + ":" + startResult.name();
-      return new StartBusResult(Code.deviceFault, message);
-    }
-
-    byte[] rbuf = new byte[8];
-
-    HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, null);
-
-    if ((readResult.getError() == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
-        (readResult.getReadCount() == 1) &&
-        (rbuf[0] == 0x07)) { // bell
-      // This can occur during development when when the first thing read after open is
-      // 0x07 0x0D. So we try this again once.
-      readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, optLogger);
-    }
-
-    if ((readResult.getError() != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
-        (readResult.getReadCount() != 0)) {
-      String message = readResult.getError().name() + " readCount:" + readResult.getReadCount();
-      HA7SSerial.StopResult stopResult = serialPort.stop(optLogger);
-      return new StartBusResult(Code.busFault, message);
-    }
-
-    started = new Boolean(true);
-
-    return new StartBusResult(StartBusResult.Code.started, null);
-  }
-
-  @Override
-  public synchronized void stopBus(Logger optLogger) {
-    if (started != null) {
-      HA7SSerial.StopResult stopResult = serialPort.stop(optLogger);
-
-      /* This would be a good log opportunity
-      if (stopResult != HA7SSerial.StopResult.SR_Success) {
-        return new StopBusResult(StopBusResult.Code.communication_error,
-          "HA7SSerial.StopResult:" + stopResult.name());
-      */
-
-      started = null;
-      searchHelper.cancelAllScheduledSearchNotifyFor();
-      searchByAlarmHelper.cancelAllScheduledSearchNotifyFor();
-    }
   }
 
   @Override
@@ -123,7 +64,7 @@ public class HA7S implements BusMaster {
   @Override
   public void scheduleNotifySearchBusCmd(NotifySearchBusCmdResult obj,
       boolean typeByAlarm, long minPeriodMSec) {
-    if (!getIsStarted()) {
+    if (serialPort == null) {
       throw new IllegalArgumentException("SNSBCR_BusMasterNotStarted");
     }
     if (!typeByAlarm) {
@@ -136,7 +77,7 @@ public class HA7S implements BusMaster {
   @Override
   public void updateScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm,
       long minPeriodMSec) {
-    if (!getIsStarted()) {
+    if (serialPort == null) {
       throw new IllegalArgumentException("USNSBC_BusMasterNotStarted");
     }
     if (!typeByAlarm) {
@@ -148,7 +89,7 @@ public class HA7S implements BusMaster {
 
   @Override
   public void cancelScheduledNotifySearchBusCmd(NotifySearchBusCmdResult obj, boolean typeByAlarm) {
-    if (!getIsStarted()) {
+    if (serialPort == null) {
       throw new IllegalArgumentException("CSNSBC_BusMasterNotStarted");
     }
     if (!typeByAlarm) {
@@ -171,6 +112,26 @@ public class HA7S implements BusMaster {
   @Override
   public ReadScratchpadCmd queryReadScratchpadCmd(DSAddress dsAddr, short requestByteCount) {
     return new HA7S.ReadScratchpadCmd(dsAddr, requestByteCount);
+  }
+
+  //
+  // Private
+  //
+
+  /**
+   * We stop our usage of the serial port, and cancel all pushes. It is the responsibility of the
+   * HA7SBusMasterManager to stop the HA7Serial.
+   */
+  public synchronized void stopBus(Logger optLogger) {
+    // may already be stopped
+    if (serialPort != null) {
+      searchHelper.cancelAllScheduledSearchNotifyFor();
+      searchByAlarmHelper.cancelAllScheduledSearchNotifyFor();
+
+      serialPort = null;
+      searchHelper = null;
+      searchByAlarmHelper = null;
+    }
   }
 
 
@@ -422,11 +383,7 @@ public class HA7S implements BusMaster {
 
       try {
         if (serialPort == null) {
-          throw new BusFaultException("no serialPort");
-        }
-
-        if (started == null) {
-          throw new BusFaultException("not started");
+          throw new BusFaultException("bus was stopped");
         }
 
         for (Object[] sequence : cmdDataSequence) {
@@ -562,11 +519,7 @@ public class HA7S implements BusMaster {
 
       try {
         if (serialPort == null) {
-          throw new BusFaultException("no serialPort");
-        }
-
-        if (started == null) {
-          throw new BusFaultException("not started");
+          throw new BusFaultException("bus was stopped");
         }
 
         for (Object[] sequence : cmdDataSequence) {
@@ -657,17 +610,19 @@ public class HA7S implements BusMaster {
     private BiConsumer<byte[], Integer> checkReadScratchpadReturn = (rbuf, readCount) -> {
       final int expectedReadCount = ((requestByteCount + 1) * 2);
       if (readCount != expectedReadCount) {
-        throw new BusDataException("ReadScratchpad failed cmd check expected:" + expectedReadCount + " read:" + readCount);
+        throw new BusDataException(
+            "ReadScratchpad failed cmd check expected:" + expectedReadCount + " read:" + readCount);
       }
       if ((rbuf[0] != readScratchpadCmdData[3]) || (rbuf[1] != readScratchpadCmdData[4])) {
         throw new BusDataException(
-            "ReadScratchpad failed cmd check expected:BE got:" + (char)rbuf[0] + (char)rbuf[1]);
+            "ReadScratchpad failed cmd check expected:BE got:" + (char) rbuf[0] + (char) rbuf[1]);
       }
       for (int i = 2; i < expectedReadCount; i++) {
-         if (!(((readScratchpadResultData[i] >= '0') && (readScratchpadResultData[i] <= '9')) ||
-             ((readScratchpadResultData[i] >= 'A') && (readScratchpadResultData[i] <= 'F')))) {
-           throw new BusDataException("checkReadScratchpad not hex data i:" + i + " got:" + readScratchpadResultData[i]);
-         }
+        if (!(((readScratchpadResultData[i] >= '0') && (readScratchpadResultData[i] <= '9')) ||
+            ((readScratchpadResultData[i] >= 'A') && (readScratchpadResultData[i] <= 'F')))) {
+          throw new BusDataException(
+              "checkReadScratchpad not hex data i:" + i + " got:" + readScratchpadResultData[i]);
+        }
       }
     };
 
@@ -694,7 +649,7 @@ public class HA7S implements BusMaster {
 
       readScratchpadResultData = new byte[(requestByteCount + 1) * 2];
 
-      cmdDataSequence = new Object[][] {
+      cmdDataSequence = new Object[][]{
           // cmd data to send, read into buf, checkFunction, returned readResult
           {selectCmdData, readBuf, checkAddressResultData, null}, // check against the dsAddress
           {readScratchpadCmdData, readScratchpadResultData, checkReadScratchpadReturn, null},
@@ -708,16 +663,12 @@ public class HA7S implements BusMaster {
 
       try {
         if (serialPort == null) {
-          throw new BusFaultException("no serialPort");
-        }
-
-        if (started == null) {
-          throw new BusFaultException("not started");
+          throw new BusFaultException("bus was stopped");
         }
 
         final int hexByteCount = (requestByteCount * 2);
 
-        Arrays.fill(readScratchpadCmdData, 5, (5 + hexByteCount), (byte)'F');
+        Arrays.fill(readScratchpadCmdData, 5, (5 + hexByteCount), (byte) 'F');
 
         for (Object[] sequence : cmdDataSequence) {
           byte[] cmdData = (byte[]) sequence[0];

@@ -51,6 +51,11 @@ public class JSSC implements HA7SSerial {
   }
 
   @Override
+  public boolean isStarted() {
+    return sharedData.started;
+  }
+
+  @Override
   public synchronized StartResult start(Logger optLogger) {
 
     String logContext = null;

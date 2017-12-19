@@ -76,19 +76,8 @@ public class ReadPowerSupplyCmdTest {
   }
 
   @Test
-  public void testBusNotStarted() {
-    BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(false);
-    DSAddress mockAddr = mock(DSAddress.class);
-
-    TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
-    Assert.assertEquals(cmd.execute(), ReadPowerSupplyCmd.Result.busFault);
-  }
-
-  @Test
   public void testExecuteInternalException() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);
@@ -101,7 +90,6 @@ public class ReadPowerSupplyCmdTest {
   public void testExecuteInternalResult(ReadPowerSupplyCmd.Result setResult, long setResultWriteCTM,
       boolean setResultIsParasitic) {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestReadPowerSupplyCmd cmd = new TestReadPowerSupplyCmd(mockBM, mockAddr);

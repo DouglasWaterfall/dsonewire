@@ -2,6 +2,11 @@ package waterfall.onewire.busmaster;
 
 import waterfall.onewire.DSAddress;
 
+/**
+ * A BusMaster instance is assumed to always be started and ready for business. There is no
+ * provision for stopping the bus via this interface, rather it needs to be managed through
+ * whatever created the BusMaster instance.
+ */
 public interface BusMaster {
 
   /**
@@ -19,64 +24,6 @@ public interface BusMaster {
    * @return the currentTimeMillis for the VM talking to the physical Bus.
    */
   public long getCurrentTimeMillis();
-
-  /**
-   * @return true if started, false otherwise.
-   */
-  public boolean getIsStarted();
-
-  /**
-   * Response class returned from attempting to start the bus.
-   */
-  public static class StartBusResult {
-
-    public enum Code {
-      /**
-       * The bus could not start because the device(s) used to access the bus were either already
-       * in use or there was some problem. The message will contain more details.
-       */
-      deviceFault,
-
-      /**
-       * The bus failed to start due to some internal fault. The message will contain more details
-       */
-      busFault,
-
-      /**
-       * The bus was successfully started, or it was already started. Message will be null.
-       */
-      started
-    }
-
-    protected final Code code;
-    protected final String message;
-
-    public StartBusResult(StartBusResult.Code code, String message) {
-      this.code = code;
-      this.message = message;
-    }
-
-    public Code getCode() {
-      return code;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-  }
-
-  /**
-   * Start the bus. If it was already started this is a no-op.
-   * @param optLogger
-   */
-  public StartBusResult startBus(Logger optLogger);
-
-  /**
-   * Stop the bus. If it was already stopped this is a no-op and if was already started it will
-   * be stopped no matter what.
-   * @param optLogger
-   */
-  public void stopBus(Logger optLogger);
 
   /**
    * Get a searchBusCmd for this busmaster.

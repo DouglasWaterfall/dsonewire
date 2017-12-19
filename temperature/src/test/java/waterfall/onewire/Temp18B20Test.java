@@ -18,7 +18,6 @@ import waterfall.onewire.Temp18B20.Reading;
 import waterfall.onewire.Temp18B20.ReadingData;
 import waterfall.onewire.Temp18B20.ReadingError;
 import waterfall.onewire.busmaster.BusMaster;
-import waterfall.onewire.busmaster.BusMaster.StartBusResult;
 import waterfall.onewire.busmaster.ConvertTCmd;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
 import waterfall.onewire.busmasters.HA7S.HA7S;
@@ -412,12 +411,8 @@ public class Temp18B20Test {
   }
 
   private BusMaster getStartedHA7S(HA7SSerial ha7SSerial) {
-    BusMaster ha7s = new HA7S(ha7SSerial);
-
-    Assert.assertFalse(ha7s.getIsStarted());
-    Assert.assertEquals(StartBusResult.Code.started, ha7s.startBus(null).getCode());
-
-    return ha7s;
+    ha7SSerial.start(null);
+    return new HA7S(ha7SSerial);
   }
 
 }

@@ -53,10 +53,6 @@ public class NotifySearchBusCmdHelper {
       throw new IllegalArgumentException("SNSBCR_MinPeriodInvalid");
     }
 
-    if (!bm.getIsStarted()) {
-      throw new IllegalArgumentException("SNSBCR_BusMasterNotStarted");
-    }
-
     if ((notifyMap != null) && (notifyMap.get(obj) != null)) {
       throw new IllegalArgumentException("SNSBCR_NotifyObjAlreadyScheduled");
     }

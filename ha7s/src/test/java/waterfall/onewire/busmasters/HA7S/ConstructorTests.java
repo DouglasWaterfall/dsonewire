@@ -4,6 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -11,47 +12,42 @@ import org.testng.annotations.Test;
  */
 public class ConstructorTests {
 
-  @Test(expectedExceptions = IllegalArgumentException.class)
-  public void testConstructorNullSerial() {
-    new HA7S(null);
+  @Test(dataProvider = "getConstructorNegativeCase",
+      expectedExceptions = IllegalArgumentException.class,
+      expectedExceptionsMessageRegExp = "serial must non-null and started")
+  public void testConstructorNegativeCases(HA7SSerial serial) {
+    new HA7S(serial);
+  }
+
+  @DataProvider
+  public Object[][] getConstructorNegativeCases() {
+    return new Object[][] {
+        { null },
+        { mock(HA7SSerial.class)}
+    };
   }
 
   @Test
   public void testConstructorDefaults() {
-    String portName = "foo";
 
     HA7SSerial mockSerial = mock(HA7SSerial.class);
+    String portName = "foo";
     when(mockSerial.getPortName()).thenReturn(portName);
+    when(mockSerial.isStarted()).thenReturn(true);
 
     HA7S ha7s = new HA7S(mockSerial);
-    Assert.assertFalse(ha7s.getIsStarted());
-    Assert.assertTrue(ha7s.getCurrentTimeMillis() > 0);
     Assert.assertEquals(ha7s.getName(), "HA7S on " + portName);
-  }
 
-  @Test
-  public void testConstructorDummySerial() {
-    HA7S ha7s = null;
 
     try {
-      ha7s = new HA7S(new HA7SSerialDummy("port"));
-    } catch (Exception e) {
-      Assert.fail("Exception not expected");
-    }
-
-    Assert.assertNotNull(ha7s);
-    Assert.assertNotNull(ha7s.getName());
-    Assert.assertTrue(ha7s.getName().startsWith("HA7S on "));
-
-    long ctm = ha7s.getCurrentTimeMillis();
-    try {
+      long ctm = ha7s.getCurrentTimeMillis();
+      Assert.assertTrue(ctm > 0);
       Thread.sleep(100);
+      long next_ctm = ha7s.getCurrentTimeMillis();
+      Assert.assertTrue(ctm < next_ctm);
     } catch (InterruptedException e) {
       Assert.fail("Unexpected exception:" + e);
     }
-    Assert.assertTrue(ctm < ha7s.getCurrentTimeMillis());
-
-    Assert.assertFalse(ha7s.getIsStarted());
   }
 
 }

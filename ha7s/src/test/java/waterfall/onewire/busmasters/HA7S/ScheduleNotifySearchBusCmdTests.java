@@ -3,7 +3,6 @@ package waterfall.onewire.busmasters.HA7S;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.BusMaster.StartBusResult;
 import waterfall.onewire.busmasters.HA7S.part.DS18B20;
 
 /**
@@ -25,21 +24,6 @@ public class ScheduleNotifySearchBusCmdTests extends TestBase {
     } catch (IllegalArgumentException e) {
       Assert.assertEquals(e.getMessage(), "CSNSBC_BusMasterNotStarted");
     }
-
-    try {
-      ha7s.scheduleNotifySearchBusCmd(null, notByAlarm, periodOneMSec);
-      Assert.fail("exception expected");
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals(e.getMessage(), "SNSBCR_BusMasterNotStarted");
-    }
-
-    try {
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
-
-    Assert.assertTrue(ha7s.getIsStarted());
 
     try {
       ha7s.cancelScheduledNotifySearchBusCmd(null, notByAlarm);
@@ -177,30 +161,11 @@ public class ScheduleNotifySearchBusCmdTests extends TestBase {
   @Test
   public void testScheduleNotifySearchBusByAlarmCmd() {
     HA7SSerialDummy serialDummy = new HA7SSerialDummy("port");
+    serialDummy.start(null);
 
     HA7S ha7s = new HA7S(serialDummy);
 
     final boolean byAlarm = true;
-
-    try {
-      ha7s.cancelScheduledNotifySearchBusCmd(null, byAlarm);
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals(e.getMessage(), "CSNSBC_BusMasterNotStarted");
-    }
-
-    try {
-      ha7s.scheduleNotifySearchBusCmd(null, byAlarm, periodOneMSec);
-    } catch (IllegalArgumentException e) {
-      Assert.assertEquals(e.getMessage(), "SNSBCR_BusMasterNotStarted");
-    }
-
-    try {
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
-
-    Assert.assertTrue(ha7s.getIsStarted());
 
     try {
       ha7s.cancelScheduledNotifySearchBusCmd(null, byAlarm);
@@ -332,16 +297,9 @@ public class ScheduleNotifySearchBusCmdTests extends TestBase {
 
   private void internal_testScheduleNotifySearchBusCmdTiming(boolean byAlarm) {
     HA7SSerialDummy serialDummy = new HA7SSerialDummy("port");
+    serialDummy.start(null);
 
     HA7S ha7s = new HA7S(serialDummy);
-
-    try {
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
-
-    Assert.assertTrue(ha7s.getIsStarted());
 
     myNotifySearchBusCmdResult callback = new myNotifySearchBusCmdResult();
     Assert.assertNull(callback.getData());
@@ -475,12 +433,9 @@ public class ScheduleNotifySearchBusCmdTests extends TestBase {
     // Stop the busmaster to cancel everything.
     try {
       ha7s.stopBus(null);
-      Assert.assertFalse(ha7s.getIsStarted());
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }
-
-    Assert.assertFalse(ha7s.getIsStarted());
 
     // no more events expected
     for (int i = 0; i < 2; i++) {

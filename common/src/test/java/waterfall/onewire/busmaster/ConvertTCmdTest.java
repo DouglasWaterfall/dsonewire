@@ -53,19 +53,8 @@ public class ConvertTCmdTest {
   }
 
   @Test
-  public void testBusNotStarted() {
-    BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(false);
-    DSAddress mockAddr = mock(DSAddress.class);
-
-    TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
-    Assert.assertEquals(cmd.execute(), ConvertTCmd.Result.busFault);
-  }
-
-  @Test
   public void testExecuteInternalException() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);
@@ -77,7 +66,6 @@ public class ConvertTCmdTest {
   @Test(dataProvider = "createExecuteInternalResultData")
   public void testExecuteInternalResult(ConvertTCmd.Result setResult, long setResultWriteCTM) {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
     DSAddress mockAddr = mock(DSAddress.class);
 
     TestConvertTCmd cmd = new TestConvertTCmd(mockBM, mockAddr);

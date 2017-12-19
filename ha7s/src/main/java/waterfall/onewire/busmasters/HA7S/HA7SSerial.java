@@ -22,6 +22,13 @@ public interface HA7SSerial {
   public StartResult start(Logger optLogger);
 
   /**
+   * Ask if the serial port is started, or running.
+   *
+   * @return true if the Serial is started, false otherwise.
+   */
+  public boolean isStarted();
+
+  /**
    * The HA7S uses a write/read sequence to communicate with the host and this method will write
    * bytes (terminated by the caller with a CR as appropriate) and then wait for a response which
    * will always be terminated by the a CR.

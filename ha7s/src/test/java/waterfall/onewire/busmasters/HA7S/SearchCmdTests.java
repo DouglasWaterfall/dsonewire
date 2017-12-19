@@ -3,15 +3,12 @@ package waterfall.onewire.busmasters.HA7S;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.BusMaster.StartBusResult;
 import waterfall.onewire.busmaster.Logger;
-import waterfall.onewire.busmaster.ReadScratchpadCmd;
 import waterfall.onewire.busmaster.SearchBusCmd;
 
 /**
@@ -31,7 +28,7 @@ public class SearchCmdTests extends TestBase {
     final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
     final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
-    HA7SSerial mockSerial = getReadyToStartMockSerial();
+    HA7SSerial mockSerial = getStartedMockSerial();
     HA7S ha7s = new HA7S(mockSerial);
 
     SearchBusCmd searchBusCmd = ha7s.querySearchBusCmd();
@@ -41,44 +38,38 @@ public class SearchCmdTests extends TestBase {
     Assert.assertNull(searchBusCmd.getResult());
 
     try {
-      SearchBusCmd.Result result = searchBusCmd.execute();
-      Assert.assertEquals(result, SearchBusCmd.Result.bus_not_started);
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
 
-    try {
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-      Assert.assertTrue(ha7s.getIsStarted());
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+          .thenAnswer(makeAnswerForSearch(new byte[]{'S'}, dev_A.copyHexBytesTo(new byte[16], 0),
+              cmdFirstWriteCTM,
+              cmdFirstReadCRCTM))
+          .thenAnswer(
+              makeAnswerForSearch(new byte[]{'s'}, dev_B.copyHexBytesTo(new byte[16], 0), 5L, 6L))
+          .thenAnswer(
+              makeAnswerForSearch(new byte[]{'s'}, dev_C.copyHexBytesTo(new byte[16], 0), 7L, 8L))
+          .thenAnswer(makeAnswerForSearch(new byte[]{'s'}, null, 9L, 10L));
 
-    when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
-        .thenAnswer(makeAnswerForSearch(new byte[]{'S'}, dev_A.copyHexBytesTo(new byte[16], 0),
-            cmdFirstWriteCTM,
-            cmdFirstReadCRCTM))
-        .thenAnswer(
-            makeAnswerForSearch(new byte[]{'s'}, dev_B.copyHexBytesTo(new byte[16], 0), 5L, 6L))
-        .thenAnswer(
-            makeAnswerForSearch(new byte[]{'s'}, dev_C.copyHexBytesTo(new byte[16], 0), 7L, 8L))
-        .thenAnswer(makeAnswerForSearch(new byte[]{'s'}, null, 9L, 10L));
-
-    try {
       SearchBusCmd.Result result = searchBusCmd.execute();
       Assert.assertEquals(result, SearchBusCmd.Result.success);
+
+      Assert.assertEquals(searchBusCmd.getResult(), SearchBusCmd.Result.success);
+      Assert.assertNotNull(searchBusCmd.getResultList());
+      Assert.assertEquals(searchBusCmd.getResultList().size(), 3);
+      Assert.assertTrue(searchBusCmd.getResultListCRC32() != 0);
+      Assert.assertEquals(searchBusCmd.getResultWriteCTM(), cmdFirstWriteCTM);
+      Assert.assertTrue(searchBusCmd.getResultList().contains(dev_A) &&
+          searchBusCmd.getResultList().contains(dev_B) &&
+          searchBusCmd.getResultList().contains(dev_C));
+
+      ha7s.stopBus(null);
+
+      searchBusCmd.execute();
+      Assert.assertEquals(result, SearchBusCmd.Result.bus_not_started);
+
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }
 
-    Assert.assertEquals(searchBusCmd.getResult(), SearchBusCmd.Result.success);
-    Assert.assertNotNull(searchBusCmd.getResultList());
-    Assert.assertEquals(searchBusCmd.getResultList().size(), 3);
-    Assert.assertTrue(searchBusCmd.getResultListCRC32() != 0);
-    Assert.assertEquals(searchBusCmd.getResultWriteCTM(), cmdFirstWriteCTM);
-    Assert.assertTrue(searchBusCmd.getResultList().contains(dev_A) &&
-        searchBusCmd.getResultList().contains(dev_B) &&
-        searchBusCmd.getResultList().contains(dev_C));
   }
 
   @Test
@@ -90,7 +81,7 @@ public class SearchCmdTests extends TestBase {
     final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
     final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
-    HA7SSerial mockSerial = getReadyToStartMockSerial();
+    HA7SSerial mockSerial = getStartedMockSerial();
     HA7S ha7s = new HA7S(mockSerial);
 
     SearchBusCmd searchBusCmd = ha7s.querySearchBusByAlarmCmd();
@@ -100,44 +91,36 @@ public class SearchCmdTests extends TestBase {
     Assert.assertNull(searchBusCmd.getResult());
 
     try {
-      SearchBusCmd.Result result = searchBusCmd.execute();
-      Assert.assertEquals(result, SearchBusCmd.Result.bus_not_started);
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
 
-    try {
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-      Assert.assertTrue(ha7s.getIsStarted());
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+          .thenAnswer(makeAnswerForSearch(new byte[]{'C'}, dev_A.copyHexBytesTo(new byte[16], 0),
+              cmdFirstWriteCTM,
+              cmdFirstReadCRCTM))
+          .thenAnswer(
+              makeAnswerForSearch(new byte[]{'c'}, dev_B.copyHexBytesTo(new byte[16], 0), 5L, 6L))
+          .thenAnswer(
+              makeAnswerForSearch(new byte[]{'c'}, dev_C.copyHexBytesTo(new byte[16], 0), 7L, 8L))
+          .thenAnswer(makeAnswerForSearch(new byte[]{'c'}, null, 9L, 10L));
 
-    when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
-        .thenAnswer(makeAnswerForSearch(new byte[]{'C'}, dev_A.copyHexBytesTo(new byte[16], 0),
-            cmdFirstWriteCTM,
-            cmdFirstReadCRCTM))
-        .thenAnswer(
-            makeAnswerForSearch(new byte[]{'c'}, dev_B.copyHexBytesTo(new byte[16], 0), 5L, 6L))
-        .thenAnswer(
-            makeAnswerForSearch(new byte[]{'c'}, dev_C.copyHexBytesTo(new byte[16], 0), 7L, 8L))
-        .thenAnswer(makeAnswerForSearch(new byte[]{'c'}, null, 9L, 10L));
-
-    try {
       SearchBusCmd.Result result = searchBusCmd.execute();
       Assert.assertEquals(result, SearchBusCmd.Result.success);
+      Assert.assertEquals(searchBusCmd.getResult(), SearchBusCmd.Result.success);
+      Assert.assertNotNull(searchBusCmd.getResultList());
+      Assert.assertEquals(searchBusCmd.getResultList().size(), 3);
+      Assert.assertTrue(searchBusCmd.getResultListCRC32() != 0);
+      Assert.assertEquals(searchBusCmd.getResultWriteCTM(), cmdFirstWriteCTM);
+      Assert.assertTrue(searchBusCmd.getResultList().contains(dev_A) &&
+          searchBusCmd.getResultList().contains(dev_B) &&
+          searchBusCmd.getResultList().contains(dev_C));
+
+      ha7s.stopBus(null);
+
+      result = searchBusCmd.execute();
+      Assert.assertEquals(result, SearchBusCmd.Result.bus_not_started);
+
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }
-
-    Assert.assertEquals(searchBusCmd.getResult(), SearchBusCmd.Result.success);
-    Assert.assertNotNull(searchBusCmd.getResultList());
-    Assert.assertEquals(searchBusCmd.getResultList().size(), 3);
-    Assert.assertTrue(searchBusCmd.getResultListCRC32() != 0);
-    Assert.assertEquals(searchBusCmd.getResultWriteCTM(), cmdFirstWriteCTM);
-    Assert.assertTrue(searchBusCmd.getResultList().contains(dev_A) &&
-        searchBusCmd.getResultList().contains(dev_B) &&
-        searchBusCmd.getResultList().contains(dev_C));
   }
 
   @Test
@@ -149,7 +132,7 @@ public class SearchCmdTests extends TestBase {
     final DSAddress dev_B = DSAddress.fromUncheckedHex(DSAddress._090000065BD53528);
     final DSAddress dev_C = DSAddress.fromUncheckedHex(DSAddress._5F0000065CCD1A28);
 
-    HA7SSerial mockSerial = getReadyToStartMockSerial();
+    HA7SSerial mockSerial = getStartedMockSerial();
     HA7S ha7s = new HA7S(mockSerial);
 
     short familyCode = 0x28;
@@ -161,44 +144,37 @@ public class SearchCmdTests extends TestBase {
     Assert.assertNull(searchBusCmd.getResult());
 
     try {
-      SearchBusCmd.Result result = searchBusCmd.execute();
-      Assert.assertEquals(result, SearchBusCmd.Result.bus_not_started);
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+          .thenAnswer(makeAnswerForSearch(new byte[]{'F', Convert.fourBitsToHex(familyCode >> 4),
+                  Convert.fourBitsToHex(familyCode & 0xf)},
+              dev_A.copyHexBytesTo(new byte[16], 0), cmdFirstWriteCTM, cmdFirstReadCRCTM))
+          .thenAnswer(
+              makeAnswerForSearch(new byte[]{'f'}, dev_B.copyHexBytesTo(new byte[16], 0), 5L, 6L))
+          .thenAnswer(
+              makeAnswerForSearch(new byte[]{'f'}, dev_C.copyHexBytesTo(new byte[16], 0), 7L, 8L))
+          .thenAnswer(makeAnswerForSearch(new byte[]{'f'}, null, 9L, 10L));
 
-    try {
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-      Assert.assertTrue(ha7s.getIsStarted());
-    } catch (Exception e) {
-      Assert.fail("Unexpected exception:" + e);
-    }
-
-    when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
-        .thenAnswer(makeAnswerForSearch(new byte[]{'F', Convert.fourBitsToHex(familyCode >> 4),
-                Convert.fourBitsToHex(familyCode & 0xf)},
-            dev_A.copyHexBytesTo(new byte[16], 0), cmdFirstWriteCTM, cmdFirstReadCRCTM))
-        .thenAnswer(
-            makeAnswerForSearch(new byte[]{'f'}, dev_B.copyHexBytesTo(new byte[16], 0), 5L, 6L))
-        .thenAnswer(
-            makeAnswerForSearch(new byte[]{'f'}, dev_C.copyHexBytesTo(new byte[16], 0), 7L, 8L))
-        .thenAnswer(makeAnswerForSearch(new byte[]{'f'}, null, 9L, 10L));
-
-    try {
       SearchBusCmd.Result result = searchBusCmd.execute();
       Assert.assertEquals(result, SearchBusCmd.Result.success);
+
+      Assert.assertEquals(searchBusCmd.getResult(), SearchBusCmd.Result.success);
+      Assert.assertNotNull(searchBusCmd.getResultList());
+      Assert.assertEquals(searchBusCmd.getResultList().size(), 3);
+      Assert.assertTrue(searchBusCmd.getResultListCRC32() != 0);
+      Assert.assertEquals(searchBusCmd.getResultWriteCTM(), cmdFirstWriteCTM);
+      Assert.assertTrue(searchBusCmd.getResultList().contains(dev_A) &&
+          searchBusCmd.getResultList().contains(dev_B) &&
+          searchBusCmd.getResultList().contains(dev_C));
+
+      ha7s.stopBus(null);
+
+      result = searchBusCmd.execute();
+      Assert.assertEquals(result, SearchBusCmd.Result.bus_not_started);
+
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }
 
-    Assert.assertEquals(searchBusCmd.getResult(), SearchBusCmd.Result.success);
-    Assert.assertNotNull(searchBusCmd.getResultList());
-    Assert.assertEquals(searchBusCmd.getResultList().size(), 3);
-    Assert.assertTrue(searchBusCmd.getResultListCRC32() != 0);
-    Assert.assertEquals(searchBusCmd.getResultWriteCTM(), cmdFirstWriteCTM);
-    Assert.assertTrue(searchBusCmd.getResultList().contains(dev_A) &&
-        searchBusCmd.getResultList().contains(dev_B) &&
-        searchBusCmd.getResultList().contains(dev_C));
   }
 
   /*

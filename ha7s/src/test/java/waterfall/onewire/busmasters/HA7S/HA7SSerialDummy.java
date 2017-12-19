@@ -43,6 +43,11 @@ public class HA7SSerialDummy implements HA7SSerial {
   }
 
   @Override
+  public boolean isStarted() {
+    return started;
+  }
+
+  @Override
   public StartResult start(Logger optLogger) {
     if (!started) {
       if (optLogger != null) {

@@ -20,7 +20,6 @@ public class SearchPusherByBusCmdTest {
   public void testPushByCorrectCmd(boolean isByAlarm) {
 
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchBusCmd mockByAlarmCmd = mock(SearchBusCmd.class);
     SearchBusCmd mockNotByAlarmCmd = mock(SearchBusCmd.class);

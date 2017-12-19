@@ -114,15 +114,6 @@ public class SearchBusCmdTest {
     Assert.fail("should have thrown exception");
   }
 
-  @Test
-  public void testBusNotStarted() {
-    BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(false);
-
-    TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
-    Assert.assertEquals(cmd.execute(), SearchBusCmd.Result.bus_not_started);
-  }
-
   @Test(expectedExceptions = IllegalArgumentException.class)
   public void testResultDataListNull() {
     BusMaster mockBM = mock(BusMaster.class);
@@ -142,7 +133,6 @@ public class SearchBusCmdTest {
   @Test
   public void testExecuteInternalException() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, (short) 5);
     cmd.setExecuteException(new RuntimeException("foo"));
@@ -154,7 +144,6 @@ public class SearchBusCmdTest {
   public void testExecuteInternalResult(SearchBusCmd.Result setResult, List<DSAddress> setResultList,
       long setResultWriteCTM) {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     TestSearchBusCmd cmd = new TestSearchBusCmd(mockBM, false);
     cmd.setExecuteResult(setResult, setResultWriteCTM, setResultList);

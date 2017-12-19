@@ -106,7 +106,6 @@ public class WaitForDeviceByAddressTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
     when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
 
     Assert.assertNotNull(bmR.getBusMasters());
@@ -155,7 +154,6 @@ public class WaitForDeviceByAddressTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
     when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
 
     Assert.assertNotNull(bmR.getBusMasters());
@@ -204,7 +202,6 @@ public class WaitForDeviceByAddressTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
     when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
 
     Assert.assertNotNull(bmR.getBusMasters());
@@ -267,7 +264,6 @@ public class WaitForDeviceByAddressTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
     when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
 
     Assert.assertNotNull(bmR.getBusMasters());
@@ -318,7 +314,6 @@ public class WaitForDeviceByAddressTest {
     BusMaster mockBM = mock(BusMaster.class);
 
     when(mockBM.getName()).thenReturn(MOCK_BM_NAME);
-    when(mockBM.getIsStarted()).thenReturn(true);
     when(mockBM.toString()).thenReturn(MOCK_BM_NAME);
 
     Assert.assertNotNull(bmR.getBusMasters());

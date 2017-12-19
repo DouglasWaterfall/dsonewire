@@ -22,8 +22,8 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
     success,
 
     /**
-     * The bus has failed to perform the cmd. This may be because the bus is not started, or
-     * it is in a fault state. Regardless the cmd did not execute.
+     * The bus has failed to perform the cmd. This may be because the bus is not started, or it is
+     * in a fault state. Regardless the cmd did not execute.
      */
     busFault,
 
@@ -62,18 +62,14 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
       resultWriteCTM = 0;
     }
 
-    if (!getBusMaster().getIsStarted()) {
-      result = Result.busFault;
-    } else {
-      try {
-        logInfo("execute(dsAddr:" + getAddress().toString() + ")");
-        result = execute_internal();
-        logInfo("result:" + result.name());
+    try {
+      logInfo("execute(dsAddr:" + getAddress().toString() + ")");
+      result = execute_internal();
+      logInfo("result:" + result.name());
 
-      } catch (Exception e) {
-        logError(e);
-        result = Result.deviceFault;
-      }
+    } catch (Exception e) {
+      logError(e);
+      result = Result.deviceFault;
     }
 
     return result;

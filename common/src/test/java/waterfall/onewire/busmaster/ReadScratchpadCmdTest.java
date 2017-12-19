@@ -127,20 +127,8 @@ public class ReadScratchpadCmdTest {
   }
 
   @Test
-  public void testBusNotStarted() {
-    BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(false);
-    DSAddress mockAddr = mock(DSAddress.class);
-    Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
-
-    TestReadScratchpadCmd cmd = new TestReadScratchpadCmd(mockBM, mockAddr, (short) 5);
-    Assert.assertEquals(cmd.execute(), Result.busFault);
-  }
-
-  @Test
   public void testExecuteInternalException() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
     DSAddress mockAddr = mock(DSAddress.class);
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 
@@ -155,7 +143,6 @@ public class ReadScratchpadCmdTest {
       short setRequestByteCount, long setResultWriteCTM,
       byte[] setResultData, byte[] setResultHexData) {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
     DSAddress mockAddr = mock(DSAddress.class);
     Logger.LogLevel mockLogLevel = mock(Logger.LogLevel.class);
 

@@ -37,14 +37,11 @@ public class NotifySearchBusCmdHelperTest {
     {BusMaster.ScheduleNotifySearchBusCmdResult.SNSBCR_NotifyObjNull, notStarted, notByAlarm, null, addOnce, ignoredMinPeriodMSec},
     */
   public void testScheduleNotifySearchBusCmdNegativeTests(String expectedExceptionMessage,
-      NotifySearchBusCmdResult nsbcr, boolean isStarted, boolean byAlarm, boolean addTwice,
+      NotifySearchBusCmdResult nsbcr, boolean byAlarm, boolean addTwice,
       long minPeriodMSec) {
     BusMaster mockBM = mock(BusMaster.class);
-    if (isStarted) {
-      when(mockBM.getIsStarted()).thenReturn(true);
-      mySearchBusCmd mySearchBusCmd = new mySearchBusCmd(mockBM, byAlarm);
-      when(mockBM.querySearchBusByAlarmCmd()).thenReturn(mySearchBusCmd);
-    }
+    mySearchBusCmd mySearchBusCmd = new mySearchBusCmd(mockBM, byAlarm);
+    when(mockBM.querySearchBusByAlarmCmd()).thenReturn(mySearchBusCmd);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
     when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
@@ -75,9 +72,6 @@ public class NotifySearchBusCmdHelperTest {
 
     NotifySearchBusCmdResult mockNSBCR = mock(NotifySearchBusCmdResult.class);
 
-    boolean notStarted = false;
-    boolean started = true;
-
     boolean notByAlarm = false;
     boolean byAlarm = true;
 
@@ -88,32 +82,20 @@ public class NotifySearchBusCmdHelperTest {
     long ignoredMinPeriodMSec = 1;
 
     return new Object[][]{
-        {"SNSBCR_NotifyObjNull", null, notStarted, byAlarm,
-            addOnce, ignoredMinPeriodMSec},
-        {"SNSBCR_NotifyObjNull", null, notStarted,
-            notByAlarm, addOnce, ignoredMinPeriodMSec},
+        {"SNSBCR_NotifyObjNull", null, byAlarm, addOnce, ignoredMinPeriodMSec},
+        {"SNSBCR_NotifyObjNull", null, notByAlarm, addOnce, ignoredMinPeriodMSec},
 
-        {"SNSBCR_MinPeriodInvalid", mockNSBCR, notStarted,
-            byAlarm, addOnce, invalidMinPeriodMSec},
-        {"SNSBCR_MinPeriodInvalid", mockNSBCR, notStarted,
-            notByAlarm, addOnce, invalidMinPeriodMSec},
+        {"SNSBCR_MinPeriodInvalid", mockNSBCR, byAlarm, addOnce, invalidMinPeriodMSec},
+        {"SNSBCR_MinPeriodInvalid", mockNSBCR, notByAlarm, addOnce, invalidMinPeriodMSec},
 
-        {"SNSBCR_BusMasterNotStarted", mockNSBCR,
-            notStarted, byAlarm, addOnce, ignoredMinPeriodMSec},
-        {"SNSBCR_BusMasterNotStarted", mockNSBCR,
-            notStarted, notByAlarm, addOnce, ignoredMinPeriodMSec},
-
-        {"SNSBCR_NotifyObjAlreadyScheduled", mockNSBCR,
-            started, byAlarm, addTwice, ignoredMinPeriodMSec},
-        {"SNSBCR_NotifyObjAlreadyScheduled", mockNSBCR,
-            started, notByAlarm, addTwice, ignoredMinPeriodMSec}
+        {"SNSBCR_NotifyObjAlreadyScheduled", mockNSBCR, byAlarm, addTwice, ignoredMinPeriodMSec},
+        {"SNSBCR_NotifyObjAlreadyScheduled", mockNSBCR, notByAlarm, addTwice, ignoredMinPeriodMSec}
     };
   }
 
   @Test
   public void testScheduleNotifySearchBusCmdPositiveCases() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
     when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
@@ -142,7 +124,6 @@ public class NotifySearchBusCmdHelperTest {
       NotifySearchBusCmdResult updateNSBCR,
       long update_minPeriodMSec) {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
     when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
@@ -182,7 +163,6 @@ public class NotifySearchBusCmdHelperTest {
   @Test
   public void testUpdateScheduledSearchNotifyForPositiveCases() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
     when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
@@ -230,7 +210,6 @@ public class NotifySearchBusCmdHelperTest {
   @Test
   public void testCancelScheduledSearchNotifyFor() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
     when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
@@ -297,7 +276,6 @@ public class NotifySearchBusCmdHelperTest {
   @Test
   public void testCancelAllScheduledSearchNotifyFor() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
     when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
@@ -325,7 +303,6 @@ public class NotifySearchBusCmdHelperTest {
   @Test(expectedExceptions = IllegalArgumentException.class)
   public void testNotifySearchResultBadArguments() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
     when(mockSearchPusher.adjustPeriod(any(Long.class))).thenReturn(true);
@@ -337,7 +314,6 @@ public class NotifySearchBusCmdHelperTest {
   @Test
   public void testNotifySearchResult() {
     BusMaster mockBM = mock(BusMaster.class);
-    when(mockBM.getIsStarted()).thenReturn(true);
 
     SearchPusher mockSearchPusher = mock(SearchPusher.class);
 

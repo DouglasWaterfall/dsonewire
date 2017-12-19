@@ -7,7 +7,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.BusMaster.StartBusResult;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
 
@@ -25,18 +24,13 @@ public class ReadPowerSupplyCmdTests extends TestBase {
     final long cmdWriteCTM = 5;
     final long cmdReadCRCTM = 6;
 
-    HA7SSerial mockSerial = getReadyToStartMockSerial();
+    HA7SSerial mockSerial = getStartedMockSerial();
     HA7S ha7s = new HA7S(mockSerial);
 
     ReadPowerSupplyCmd cmd = ha7s.queryReadPowerSupplyCmd(dsAddr);
     Assert.assertNotNull(cmd);
 
     try {
-      ReadPowerSupplyCmd.Result result = cmd.execute();
-      Assert.assertEquals(result, ReadPowerSupplyCmd.Result.busFault);
-
-      Assert.assertEquals(ha7s.startBus(null).getCode(), StartBusResult.Code.started);
-      Assert.assertTrue(ha7s.getIsStarted());
 
       when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
           .thenAnswer(makeAnswerForAddress(3L, 4L))
@@ -47,6 +41,12 @@ public class ReadPowerSupplyCmdTests extends TestBase {
       Assert.assertEquals(cmd.execute(), ReadPowerSupplyCmd.Result.success);
       Assert.assertEquals(cmd.getResultWriteCTM(), cmdWriteCTM);
       Assert.assertEquals(cmd.getResultIsParasitic(), expectedIsParasitic);
+
+      ha7s.stopBus(null);
+
+      ReadPowerSupplyCmd.Result result = cmd.execute();
+      Assert.assertEquals(result, ReadPowerSupplyCmd.Result.busFault);
+
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }
