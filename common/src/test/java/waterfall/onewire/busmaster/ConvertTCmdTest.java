@@ -1,7 +1,6 @@
 package waterfall.onewire.busmaster;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -82,7 +81,6 @@ public class ConvertTCmdTest {
     return new Object[][]{
         {ConvertTCmd.Result.busFault, -1},
         {ConvertTCmd.Result.deviceFault, -1},
-        {ConvertTCmd.Result.deviceNotFound, -1},
         {ConvertTCmd.Result.success, -1},
         {ConvertTCmd.Result.success, 0},
         {ConvertTCmd.Result.success, 1},
@@ -106,8 +104,6 @@ public class ConvertTCmdTest {
       setResultData(execute_internal_resultWriteCTM);
       return execute_internal_result;
     }
-
-    ;
 
     protected void setResultData(long resultWriteCTM) {
       this.resultWriteCTM = resultWriteCTM;

@@ -134,167 +134,8 @@ public class HA7S implements BusMaster {
     }
   }
 
-
-  private cmdReturn cmdSearchROM(ArrayList<byte[]> hexByteArrayList, Logger optLogger) {
-    final String logContext = "cmdSearchROM";
-
-    HexByteArrayListResult result = cmdSearch(optLogger);
-    if (!result.isSuccess()) {
-      if (optLogger != null) {
-        optLogger.logError(logContext, logContext + " error:" + result.getErrorMsg());
-      }
-      return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
-    }
-
-    if (result.getValue() != null) {
-      hexByteArrayList.addAll(result.getValue());
-    }
-
-    return logAndReturn(new cmdReturn(hexByteArrayList.size(), result.getWriteCTM()), optLogger,
-        logContext);
-  }
-
-  private cmdReturn cmdFamilySearch(byte familyCode, ArrayList<byte[]> hexByteArrayList,
-      Logger optLogger) {
-    final String logContext = "cmdFamilySearch";
-
-    HexByteArrayListResult result = cmdFamilySearch(familyCode, optLogger);
-    if (!result.isSuccess()) {
-      if (optLogger != null) {
-        optLogger.logError(logContext, logContext + " error:" + result.getErrorMsg());
-      }
-      return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
-    }
-
-    if (result.getValue() != null) {
-      hexByteArrayList.addAll(result.getValue());
-    }
-
-    return logAndReturn(new cmdReturn(hexByteArrayList.size(), result.getWriteCTM()), optLogger,
-        logContext);
-  }
-
-  private cmdReturn cmdConditionalSearch(ArrayList<byte[]> hexByteArrayList, Logger optLogger) {
-    final String logContext = "cmdConditionalSearch";
-
-    HexByteArrayListResult result = cmdConditionalSearch(optLogger);
-    if (!result.isSuccess()) {
-      if (optLogger != null) {
-        optLogger.logError(logContext, logContext + " error:" + result.getErrorMsg());
-      }
-      return logAndReturn(new cmdReturn(cmdResult.ReadError), optLogger, logContext);
-    }
-
-    if (result.getValue() != null) {
-      hexByteArrayList.addAll(result.getValue());
-    }
-
-    return logAndReturn(new cmdReturn(hexByteArrayList.size(), result.getWriteCTM()), optLogger,
-        logContext);
-  }
-
-  private cmdReturn logAndReturn(cmdReturn ret, Logger optLogger, String logContext) {
-    if (optLogger != null) {
-      optLogger.logError(logContext, ret.result.name());
-    }
-    return ret;
-  }
-
   //
-  //
-  //
-  private HexByteArrayListResult cmdSearch(Logger optLogger) {
-    return cmdSearchInternal(new byte[]{'S'}, new byte[]{'s'}, optLogger);
-  }
-
-  private HexByteArrayListResult cmdConditionalSearch(Logger optLogger) {
-    return cmdSearchInternal(new byte[]{'C'}, new byte[]{'c'}, optLogger);
-  }
-
-  private HexByteArrayListResult cmdFamilySearch(short familyCode, Logger optLogger) {
-    if ((familyCode < 0) || (familyCode > 255)) {
-      throw new IllegalArgumentException("Bad familyCode");
-    }
-    byte[] cmdData = new byte[]{'F',
-        Convert.fourBitsToHex(familyCode >> 4),
-        Convert.fourBitsToHex(familyCode & 0xf)};
-    byte[] cmdNextData = new byte[]{'f'};
-    return cmdSearchInternal(cmdData, cmdNextData, optLogger);
-  }
-
-  private HexByteArrayListResult cmdSearchInternal(byte[] cmdData, byte[] nextCmdData,
-      Logger optLogger) {
-    ArrayList<byte[]> resultList = new ArrayList<>();
-
-    long firstPostWriteCTM = 0;
-
-    int index = 0;
-    while (true) {
-      byte[] rHexBuf = new byte[16];
-
-      boolean first = (index == 0);
-
-      HA7SSerial.ReadResult readResult = serialPort
-          .writeReadTilCR((first ? cmdData : nextCmdData), rHexBuf,
-              optLogger);
-
-      if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
-        return new HexByteArrayListResult().setFailure(readResult.getError().name());
-      }
-
-      if (first) {
-        firstPostWriteCTM = readResult.getPostWriteCTM();
-      }
-
-      if (readResult.getReadCount() == 0) {
-        return new HexByteArrayListResult().setSuccess(resultList, firstPostWriteCTM,
-            readResult.getReadCRCTM());
-      }
-
-      if (readResult.getReadCount() != 16) {
-        return new HexByteArrayListResult()
-            .setFailure("Underrun - expected 0 or 16 got:" + readResult.getReadCount());
-      }
-
-      if (!HA7SSerial.isValidUpperCaseHex(rHexBuf, readResult.getReadCount())) {
-        return new HexByteArrayListResult().setFailure("Not hex bytes");
-      }
-
-      resultList.add(rHexBuf);
-      index++;
-    }
-  }
-
-  public enum cmdResult {
-    Success,
-    NotStarted,
-    DeviceNotFound,
-    ReadTimeout,
-    ReadOverrun,
-    ReadError
-  }
-
-  public static class cmdReturn {
-
-    public cmdResult result;
-    public int readCount;
-    public long writeCTM;
-
-    public cmdReturn(cmdResult result) {
-      this.result = result;
-      this.readCount = 0;
-      this.writeCTM = 0;
-    }
-
-    public cmdReturn(int readCount, long writeCTM) {
-      this.result = cmdResult.Success;
-      this.readCount = readCount;
-      this.writeCTM = writeCTM;
-    }
-  }
-
-  //
-  // Private Exceptions
+  // Exceptions
   //
   private static class BusFaultException extends RuntimeException {
 
@@ -315,12 +156,9 @@ public class HA7S implements BusMaster {
   //
   private class ConvertTCmd extends waterfall.onewire.busmaster.ConvertTCmd {
 
-    private final byte[] selectCmdData = new byte[]{'A',
-        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F',
-        0x0D
-    };
-    private final byte[] convertTCmdData = {'W', '0', '1', '4', '4', '\r'};
-    private final byte[] readBitCmdData = {'O'};
+    private final byte[] selectCmd = new byte[]{'A',
+        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', '\r'};
+    private final byte[] convertTCmd = {'W', '0', '1', '4', '4', '\r'};
     private final byte[] resetCmdData = {'R'};
     private final byte[] readBuf = new byte[16];
     private final byte[] readBitBuf = new byte[1];
@@ -330,9 +168,9 @@ public class HA7S implements BusMaster {
         throw new BusDataException("checkAddress wrong count:" + readCount);
       }
       for (int i = 0; i < 16; i++) {
-        if (rbuf[i] != selectCmdData[i + 1]) {
+        if (rbuf[i] != selectCmd[i + 1]) {
           throw new BusDataException("checkAddress wrong data i:" + i + " expected:"
-              + selectCmdData[i + 1] + " got:" + rbuf[i]);
+              + selectCmd[i + 1] + " got:" + rbuf[i]);
         }
       }
     };
@@ -341,7 +179,7 @@ public class HA7S implements BusMaster {
       if (readCount != 2) {
         throw new BusDataException("ConvertT failed cmd check read:" + readCount);
       }
-      if ((rbuf[0] != convertTCmdData[3]) || (rbuf[1] != convertTCmdData[4])) {
+      if ((rbuf[0] != convertTCmd[3]) || (rbuf[1] != convertTCmd[4])) {
         throw new BusDataException(
             "ConvertT failed cmd check expected:44 got:" + rbuf[0] + rbuf[1]);
       }
@@ -364,9 +202,8 @@ public class HA7S implements BusMaster {
 
     private Object[][] cmdDataSequence = {
         // cmd data to send, read into buf, checkFunction, returned readResult
-        {selectCmdData, readBuf, checkAddressResultData, null}, // check against the dsAddress
-        {convertTCmdData, readBuf, checkConvertTReturn, null},
-        {readBitCmdData, readBitBuf, checkReadBitReturn, null},
+        {selectCmd, readBuf, checkAddressResultData, null}, // check against the dsAddress
+        {convertTCmd, readBuf, checkConvertTReturn, null},
         {resetCmdData, readBuf, checkResetReturn, null}
     };
 
@@ -374,7 +211,7 @@ public class HA7S implements BusMaster {
 
     private ConvertTCmd(DSAddress dsAddr) {
       super(HA7S.this, dsAddr);
-      dsAddr.copyHexBytesTo(selectCmdData, 1);
+      dsAddr.copyHexBytesTo(selectCmd, 1);
     }
 
     protected ConvertTCmd.Result execute_internal() {
@@ -405,11 +242,8 @@ public class HA7S implements BusMaster {
           sequence[3] = readResult;
         }
 
-        if (readBitBuf[0] == '1') {
-          return Result.deviceNotFound;
-        }
-
-        long writeCTM = ((HA7SSerial.ReadResult) cmdDataSequence[2][3]).getPostWriteCTM();
+        // We are interested in tracking the time the device started the temperature calculation
+        long writeCTM = ((HA7SSerial.ReadResult) cmdDataSequence[1][3]).getPostWriteCTM();
 
         setResultData(writeCTM);
 
@@ -448,23 +282,12 @@ public class HA7S implements BusMaster {
 
   }
 
-  // TODO: Let's not allow any query for the cmds until the HA7S is started. That will avoid having
-  // TODO: the commands deal with this. Also, lets not let the HA7S be stopped once it is started.
-  // TODO: Maybe the BusMaster API can define some more Exceptions that we can just throw and
-  // TODO: so not have to worry about returning...like querying without being started, and if we
-  // TODO: have turned off the HA7S we can just keep returning busFault.
-  // TODO: That would let the ScheduleNotifySearchBusCmdResult be eliminated entirely since all the
-  // TODO: errors are really logic exception on the fault of the caller, not a random event like
-  // TODO: the busFault.
-
   private class ReadPowerSupplyCmd extends waterfall.onewire.busmaster.ReadPowerSupplyCmd {
 
-    private final byte[] selectCmdData = new byte[]{'A',
-        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F',
-        0x0D
-    };
-    private final byte[] readPowerSupplyCmdData = {'W', '0', '2', 'B', '4', 'F', 'F', '\r'};
-    private final byte[] resetCmdData = {'R'};
+    private final byte[] selectCmd = {'A',
+        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', '\r'};
+    private final byte[] readPowerSupplyCmd = {'W', '0', '2', 'B', '4', 'F', 'F', '\r'};
+    private final byte[] resetCmd = {'R'};
     private final byte[] readBuf = new byte[16];
     private final byte[] readPowerSupplyData = new byte[4];
 
@@ -473,9 +296,9 @@ public class HA7S implements BusMaster {
         throw new BusDataException("checkAddress wrong count:" + readCount);
       }
       for (int i = 0; i < 16; i++) {
-        if (rbuf[i] != selectCmdData[i + 1]) {
+        if (rbuf[i] != selectCmd[i + 1]) {
           throw new BusDataException("checkAddress wrong data i:" + i + " expected:"
-              + selectCmdData[i + 1] + " got:" + rbuf[i]);
+              + selectCmd[i + 1] + " got:" + rbuf[i]);
         }
       }
     };
@@ -484,7 +307,7 @@ public class HA7S implements BusMaster {
       if (readCount != 4) {
         throw new BusDataException("ReadPowerSupply failed cmd check read:" + readCount);
       }
-      if ((rbuf[0] != readPowerSupplyCmdData[3]) || (rbuf[1] != readPowerSupplyCmdData[4])) {
+      if ((rbuf[0] != readPowerSupplyCmd[3]) || (rbuf[1] != readPowerSupplyCmd[4])) {
         throw new BusDataException(
             "ReadPowerSupply failed cmd check expected:B4 got:" + rbuf[0] + rbuf[1]);
       }
@@ -502,14 +325,14 @@ public class HA7S implements BusMaster {
 
     private Object[][] cmdDataSequence = {
         // cmd data to send, read into buf, checkFunction, returned readResult
-        {selectCmdData, readBuf, checkAddressResultData, null}, // check against the dsAddress
-        {readPowerSupplyCmdData, readPowerSupplyData, checkReadPowerSupplyReturn, null},
-        {resetCmdData, readBuf, checkResetReturn, null}
+        {selectCmd, readBuf, checkAddressResultData, null}, // check against the dsAddress
+        {readPowerSupplyCmd, readPowerSupplyData, checkReadPowerSupplyReturn, null},
+        {resetCmd, readBuf, checkResetReturn, null}
     };
 
     public ReadPowerSupplyCmd(DSAddress dsAddr) {
       super(HA7S.this, dsAddr);
-      dsAddr.copyHexBytesTo(selectCmdData, 1);
+      dsAddr.copyHexBytesTo(selectCmd, 1);
     }
 
     @Override
@@ -587,11 +410,9 @@ public class HA7S implements BusMaster {
 
   private class ReadScratchpadCmd extends waterfall.onewire.busmaster.ReadScratchpadCmd {
 
-    private final byte[] selectCmdData = new byte[]{'A',
-        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F',
-        0x0D
-    };
-    private byte[] readScratchpadCmdData = null;
+    private final byte[] selectCmd = {'A',
+        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', '\r'};
+    private byte[] readScratchpadCmd = null;
     private final byte[] readBuf = new byte[16];
     private byte[] readScratchpadResultData = null;
 
@@ -600,9 +421,9 @@ public class HA7S implements BusMaster {
         throw new BusDataException("checkAddress wrong count:" + readCount);
       }
       for (int i = 0; i < 16; i++) {
-        if (rbuf[i] != selectCmdData[i + 1]) {
+        if (rbuf[i] != selectCmd[i + 1]) {
           throw new BusDataException("checkAddress wrong data i:" + i + " expected:"
-              + selectCmdData[i + 1] + " got:" + rbuf[i]);
+              + selectCmd[i + 1] + " got:" + rbuf[i]);
         }
       }
     };
@@ -613,7 +434,7 @@ public class HA7S implements BusMaster {
         throw new BusDataException(
             "ReadScratchpad failed cmd check expected:" + expectedReadCount + " read:" + readCount);
       }
-      if ((rbuf[0] != readScratchpadCmdData[3]) || (rbuf[1] != readScratchpadCmdData[4])) {
+      if ((rbuf[0] != readScratchpadCmd[3]) || (rbuf[1] != readScratchpadCmd[4])) {
         throw new BusDataException(
             "ReadScratchpad failed cmd check expected:BE got:" + (char) rbuf[0] + (char) rbuf[1]);
       }
@@ -630,29 +451,29 @@ public class HA7S implements BusMaster {
 
     public ReadScratchpadCmd(DSAddress dsAddr, short requestByteCount) {
       super(HA7S.this, dsAddr, requestByteCount);
-      dsAddr.copyHexBytesTo(selectCmdData, 1);
+      dsAddr.copyHexBytesTo(selectCmd, 1);
 
       int totalLength = (5 + (requestByteCount * 2) + 1);
-      readScratchpadCmdData = new byte[totalLength];
+      readScratchpadCmd = new byte[totalLength];
       int i = 0;
-      readScratchpadCmdData[i++] = 'W';
-      readScratchpadCmdData[i++] = Convert
+      readScratchpadCmd[i++] = 'W';
+      readScratchpadCmd[i++] = Convert
           .fourBitsToHex(((int) (requestByteCount + 1) & 0xff) >> 4);
-      readScratchpadCmdData[i++] = Convert
+      readScratchpadCmd[i++] = Convert
           .fourBitsToHex(((int) (requestByteCount + 1) & 0xff) & 0xf);
-      readScratchpadCmdData[i++] = 'B';
-      readScratchpadCmdData[i++] = 'E';
+      readScratchpadCmd[i++] = 'B';
+      readScratchpadCmd[i++] = 'E';
       while (i < (totalLength - 1)) {
-        readScratchpadCmdData[i++] = 'F';
+        readScratchpadCmd[i++] = 'F';
       }
-      readScratchpadCmdData[i] = '\r';
+      readScratchpadCmd[i] = '\r';
 
       readScratchpadResultData = new byte[(requestByteCount + 1) * 2];
 
       cmdDataSequence = new Object[][]{
           // cmd data to send, read into buf, checkFunction, returned readResult
-          {selectCmdData, readBuf, checkAddressResultData, null}, // check against the dsAddress
-          {readScratchpadCmdData, readScratchpadResultData, checkReadScratchpadReturn, null},
+          {selectCmd, readBuf, checkAddressResultData, null}, // check against the dsAddress
+          {readScratchpadCmd, readScratchpadResultData, checkReadScratchpadReturn, null},
       };
     }
 
@@ -668,7 +489,7 @@ public class HA7S implements BusMaster {
 
         final int hexByteCount = (requestByteCount * 2);
 
-        Arrays.fill(readScratchpadCmdData, 5, (5 + hexByteCount), (byte) 'F');
+        Arrays.fill(readScratchpadCmd, 5, (5 + hexByteCount), (byte) 'F');
 
         for (Object[] sequence : cmdDataSequence) {
           byte[] cmdData = (byte[]) sequence[0];
@@ -750,51 +571,73 @@ public class HA7S implements BusMaster {
       super(HA7S.this, byAlarm);
     }
 
-    public short getFamilyCode() {
-      assert isByFamilyCode();
-      return familyCode;
-    }
-
     protected Result execute_internal() {
       assert (result == Result.busy);
       assert (resultData == null);
 
-      ArrayList<byte[]> hexByteArrayList = new ArrayList<byte[]>();
-
-      HA7S.cmdReturn ret;
-
-      if (isByFamilyCode()) {
-        ret = cmdFamilySearch((byte) getFamilyCode(), hexByteArrayList, getDeviceLevelLogger());
-      } else if (isByAlarm()) {
-        ret = cmdConditionalSearch(hexByteArrayList, getDeviceLevelLogger());
-      } else {
-        ret = cmdSearchROM(hexByteArrayList, getDeviceLevelLogger());
+      if (serialPort == null) {
+        throw new BusFaultException("bus was stopped");
       }
 
-      switch (ret.result) {
-        case NotStarted:
-          return Result.bus_not_started;
-        case Success:
-          break;
-        case DeviceNotFound:
-        case ReadTimeout:
-        case ReadOverrun:
-        case ReadError:
-        default:
-          return Result.communication_error;
+      final byte[] cmdSearchROM = {'S'};
+      final byte[] cmdSearchROMNext = {'s'};
+      final byte[] cmdAlarmSearch = {'C'};
+      final byte[] cmdAlarmSearchNext = {'c'};
+      final byte[] cmdFamilySearch = {'F', '0', '0'};
+      final byte[] cmdFamilySearchNext = {'f'};
+
+      byte[] firstCmd = null;
+      byte[] nextCmd = null;
+
+      if (isByFamilyCode()) {
+        cmdFamilySearch[1] = Convert.fourBitsToHex(familyCode >> 4);
+        cmdFamilySearch[2] = Convert.fourBitsToHex(familyCode & 0xf);
+        firstCmd = cmdFamilySearch;
+        nextCmd = cmdFamilySearchNext;
+      } else if (isByAlarm()) {
+        firstCmd = cmdAlarmSearch;
+        nextCmd = cmdAlarmSearchNext;
+      } else {
+        firstCmd = cmdSearchROM;
+        nextCmd = cmdSearchROMNext;
       }
 
       ArrayList<DSAddress> resultList = new ArrayList<>();
+      long firstPostWriteCTM = 0;
 
-      try {
-        for (byte[] hexByteArray : hexByteArrayList) {
-          resultList.add(DSAddress.takeUnCRCCheckedHex(hexByteArray));
+      int index = 0;
+      while (true) {
+        byte[] rHexBuf = new byte[16];
+
+        HA7SSerial.ReadResult readResult = serialPort
+            .writeReadTilCR(((index == 0) ? firstCmd : nextCmd), rHexBuf, getLogger());
+
+        if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
+          throw new BusDataException("writeReadTilCR:" + readResult.getError().name());
         }
-      } catch (IllegalArgumentException e) {
-        return Result.communication_error;
+
+        if (index == 0) {
+          firstPostWriteCTM = readResult.getPostWriteCTM();
+        }
+
+        if (readResult.getReadCount() == 0) {
+          break;
+        }
+
+        if (readResult.getReadCount() != 16) {
+          throw new BusDataException(
+              "Search failed read count expected:16 got:" + readResult.getReadCount());
+        }
+
+        if (!HA7SSerial.isValidUpperCaseHex(rHexBuf, readResult.getReadCount())) {
+          throw new BusDataException("Not hex bytes");
+        }
+
+        resultList.add(DSAddress.takeUnCRCCheckedHex(rHexBuf));
+        index++;
       }
 
-      ResultData _resultData = new ResultData(resultList, ret.writeCTM);
+      ResultData _resultData = new ResultData(resultList, firstPostWriteCTM);
 
       if (isByAlarm()) {
         searchByAlarmHelper.notifySearchResult(_resultData);

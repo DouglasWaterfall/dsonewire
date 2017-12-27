@@ -3,47 +3,12 @@ package waterfall.onewire.busmaster;
 import waterfall.onewire.DSAddress;
 
 /**
- * Created by dwaterfa on 6/9/16. <p> ConvertT 44h
+ * Created by dwaterfa on 6/9/16.
  */
 public abstract class ConvertTCmd extends DeviceBaseCmd {
 
-  /**
-   *
-   */
-  public enum Result {
-    /**
-     * The cmd is busy performing the operation.
-     */
-    cmdBusy,
-
-    /**
-     * The cmd executed successfully.
-     */
-    success,
-
-    /**
-     * The bus has failed to perform the cmd. This may be because the bus is not started, or it is
-     * in a fault state. Regardless the cmd did not execute.
-     */
-    busFault,
-
-    /**
-     * The device did not respond and is believed to not be present.
-     */
-    deviceNotFound,
-
-    /**
-     * The device did not respond correctly and is believed to be in error.
-     */
-    deviceFault
-
-  }
-
   protected Result result = null;
 
-  /**
-   * Protected Methods and Constructors
-   */
   protected ConvertTCmd(BusMaster busMaster, DSAddress dsAddr) {
     super(busMaster, dsAddr);
   }
@@ -89,7 +54,7 @@ public abstract class ConvertTCmd extends DeviceBaseCmd {
 
   /**
    * This the closest value for System.getCurrentTimeMillis() on the physical bus controlling the
-   * device when the write for the bus command was executed.
+   * device when the write for the ConvertT command was executed.
    *
    * @return system time in milliseconds
    * @throws NoResultException if the current result is not done.
@@ -113,6 +78,32 @@ public abstract class ConvertTCmd extends DeviceBaseCmd {
    * @param resultWriteCTM the time mark taken after the CR is written for the cmd byte
    */
   protected abstract void setResultData(long resultWriteCTM);
+
+  /**
+   *
+   */
+  public enum Result {
+    /**
+     * The cmd is busy performing the operation.
+     */
+    cmdBusy,
+
+    /**
+     * The cmd executed successfully.
+     */
+    success,
+
+    /**
+     * The bus has failed to perform the cmd. This may be because the bus is stopped, or it is
+     * in a fault state. Regardless the cmd did not execute.
+     */
+    busFault,
+
+    /**
+     * The device did not respond correctly and is believed to be in error.
+     */
+    deviceFault
+  }
 
 }
 

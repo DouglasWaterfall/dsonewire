@@ -13,22 +13,13 @@ import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
-import waterfall.onewire.busmasters.HA7S.HA7S.cmdReturn;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult;
 import waterfall.onewire.busmasters.HA7S.part.DS18B20;
 
 /**
  * Created by dwaterfa on 12/17/17.
  *
- * Here is helpful site with which to fabricate addresses: http://www.datastat.com/sysadminjournal/maximcrc.cgi
- *
- * The trick is when calculating the crc8 you need to do it in reverse order, that is from right to
- * left of the address as we maintain it. If you do the 14 bytes what will be left will be a two
- * byte CRC value. This is what can then be the FIRST two nibbles of the full address.
- *
- * "EE0000065BC0AE28", "090000065BD53528", "5F0000065CCD1A28", "260000065BE22D28",
- * "7C0000063BB13028", "5A0000063B7AF528", "AA0000063BF51928", "390000063B759F28",
- * "7F0000063BA12F28"
+
  */
 public class TestBase {
   
@@ -44,62 +35,6 @@ public class TestBase {
     HA7SSerial mockSerial = mock(HA7SSerial.class);
     when(mockSerial.isStarted()).thenReturn(true);
     return mockSerial;
-  }
-
-  public static Answer<cmdReturn> makeWriteBlockCmdReturnAnswer(HA7S.cmdResult result,
-      byte[] rbuf_data, long writeCTM) {
-    return new Answer<HA7S.cmdReturn>() {
-      @Override
-      public HA7S.cmdReturn answer(final InvocationOnMock invocation) {
-        byte[] wbuf = (byte[]) (invocation.getArguments())[0];
-        byte[] rbuf = (byte[]) (invocation.getArguments())[1];
-        Logger logger = (Logger) (invocation.getArguments())[2];
-
-        if (result == HA7S.cmdResult.Success) {
-          int read_count = 0;
-          if (rbuf_data != null) {
-            read_count = rbuf_data.length;
-            for (int i = 0; i < read_count; i++) {
-              rbuf[i] = rbuf_data[i];
-            }
-          }
-          return new HA7S.cmdReturn(read_count, writeCTM);
-        }
-        return new HA7S.cmdReturn(result);
-      }
-    };
-  }
-
-  public static Answer<HA7S.cmdReturn> makeSearchCmdReturnAnswer(HA7S.cmdResult result,
-      ArrayList<byte[]> hexByteArrayList_data, long writeCTM) {
-    return new Answer<HA7S.cmdReturn>() {
-      @Override
-      public HA7S.cmdReturn answer(final InvocationOnMock invocation) {
-        Byte familyCode = null;
-        ArrayList<byte[]> hexByteArrayList = null;
-        Logger logger = null;
-        if (invocation.getArguments().length == 2) {
-          hexByteArrayList = (ArrayList<byte[]>) (invocation.getArguments())[0];
-          logger = (Logger) (invocation.getArguments())[1];
-        } else {
-          familyCode = (Byte) (invocation.getArguments())[0];
-          hexByteArrayList = (ArrayList<byte[]>) (invocation.getArguments())[1];
-          logger = (Logger) (invocation.getArguments())[2];
-        }
-
-        if (result == HA7S.cmdResult.Success) {
-          int read_count = 0;
-          if (hexByteArrayList_data != null) {
-            read_count = hexByteArrayList_data.size();
-            for (int i = 0; i < read_count; i++) {
-              hexByteArrayList.add(hexByteArrayList_data.get(i));
-            }
-          }
-          return new HA7S.cmdReturn(read_count, writeCTM);
-        }
-        return new HA7S.cmdReturn(result);
-      }
-    };
   }
 
   protected Answer<HA7SSerial.ReadResult> makeAnswerForReadResult(

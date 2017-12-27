@@ -3,43 +3,14 @@ package waterfall.onewire.busmaster;
 import waterfall.onewire.DSAddress;
 
 /**
- * Created by dwaterfa on 6/9/16. <p> ReadPowerSupply B4h
+ * Created by dwaterfa on 6/9/16.
  */
 public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
 
-  /**
-   *
-   */
-  public enum Result {
-    /**
-     * The cmd is busy performing the operation.
-     */
-    cmdBusy,
-
-    /**
-     * The cmd executed successfully.
-     */
-    success,
-
-    /**
-     * The bus has failed to perform the cmd. This may be because the bus is not started, or it is
-     * in a fault state. Regardless the cmd did not execute.
-     */
-    busFault,
-
-    /**
-     * The device did not respond correctly and is believed to be in error.
-     */
-    deviceFault
-
-  }
-
   protected Result result = null;
+
   protected boolean resultIsParasitic;
 
-  /**
-   * Protected Methods and Constructors
-   */
   protected ReadPowerSupplyCmd(BusMaster busMaster, DSAddress dsAddr) {
     super(busMaster, dsAddr);
   }
@@ -118,5 +89,31 @@ public abstract class ReadPowerSupplyCmd extends DeviceBaseCmd {
   protected abstract Result execute_internal();
 
   protected abstract void setResultData(long resultWriteCTM, boolean isParasitic);
+
+  /**
+   *
+   */
+  public enum Result {
+    /**
+     * The cmd is busy performing the operation.
+     */
+    cmdBusy,
+
+    /**
+     * The cmd executed successfully.
+     */
+    success,
+
+    /**
+     * The bus has failed to perform the cmd. This may be because the bus has stopped, or it is
+     * in a fault state. Regardless the cmd did not execute.
+     */
+    busFault,
+
+    /**
+     * The device did not respond correctly and is believed to be in error.
+     */
+    deviceFault
+  }
 
 }

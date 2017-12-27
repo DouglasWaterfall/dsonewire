@@ -3,46 +3,15 @@ package waterfall.onewire.busmaster;
 import waterfall.onewire.DSAddress;
 
 /**
- * Created by dwaterfa on 6/9/16. <p> ReadScratchPad BEh
+ * Created by dwaterfa on 6/9/16.
  */
 public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
 
-  /**
-   *
-   */
-  public enum Result {
-    /**
-     * The cmd is busy performing the operation.
-     */
-    cmdBusy,
-
-    /**
-     * The cmd executed successfully.
-     */
-    success,
-
-    /**
-     * The bus has failed to perform the cmd. This may be because the bus is not started, or it is
-     * in a fault state. Regardless the cmd did not execute.
-     */
-    busFault,
-
-    /**
-     * The device did not respond correctly and is believed to be in error.
-     */
-    deviceFault
-
-  }
-
   protected short requestByteCount;
-
   protected Result result = null;
   protected byte[] resultData;
   protected byte[] resultHexData;
 
-  /**
-   * Protected Methods and Constructors
-   */
   protected ReadScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, short requestByteCount) {
     super(busMaster, dsAddr);
     assert (requestByteCount >= 1);
@@ -149,5 +118,32 @@ public abstract class ReadScratchpadCmd extends DeviceBaseCmd {
 
   protected abstract void setResultData(long resultWriteCTM, byte[] resultData,
       byte[] resultHexData);
+
+  /**
+   *
+   */
+  public enum Result {
+    /**
+     * The cmd is busy performing the operation.
+     */
+    cmdBusy,
+
+    /**
+     * The cmd executed successfully.
+     */
+    success,
+
+    /**
+     * The bus has failed to perform the cmd. This may be because the bus is not started, or it is
+     * in a fault state. Regardless the cmd did not execute.
+     */
+    busFault,
+
+    /**
+     * The device did not respond correctly and is believed to be in error.
+     */
+    deviceFault
+
+  }
 
 }

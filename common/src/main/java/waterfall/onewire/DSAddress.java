@@ -8,6 +8,17 @@ import java.util.Arrays;
  */
 public class DSAddress extends Object {
 
+  /*
+   * Here is helpful site with which to fabricate addresses: http://www.datastat.com/sysadminjournal/maximcrc.cgi
+   *
+   * The trick is when calculating the crc8 you need to do it in reverse order, that is from right to
+   * left of the address as we maintain it. If you do the 14 bytes what will be left will be a two
+   * byte CRC value. This is what can then be the FIRST two nibbles of the full address.
+   *
+   * "EE0000065BC0AE28", "090000065BD53528", "5F0000065CCD1A28", "260000065BE22D28",
+   * "7C0000063BB13028", "5A0000063B7AF528", "AA0000063BF51928", "390000063B759F28",
+   * "7F0000063BA12F28"
+   */
   public static String _EE0000065BC0AE28 = "EE0000065BC0AE28";
   public static String _ED0000063BC00428 = "ED0000063BC00428";
   public static String _090000065BD53528 = "090000065BD53528";
@@ -40,8 +51,8 @@ public class DSAddress extends Object {
     byte[] addr = new byte[8];
     for (int i = 0; i < 8; i++) {
       int hexCharIndex = ((7 - i) * 2);
-      byte msb = checkUpperCaseHex((byte)uncheckedHexAddr.charAt(hexCharIndex), notHexMsg);
-      byte lsb = checkUpperCaseHex((byte)uncheckedHexAddr.charAt(hexCharIndex + 1), notHexMsg);
+      byte msb = checkUpperCaseHex((byte) uncheckedHexAddr.charAt(hexCharIndex), notHexMsg);
+      byte lsb = checkUpperCaseHex((byte) uncheckedHexAddr.charAt(hexCharIndex + 1), notHexMsg);
       addr[i] = (byte) Convert.hexTo8bits(msb, lsb);
     }
     if (CRC8.compute(addr) != 0) {
@@ -99,6 +110,7 @@ public class DSAddress extends Object {
   /**
    * The family code is one byte which declares the device type family. This can be used in the
    * family search.
+   *
    * @return the family code
    */
   public short getFamilyCode() {
@@ -121,6 +133,7 @@ public class DSAddress extends Object {
 
   /**
    * Fill the specified array with the hex data. This api avoids exposing the underlying array.
+   *
    * @param to array to fill with the 16 bytes of hex data, msb to lsb
    * @param index in the to array to start filling
    * @return the array passed in

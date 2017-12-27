@@ -109,6 +109,11 @@ public abstract class SearchBusCmd extends BaseCmd {
   }
 
   /**
+   * Protected Methods and Constructors
+   */
+  protected abstract void setResultData(ResultData resultData);
+
+  /**
    * @return List of devices Addresses.
    * @throws NoResultException if the current result is not success.
    */
@@ -133,11 +138,6 @@ public abstract class SearchBusCmd extends BaseCmd {
   }
 
   protected abstract Result execute_internal();
-
-  /**
-   * Protected Methods and Constructors
-   */
-  protected abstract void setResultData(ResultData resultData);
 
   /**
    *
