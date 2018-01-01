@@ -114,6 +114,11 @@ public class HA7S implements BusMaster {
     return new HA7S.ReadScratchpadCmd(dsAddr, requestByteCount);
   }
 
+  @Override
+  public WriteScratchpadCmd queryWriteScratchpadCmd(DSAddress dsAddr, byte[] writeData) {
+    return new HA7S.WriteScratchpadCmd(dsAddr, writeData);
+  }
+
   //
   // Private
   //
@@ -537,6 +542,127 @@ public class HA7S implements BusMaster {
       this.resultWriteCTM = resultWriteCTM;
       this.resultData = resultData;
       this.resultHexData = resultHexData;
+    }
+
+    private Logger getDeviceLevelLogger() {
+      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+        return getLogger();
+      }
+      return null;
+    }
+
+    private void logErrorInternal(String str) {
+      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
+        getLogger().logError(this.getClass().getSimpleName(), str);
+      }
+    }
+
+  }
+
+  private class WriteScratchpadCmd extends waterfall.onewire.busmaster.WriteScratchpadCmd {
+
+    private final byte[] selectCmd = {'A',
+        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', '\r'};
+    private byte[] writeScratchpadCmd = null;
+    private final byte[] readBuf = new byte[16];
+
+    private BiConsumer<byte[], Integer> checkAddressResultData = (rbuf, readCount) -> {
+      if (readCount != 16) {
+        throw new BusDataException("checkAddress wrong count:" + readCount);
+      }
+      for (int i = 0; i < 16; i++) {
+        if (rbuf[i] != selectCmd[i + 1]) {
+          throw new BusDataException("checkAddress wrong data i:" + i + " expected:"
+              + selectCmd[i + 1] + " got:" + rbuf[i]);
+        }
+      }
+    };
+
+    private Object[][] cmdDataSequence = null;
+
+    public WriteScratchpadCmd(DSAddress dsAddr, byte[] writeData) {
+      super(HA7S.this, dsAddr, writeData);
+      dsAddr.copyHexBytesTo(selectCmd, 1);
+
+      cmdDataSequence = new Object[][]{
+          // cmd data to send, read into buf, checkFunction, returned readResult
+          {selectCmd, readBuf, checkAddressResultData, null}, // check against the dsAddress
+          {writeScratchpadCmd, readBuf, null, null},
+      };
+    }
+
+    public void updateWriteData(byte[] writeData) {
+      super.updateWriteData(writeData);
+
+      int totalLength = (5 + (writeData.length * 2) + 1);
+      writeScratchpadCmd = new byte[totalLength];
+      int i = 0;
+      writeScratchpadCmd[i++] = 'W';
+      writeScratchpadCmd[i++] = Convert
+          .fourBitsToHex(((int) (writeData.length + 1) & 0xff) >> 4);
+      writeScratchpadCmd[i++] = Convert
+          .fourBitsToHex(((int) (writeData.length + 1) & 0xff) & 0xf);
+      writeScratchpadCmd[i++] = '4';
+      writeScratchpadCmd[i++] = 'E';
+      for (int j = 0; j < writeData.length; j++) {
+        writeScratchpadCmd[i++] = Convert
+            .fourBitsToHex(((int) (writeData[j]) & 0xff) >> 4);
+        writeScratchpadCmd[i++] = Convert
+            .fourBitsToHex(((int) (writeData[j]) & 0xff) & 0xf);
+      }
+      writeScratchpadCmd[i] = '\r';
+    }
+
+    protected WriteScratchpadCmd.Result execute_internal() {
+      assert (result == Result.cmdBusy);
+      assert (resultWriteCTM == 0);
+
+      try {
+        if (serialPort == null) {
+          throw new BusFaultException("bus was stopped");
+        }
+
+        for (Object[] sequence : cmdDataSequence) {
+          byte[] cmdData = (byte[]) sequence[0];
+          byte[] rBuf = (byte[]) sequence[1];
+          BiConsumer<byte[], Integer> checkDataF = (BiConsumer<byte[], Integer>) sequence[2];
+
+          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf,
+              getDeviceLevelLogger());
+
+          if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
+            throw new BusDataException("writeReadTilCR:" + readResult.getError().name());
+          }
+
+          if (checkDataF != null) {
+            checkDataF.accept(rBuf, readResult.getReadCount());
+          }
+
+          sequence[3] = readResult;
+        }
+
+        long writeCTM = ((HA7SSerial.ReadResult) cmdDataSequence[1][3]).getPostWriteCTM();
+
+        setResultData(writeCTM);
+        return Result.success;
+
+      } catch (BusDataException e) {
+        // TODO: Here is a potential place to imagine recovering from the bus fault and then
+        // TODO: trying again.
+        // TODO: logging with the HA7S (need more data in the throw errors)
+        // TODO: resync with the HA7S (a bunch of resets and read until the queue is empty) and
+        // TODO: then retry...
+        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
+        return Result.busFault;
+      } catch (BusFaultException e) {
+        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
+        return Result.busFault;
+      }
+    }
+
+    public void setResultData(long resultWriteCTM) {
+      assert (result == Result.cmdBusy);
+      this.resultWriteCTM = resultWriteCTM;
     }
 
     private Logger getDeviceLevelLogger() {

@@ -179,6 +179,7 @@ public class Temp18B20Test {
             DS18B20Scratchpad.DEFAULT_LALARM,
 
             new ReadingError(Temp18B20.ERR_SCRATCHPAD_DATA_NOT_VALID)},
+
         // device goes missing after convertT
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
             .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{
@@ -219,6 +220,7 @@ public class Temp18B20Test {
             DS18B20Scratchpad.DEFAULT_HALARM,
             DS18B20Scratchpad.DEFAULT_LALARM,
             new ReadingData((float)77.125, 1L)},
+
         // success read with CRC, recovered -79.375
         {dsAddress, getStartedHA7S(new HA7SSerialDummy("port")
             .addDevice(new DS18B20(dsAddress).setScratchPadData(new byte[][]{

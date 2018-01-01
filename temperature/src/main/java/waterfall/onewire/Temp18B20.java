@@ -1,9 +1,11 @@
 package waterfall.onewire;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.ConvertTCmd;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
+import waterfall.onewire.busmaster.WriteScratchpadCmd;
 import waterfall.onewire.device.DS18B20Scratchpad;
 
 /**
@@ -13,6 +15,7 @@ public class Temp18B20 {
 
   public static String ERR_NO_BUSMASTER = "No BusMaster";
   public static String ERR_READSCRATCHPAD_RESULT = "ReadScratchpadCmd.Result."; // starts with
+  public static String ERR_WRITESCRATCHPAD_RESULT = "WriteScratchpadCmd.Result."; // starts with
   public static String ERR_DEVICE_NOT_FOUND = "Device not found";
   public static String ERR_SCRATCHPAD_DATA_NOT_VALID = "Scratchpad data not valid";
   public static String ERR_SCRATCHPAD_DATA_CRC = "Scratchpad data crc error";
@@ -357,10 +360,15 @@ public class Temp18B20 {
     scratchpadData.setResolution((byte) resolution);
 
     // write scratchpad cmd
+    WriteScratchpadCmd writeScratchpadCmd = bm.queryWriteScratchpadCmd(dsAddress,
+        Arrays.copyOfRange(scratchpadData.getRawBytes(), 2, 5));
 
-    // Not yet.
+    WriteScratchpadCmd.Result rResult = writeScratchpadCmd.execute();
+    if (rResult != WriteScratchpadCmd.Result.success) {
+      return new ReadingError(ERR_WRITESCRATCHPAD_RESULT + rResult.name());
+    }
 
-    // Success - not returning an ReadingError
+    // Success - not returning a ReadingError
     return null;
   }
 

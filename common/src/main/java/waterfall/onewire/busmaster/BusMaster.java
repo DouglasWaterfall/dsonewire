@@ -114,6 +114,15 @@ public interface BusMaster {
    */
   public ReadScratchpadCmd queryReadScratchpadCmd(final DSAddress dsAddr, short requestByteCount);
 
+  /**
+   * Get a WriteScratchpadCmd for the specified DSAddress from this busmaster.
+   *
+   * @param dsAddr
+   * @param writeData
+   * @return WriteScratchpadCmd
+   */
+  public WriteScratchpadCmd queryWriteScratchpadCmd(final DSAddress dsAddr, byte[] writeData);
+
   // ReadStatusCmd
   // AA {0000 index} FFFFFFFFFF00007F {EDC1 crc}, so write 1 + 2 + 8 + 2 = 13 = 0D
 
