@@ -16,6 +16,7 @@
     <module>ha7sserial-jssc</module>
     <module>temperature</module>
     <module>application</module>
+    <module>scratch</module>
   </modules>
 
   <properties>

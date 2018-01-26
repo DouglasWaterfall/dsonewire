@@ -12,7 +12,10 @@ public abstract class WriteScratchpadCmd extends DeviceBaseCmd {
 
   protected WriteScratchpadCmd(BusMaster busMaster, DSAddress dsAddr, byte[] writeData) {
     super(busMaster, dsAddr);
-    updateWriteData(writeData);
+    if ((writeData == null) || (writeData.length < 1)) {
+      throw new IllegalArgumentException("writeData");
+    }
+    this.writeData = writeData;
   }
 
   /**
@@ -50,6 +53,7 @@ public abstract class WriteScratchpadCmd extends DeviceBaseCmd {
 
     } catch (Exception e) {
       logError(e);
+      e.printStackTrace();
       result = Result.deviceFault;
     }
 

@@ -29,7 +29,7 @@ public class HA7SBusMasterManagerTest {
     HA7SBusMasterManager ha7sBMM = new HA7SBusMasterManager(bmRegistry);
 
     try {
-      ha7sBMM.start(ttyArg, serialClass, logLevel);
+      ha7sBMM.start(ttyArg, serialClass.getName(), logLevel);
       Assert.fail("expected exception");
     } catch (Exception e) {
       Assert.assertNotNull(exceptionClass);
@@ -73,7 +73,7 @@ public class HA7SBusMasterManagerTest {
     HA7S[] addedList = null;
 
     try {
-      addedList = ha7sBMM.start("Foo", HA7SSerialDummy.class, Logger.LogLevel.CmdOnlyLevel());
+      addedList = ha7sBMM.start("Foo", HA7SSerialDummy.class.getName(), Logger.LogLevel.CmdOnlyLevel());
     } catch (Exception e) {
       Assert.fail("exception not expected");
     }
@@ -125,7 +125,7 @@ public class HA7SBusMasterManagerTest {
     String ha7sTTYArg = foo + "," + bar;
 
     try {
-      ha7sBMM.start(ha7sTTYArg, HA7SSerialDummy.class, Logger.LogLevel.CmdOnlyLevel());
+      ha7sBMM.start(ha7sTTYArg, HA7SSerialDummy.class.getName(), Logger.LogLevel.CmdOnlyLevel());
     } catch (Exception e) {
       Assert.fail("exception not expected");
     }

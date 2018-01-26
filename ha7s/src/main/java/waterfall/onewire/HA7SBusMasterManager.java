@@ -22,13 +22,25 @@ public class HA7SBusMasterManager {
     this.bmRegistry = bmRegistry;
   }
 
-  public synchronized HA7S[] start(String ha7sTTYArg, Class ttyClass, Logger.LogLevel logLevel)
+  public synchronized HA7S[] start(String ha7sTTYArg, String ttyClassName, Logger.LogLevel logLevel)
       throws IllegalArgumentException, NoSuchMethodException {
 
     String[] bmPaths = checkTTYArg(ha7sTTYArg);
 
-    if ((ttyClass == null) || (ttyClass.isAssignableFrom(HA7SSerial.class))) {
-      throw new IllegalArgumentException("ttyClass");
+    if ((ttyClassName == null) || (ttyClassName.isEmpty())) {
+      throw new IllegalArgumentException("ttyClass null or empty");
+    }
+
+    Class ttyClass = null;
+
+    try {
+      ttyClass = this.getClass().getClassLoader().loadClass(ttyClassName);
+      if (ttyClass.isAssignableFrom(HA7SSerial.class)) {
+        throw new IllegalArgumentException(ttyClass.getSimpleName() + ": assignable from HA7SSerial.class");
+      }
+    }
+    catch (ClassNotFoundException e) {
+      throw new IllegalArgumentException(ttyClassName + ": " + e);
     }
 
     if (logLevel == null) {

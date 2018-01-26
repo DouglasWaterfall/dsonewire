@@ -3,6 +3,7 @@ package waterfall.onewire.busmasters.HA7S;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.BiConsumer;
+import jdk.nashorn.internal.ir.annotations.Ignore;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.BusMaster;
@@ -561,39 +562,42 @@ public class HA7S implements BusMaster {
 
   private class WriteScratchpadCmd extends waterfall.onewire.busmaster.WriteScratchpadCmd {
 
-    private final byte[] selectCmd = {'A',
-        'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', '\r'};
-    private byte[] writeScratchpadCmd = null;
-    private final byte[] readBuf = new byte[16];
+    private final byte[] selectCmd;
+    private final byte[] readBuf;
+    private byte[] writeScratchpadCmd;
+    private Object[][] cmdDataSequence;
 
     private BiConsumer<byte[], Integer> checkAddressResultData = (rbuf, readCount) -> {
       if (readCount != 16) {
         throw new BusDataException("checkAddress wrong count:" + readCount);
       }
       for (int i = 0; i < 16; i++) {
-        if (rbuf[i] != selectCmd[i + 1]) {
+        if (rbuf[i] != getSelectCmd()[i + 1]) {
           throw new BusDataException("checkAddress wrong data i:" + i + " expected:"
-              + selectCmd[i + 1] + " got:" + rbuf[i]);
+              + getSelectCmd()[i + 1] + " got:" + rbuf[i]);
         }
       }
     };
 
-    private Object[][] cmdDataSequence = null;
-
     public WriteScratchpadCmd(DSAddress dsAddr, byte[] writeData) {
       super(HA7S.this, dsAddr, writeData);
+
+      selectCmd = new byte[] {'A',
+          'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', '\r'};
+      readBuf = new byte[16];
+
       dsAddr.copyHexBytesTo(selectCmd, 1);
 
-      cmdDataSequence = new Object[][]{
-          // cmd data to send, read into buf, checkFunction, returned readResult
-          {selectCmd, readBuf, checkAddressResultData, null}, // check against the dsAddress
-          {writeScratchpadCmd, readBuf, null, null},
-      };
+      updateCmdData();
     }
 
+    @Override
     public void updateWriteData(byte[] writeData) {
       super.updateWriteData(writeData);
+      updateCmdData();
+    }
 
+    private void updateCmdData() {
       int totalLength = (5 + (writeData.length * 2) + 1);
       writeScratchpadCmd = new byte[totalLength];
       int i = 0;
@@ -611,6 +615,16 @@ public class HA7S implements BusMaster {
             .fourBitsToHex(((int) (writeData[j]) & 0xff) & 0xf);
       }
       writeScratchpadCmd[i] = '\r';
+
+      cmdDataSequence = new Object[][]{
+          // cmd data to send, read into buf, checkFunction, returned readResult
+          {selectCmd, readBuf, checkAddressResultData, null}, // check against the dsAddress
+          {writeScratchpadCmd, readBuf, null, null},
+      };
+    }
+
+    private byte[] getSelectCmd() {
+      return selectCmd;
     }
 
     protected WriteScratchpadCmd.Result execute_internal() {

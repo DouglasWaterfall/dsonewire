@@ -8,10 +8,10 @@ import java.util.Arrays;
  */
 public class DS18B20Scratchpad {
 
-  public static final int RESOLUTION_9 = 0;
-  public static final int RESOLUTION_10 = 1;
-  public static final int RESOLUTION_11 = 2;
-  public static final int RESOLUTION_12 = 3;
+  public static final byte RESOLUTION_9 = 0;
+  public static final byte RESOLUTION_10 = 1;
+  public static final byte RESOLUTION_11 = 2;
+  public static final byte RESOLUTION_12 = 3;
 
   public static final byte DEFAULT_HALARM = 75;
   public static final byte DEFAULT_LALARM = 70;

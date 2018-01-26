@@ -22,6 +22,7 @@ public class Temp18B20 {
   public static String ERR_CONVERTT_RESULT = "ConvertTCmd.Result.";
   public static String ERR_REINITIALIZE_CYCLE = "Reinitialize cycle";
   public static String ERR_UNEXPECTED_INITSTATE = "Unexpected initState:"; // starts with
+  public static String ERR_INITIALIZE_FAILED = "WriteScratchpadCmd did not take";
 
   private final DSAddress dsAddress;
   private final byte resolution;
@@ -338,6 +339,29 @@ public class Temp18B20 {
         // do not want to cycle forever so we fail this and force it to try again from scratch.
         initState = InitializationState.Initialize;
         return new ReadingError(ERR_REINITIALIZE_CYCLE);
+      }
+
+      ReadScratchpadCmd.Result rResult = readScratchpadCmd.execute();
+      if (rResult != ReadScratchpadCmd.Result.success) {
+        return new ReadingError(ERR_READSCRATCHPAD_RESULT + rResult.name());
+      }
+
+      data = new DS18B20Scratchpad(readScratchpadCmd.getResultData());
+      if ((data.getResolution() != resolution) ||
+          (data.getTempHAlarm() != tempHAlarm) ||
+          (data.getTempLAlarm() != tempLAlarm)) {
+        StringBuffer sb = new StringBuffer();
+        sb.append(ERR_INITIALIZE_FAILED);
+        if (data.getResolution() != resolution) {
+          sb.append(String.format(" resolution:%d/%d", resolution, data.getResolution()));
+        }
+        if (data.getTempHAlarm() != tempHAlarm) {
+          sb.append(String.format(" tempHAlarm:%02x/%02x", tempHAlarm, data.getTempHAlarm()));
+        }
+        if (data.getTempLAlarm() != tempLAlarm) {
+          sb.append(String.format(" tempLAlarm:%02x/%02x", tempLAlarm, data.getTempLAlarm()));
+        }
+        return new ReadingError(sb.toString());
       }
 
       initState = InitializationState.ReInitialize;

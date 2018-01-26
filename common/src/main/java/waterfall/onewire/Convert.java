@@ -70,6 +70,17 @@ public class Convert {
     }
 
     return t_idx;
+  };
+
+  /**
+   * Converts the byte array to and array of two hex characters per byte.
+   * @param from
+   * @return
+   */
+  public static byte[] byteToHex(byte from[]) {
+    byte[] ret = new byte[from.length * 2];
+    byteToHex(from, 0, from.length, ret, 0);
+    return ret;
   }
 
   /**
