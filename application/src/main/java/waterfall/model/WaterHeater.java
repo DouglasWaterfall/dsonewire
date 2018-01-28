@@ -1,8 +1,7 @@
 package waterfall.model;
 
 import com.dalsemi.onewire.utils.Convert;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -185,36 +184,26 @@ public class WaterHeater implements Runnable {
 
   private void setStateUnknown(ReadingError error) {
     state = State.unknown;
-    String date = toDateString(System.currentTimeMillis());
+    current = new Current(System.currentTimeMillis(), state, error.getError(), current);
 
-    current = new Current(date, state, error.getError());
-
-    StringBuffer sb = new StringBuffer();
-    sb.append(date);
-    sb.append('\t');
-    sb.append(state.name());
-    if (error != null) {
-      sb.append('\t');
-      sb.append(error.getError());
-    }
-    sb.append('\n');
-    System.out.print(sb.toString());
-    System.out.flush();
+    logStateChange(current, null);
   }
 
   private void setStateFlat(Reading reading) {
     state = State.flat;
+    current = new Current(reading.getTimeMSec(), state,
+        (float)Convert.toFahrenheit(reading.getTempC()), current);
 
-    logStateChange(state, (float) Convert.toFahrenheit(reading.getTempC()),
-        reading.getTimeMSec(), null);
+    logStateChange(current, null);
   }
 
   private void setStateBurning(Reading reading) {
     burnStartTimeMSec = reading.getTimeMSec();
     state = State.burning;
+    current = new Current(reading.getTimeMSec(), state,
+        (float)Convert.toFahrenheit(reading.getTempC()), current);
 
-    logStateChange(state, (float) Convert.toFahrenheit(reading.getTempC()),
-        reading.getTimeMSec(), null);
+    logStateChange(current, null);
   }
 
   private void setStateCooling(Reading reading) {
@@ -229,22 +218,25 @@ public class WaterHeater implements Runnable {
     }
 
     state = State.cooling;
+    current = new Current(reading.getTimeMSec(), state,
+        (float)Convert.toFahrenheit(reading.getTempC()), current);
 
-    logStateChange(state, (float) Convert.toFahrenheit(reading.getTempC()),
-        reading.getTimeMSec(), msg);
+    logStateChange(current, null);
   }
 
-  private void logStateChange(State newState, float tempF, long timeMSec, String addMessage) {
-    String date = toDateString(timeMSec);
-
-    current = new Current(date, state, tempF);
-
+  private static void logStateChange(Current current, String addMessage) {
     StringBuffer sb = new StringBuffer();
-    sb.append(date);
+    sb.append(Temperature.toDateString(current.stateStartMSec));
     sb.append('\t');
-    sb.append(newState.name());
-    sb.append('\t');
-    sb.append(tempF);
+    sb.append(current.state.name());
+    if (current.tempF != null) {
+      sb.append('\t');
+      sb.append(current.tempF);
+    }
+    else if (current.error != null) {
+      sb.append('\t');
+      sb.append(current.error);
+    }
     if (addMessage != null) {
       sb.append('\t');
       sb.append(addMessage);
@@ -254,39 +246,84 @@ public class WaterHeater implements Runnable {
     System.out.flush();
   }
 
-  private static String toDateString(long timeMSec) {
-    GregorianCalendar calendar = new GregorianCalendar();
-    calendar.setTimeInMillis(timeMSec);
-    return String.format("%d/%d/%d %d:%d:%d",
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH) + 1,
-        calendar.get(Calendar.DAY_OF_MONTH),
-        calendar.get(Calendar.HOUR_OF_DAY),
-        calendar.get(Calendar.MINUTE),
-        calendar.get(Calendar.SECOND));
-  }
-
   public static class Current {
 
-    public String date;
-    public String state;
-    public Float tempF;
-    public String error;
+    @JsonIgnore
+    public final long stateStartMSec;
 
-    public Current(String date, State s, float tempF) {
-      this.date = date;
-      this.state = s.name();
+    public final State state;
+    public final String startStart;
+    public final Float tempF;
+    public final String error;
+    public final Burn[] burns;
+
+    public Current(long stateStartMSec, State s, float tempF, Current prevCurrent) {
+      this.stateStartMSec = stateStartMSec;
+      this.state = s;
+      this.startStart = Temperature.toDateString(stateStartMSec);
       this.tempF = tempF;
       this.error = null;
+
+      if (prevCurrent != null) {
+          if ((s == State.cooling) && (prevCurrent.state == State.burning) &&
+              (prevCurrent.error == null)) {
+            float burnTimeSec = ((float)(stateStartMSec - prevCurrent.stateStartMSec)) / 1000;
+            this.burns = addBurn(prevCurrent.burns,
+                Temperature.toDateString(prevCurrent.stateStartMSec), burnTimeSec);
+          }
+        else {
+            this.burns = prevCurrent.burns;
+          }
+      }
+      else {
+        this.burns = null;
+      }
     }
 
-    public Current(String date, State s, String error) {
-      this.date = date;
-      this.state = s.name();
+    public Current(long atStartMSec, State s, String error, Current prevCurrent) {
+      this.stateStartMSec = atStartMSec;
+      this.state = s;
+      this.startStart = Temperature.toDateString(stateStartMSec);
       this.tempF = null;
       this.error = error;
 
+      if (prevCurrent != null) {
+        this.burns = prevCurrent.burns;
+      }
+      else {
+        this.burns = null;
+      }
     }
+
+    private Burn[] addBurn(Burn[] prevBurns, String date, float timeSecs) {
+      Burn newBurn = new Burn(date, timeSecs);
+      Burn[] newBurns = null;
+
+      if (prevBurns != null) {
+        newBurns = new Burn[Math.min(10, prevBurns.length + 1)];
+        int toCopy = Math.min(9, prevBurns.length);
+        for (int i = 0; i < toCopy; i++) {
+          newBurns[1 + i] = prevBurns[i];
+        }
+      }
+      else {
+        newBurns = new Burn[1];
+      }
+
+      newBurns[0] = newBurn;
+      return newBurns;
+    }
+
+    public static class Burn {
+      String date;
+      float timeSecs;
+
+      public Burn(String date, float timeSec) {
+        this.date = date;
+        this.timeSecs = timeSecs;
+      }
+    }
+
   }
 
   public Current getCurrent() {
