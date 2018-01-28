@@ -252,7 +252,7 @@ public class WaterHeater implements Runnable {
     public final long stateStartMSec;
 
     public final State state;
-    public final String startStart;
+    public final String stateStart;
     public final Float tempF;
     public final String error;
     public final Burn[] burns;
@@ -260,7 +260,7 @@ public class WaterHeater implements Runnable {
     public Current(long stateStartMSec, State s, float tempF, Current prevCurrent) {
       this.stateStartMSec = stateStartMSec;
       this.state = s;
-      this.startStart = Temperature.toDateString(stateStartMSec);
+      this.stateStart = Temperature.toDateString(stateStartMSec);
       this.tempF = tempF;
       this.error = null;
 
@@ -283,7 +283,7 @@ public class WaterHeater implements Runnable {
     public Current(long atStartMSec, State s, String error, Current prevCurrent) {
       this.stateStartMSec = atStartMSec;
       this.state = s;
-      this.startStart = Temperature.toDateString(stateStartMSec);
+      this.stateStart = Temperature.toDateString(stateStartMSec);
       this.tempF = null;
       this.error = error;
 
