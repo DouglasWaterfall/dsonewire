@@ -6,7 +6,6 @@ import java.util.function.BiConsumer;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.BusMaster;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.NotifySearchBusCmdHelper;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchPusherByBusCmd;
@@ -126,7 +125,7 @@ public class HA7S implements BusMaster {
    * We stop our usage of the serial port, and cancel all pushes. It is the responsibility of the
    * HA7SBusMasterManager to stop the HA7Serial.
    */
-  public synchronized void stopBus(Logger optLogger) {
+  public synchronized void stopBus() {
     // may already be stopped
     if (serialPort != null) {
       searchHelper.cancelAllScheduledSearchNotifyFor();

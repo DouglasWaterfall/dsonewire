@@ -8,7 +8,6 @@ import org.mockito.stubbing.Answer;
 import org.testng.Assert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.BusMaster;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult;
@@ -16,8 +15,6 @@ import waterfall.onewire.busmasters.HA7S.part.DS18B20;
 
 /**
  * Created by dwaterfa on 12/17/17.
- *
-
  */
 public class TestBase {
   
@@ -42,7 +39,6 @@ public class TestBase {
       public HA7SSerial.ReadResult answer(final InvocationOnMock invocation) {
         byte[] wbuf = (byte[]) (invocation.getArguments())[0];
         byte[] rbuf = (byte[]) (invocation.getArguments())[1];
-        Logger logger = (Logger) (invocation.getArguments())[2];
 
         if (rbuf_data != null) {
           for (int i = 0; i < rbuf_data.length; i++) {
@@ -65,7 +61,6 @@ public class TestBase {
       public HA7SSerial.ReadResult answer(final InvocationOnMock invocation) {
         byte[] wbuf = (byte[]) (invocation.getArguments())[0];
         byte[] rbuf = (byte[]) (invocation.getArguments())[1];
-        Logger logger = (Logger) (invocation.getArguments())[2];
 
         Assert.assertNotNull(wbuf);
         Assert.assertEquals(wbuf.length, 18);
@@ -90,7 +85,6 @@ public class TestBase {
       public HA7SSerial.ReadResult answer(final InvocationOnMock invocation) {
         byte[] wbuf = (byte[]) (invocation.getArguments())[0];
         byte[] rbuf = (byte[]) (invocation.getArguments())[1];
-        Logger logger = (Logger) (invocation.getArguments())[2];
 
         Assert.assertNotNull(wbuf);
         Assert.assertTrue(wbuf.length >= 1);

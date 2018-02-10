@@ -7,7 +7,6 @@ import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadScratchpadCmd;
 
 /**
@@ -33,7 +32,7 @@ public class ReadScratchpadCmdTests extends TestBase {
 
     try {
 
-      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class)))
           .thenAnswer(makeAnswerForAddress(3L, 4L))
           .thenAnswer(makeAnswerForReadResult(
               new HA7SSerial.ReadResult(read_data.length, cmdWriteCTM, cmdReadCRCTM), read_data));
@@ -43,7 +42,7 @@ public class ReadScratchpadCmdTests extends TestBase {
       Assert.assertTrue(Arrays.equals(cmd.getResultHexData(),
           Arrays.copyOfRange(read_data, 2, read_data.length)));
 
-      ha7s.stopBus(null);
+      ha7s.stopBus();
 
       ReadScratchpadCmd.Result result = cmd.execute();
       Assert.assertEquals(result, ReadScratchpadCmd.Result.busFault);

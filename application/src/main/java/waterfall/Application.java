@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import waterfall.onewire.BusMasterRegistry;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.HA7SBusMasterManager;
-import waterfall.onewire.busmaster.Logger.LogLevel;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 
 
@@ -32,8 +31,8 @@ public class Application {
     HA7S[] bmList = null;
     try {
       bmList = ha7SBusMasterManager
-          .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.JSSC", LogLevel.CmdOnlyLevel());
-      //    .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.HA7SSerialDummy", LogLevel.CmdOnlyLevel());
+          .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.JSSC");
+      //    .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.HA7SSerialDummy");
     } catch (NoSuchMethodException e) {
       System.err.println(e);
       System.exit(1);

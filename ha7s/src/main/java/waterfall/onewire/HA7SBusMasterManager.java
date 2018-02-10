@@ -3,7 +3,6 @@ package waterfall.onewire;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 
@@ -22,7 +21,7 @@ public class HA7SBusMasterManager {
     this.bmRegistry = bmRegistry;
   }
 
-  public synchronized HA7S[] start(String ha7sTTYArg, String ttyClassName, Logger.LogLevel logLevel)
+  public synchronized HA7S[] start(String ha7sTTYArg, String ttyClassName)
       throws IllegalArgumentException, NoSuchMethodException {
 
     String[] bmPaths = checkTTYArg(ha7sTTYArg);
@@ -41,10 +40,6 @@ public class HA7SBusMasterManager {
     }
     catch (ClassNotFoundException e) {
       throw new IllegalArgumentException(ttyClassName + ": " + e);
-    }
-
-    if (logLevel == null) {
-      throw new IllegalArgumentException("logLevel");
     }
 
     Constructor c = null;
@@ -103,7 +98,7 @@ public class HA7SBusMasterManager {
 
     bmRegistry.removeBusMaster(ha7s);
 
-    ha7s.stopBus(null);
+    ha7s.stopBus();
   }
 
   private String[] checkTTYArg(String ttyArg) {

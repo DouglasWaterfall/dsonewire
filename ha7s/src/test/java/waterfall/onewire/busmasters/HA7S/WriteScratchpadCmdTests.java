@@ -7,7 +7,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.WriteScratchpadCmd;
 import waterfall.onewire.device.DS18B20Scratchpad;
 
@@ -44,7 +43,7 @@ public class WriteScratchpadCmdTests extends TestBase {
 
     try {
 
-      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class)))
           .thenAnswer(makeAnswerForAddress(3L, 4L))
           .thenAnswer(makeAnswerForReadResult(
               new HA7SSerial.ReadResult(read_data.length, cmdWriteCTM, cmdReadCRCTM), read_data));
@@ -52,7 +51,7 @@ public class WriteScratchpadCmdTests extends TestBase {
       Assert.assertEquals(cmd.execute(), WriteScratchpadCmd.Result.success);
       Assert.assertEquals(cmd.getResultWriteCTM(), cmdWriteCTM);
 
-      ha7s.stopBus(null);
+      ha7s.stopBus();
 
       WriteScratchpadCmd.Result result = cmd.execute();
       Assert.assertEquals(result, WriteScratchpadCmd.Result.busFault);

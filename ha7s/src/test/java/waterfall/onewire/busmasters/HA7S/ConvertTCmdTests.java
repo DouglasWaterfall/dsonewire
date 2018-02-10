@@ -7,7 +7,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.ConvertTCmd;
-import waterfall.onewire.busmaster.Logger;
 
 /**
  * Created by dwaterfa on 12/17/17.
@@ -28,7 +27,7 @@ public class ConvertTCmdTests extends TestBase {
     Assert.assertNotNull(cmd);
 
     try {
-      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class)))
           .thenAnswer(makeAnswerForAddress(3L, 4L))
           .thenAnswer(makeAnswerForReadResult(
               new HA7SSerial.ReadResult(2, cmdWriteCTM, cmdReadCRCTM), new byte[]{'4', '4'}))
@@ -42,7 +41,7 @@ public class ConvertTCmdTests extends TestBase {
       /*
       >> Some devices are not handling the read bit call correctly, not sure why
       >> Disable this for now.
-      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class)))
           .thenAnswer(makeAnswerForAddress(3L, 4L))
           .thenAnswer(makeAnswerForReadResult(
               new HA7SSerial.ReadResult(2, cmdWriteCTM, cmdReadCRCTM), new byte[]{'4', '4'}))
@@ -53,7 +52,7 @@ public class ConvertTCmdTests extends TestBase {
       Assert.assertEquals(cmd.execute(), Result.deviceNotFound);
       */
 
-      ha7s.stopBus(null);
+      ha7s.stopBus();
 
       ConvertTCmd.Result result = cmd.execute();
       Assert.assertEquals(result, ConvertTCmd.Result.busFault);

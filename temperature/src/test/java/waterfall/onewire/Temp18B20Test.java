@@ -413,7 +413,7 @@ public class Temp18B20Test {
   }
 
   private BusMaster getStartedHA7S(HA7SSerial ha7SSerial) {
-    ha7SSerial.start(null);
+    ha7SSerial.start();
     return new HA7S(ha7SSerial);
   }
 

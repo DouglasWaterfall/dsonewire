@@ -7,7 +7,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.ReadPowerSupplyCmd;
 
 /**
@@ -32,7 +31,7 @@ public class ReadPowerSupplyCmdTests extends TestBase {
 
     try {
 
-      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class), any(Logger.class)))
+      when(mockSerial.writeReadTilCR(any(byte[].class), any(byte[].class)))
           .thenAnswer(makeAnswerForAddress(3L, 4L))
           .thenAnswer(makeAnswerForReadResult(
               new HA7SSerial.ReadResult(4, cmdWriteCTM, cmdReadCRCTM), rbuf_data))
@@ -42,7 +41,7 @@ public class ReadPowerSupplyCmdTests extends TestBase {
       Assert.assertEquals(cmd.getResultWriteCTM(), cmdWriteCTM);
       Assert.assertEquals(cmd.getResultIsParasitic(), expectedIsParasitic);
 
-      ha7s.stopBus(null);
+      ha7s.stopBus();
 
       ReadPowerSupplyCmd.Result result = cmd.execute();
       Assert.assertEquals(result, ReadPowerSupplyCmd.Result.busFault);

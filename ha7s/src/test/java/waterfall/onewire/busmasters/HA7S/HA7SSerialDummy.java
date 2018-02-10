@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
-import waterfall.onewire.busmaster.Logger;
 
 /**
  * Created by dwaterfa on 1/18/17.
@@ -47,25 +46,19 @@ public class HA7SSerialDummy implements HA7SSerial {
   }
 
   @Override
-  public StartResult start(Logger optLogger) {
+  public StartResult start() {
     if (!started) {
-      if (optLogger != null) {
-        optLogger.logInfo("start", "Starting");
-      }
       started = true;
     }
     return StartResult.SR_Success;
   }
 
   @Override
-  public ReadResult writeReadTilCR(byte[] wBuf, byte[] rBuf, Logger optLogger) {
+  public ReadResult writeReadTilCR(byte[] wBuf, byte[] rBuf) {
     final String logContext = "writeReadTilCR()";
 
     if (wBuf == null) {
-      if (optLogger != null) {
-        optLogger.logError(logContext, "null wBuf");
-      }
-      return new ReadResult(ReadResult.ErrorCode.RR_Error);
+      throw new IllegalArgumentException("null wBuf");
     }
 
     int wStart = 0;
@@ -74,7 +67,6 @@ public class HA7SSerialDummy implements HA7SSerial {
     long postWriteCTM = System.currentTimeMillis();
     int readCount = 0;
 
-    try {
       for (; ; ) {
         wEnd = parse(wBuf, wStart);
 
@@ -93,68 +85,56 @@ public class HA7SSerialDummy implements HA7SSerial {
 
         switch (wBuf[wStart]) {
           case 'A':
-            readCount += addressSelect(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += addressSelect(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'S':
-            readCount += search(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += search(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 's':
-            readCount += searchNext(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += searchNext(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'R':
-            readCount += reset(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += reset(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'F':
-            readCount += familySearch(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += familySearch(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'f':
-            readCount += familySearchNext(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += familySearchNext(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'C':
-            readCount += alarmSearch(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += alarmSearch(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'c':
-            readCount += alarmSearchNext(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += alarmSearchNext(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'O':
-            readCount += readBit(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += readBit(wBuf, wStart, wEnd, rBuf);
             break;
 
           case 'W':
-            readCount += writeBlock(wBuf, wStart, wEnd, rBuf, optLogger);
+            readCount += writeBlock(wBuf, wStart, wEnd, rBuf);
             break;
 
           default:
-            if (optLogger != null) {
-              optLogger.logError(logContext, "unknown cmd code:" + (char) wBuf[wStart]);
-            }
-            return new ReadResult(ReadResult.ErrorCode.RR_Error);
+            throw new IllegalArgumentException("unknown cmd code:" + (char) wBuf[wStart]);
         }
 
         wStart = wEnd;
       }
-    } catch (IllegalArgumentException e) {
-      if (optLogger != null) {
-        optLogger.logError(logContext, e.getMessage());
-      }
-      return new ReadResult(ReadResult.ErrorCode.RR_Error);
-    }
   }
 
   @Override
-  public StopResult stop(Logger optLogger) {
+  public StopResult stop() {
     if (started) {
-      if (optLogger != null) {
-        optLogger.logInfo("stop", "Stopping");
-      }
       started = false;
     }
     return StopResult.SR_Success;
@@ -185,7 +165,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     return this;
   }
 
-  private int addressSelect(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int addressSelect(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 18) { // A {16} CR
       throw new IllegalArgumentException("address select must include address");
     }
@@ -214,7 +194,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     return 16; // readCount
   }
 
-  private int search(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int search(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("search is single char cmd");
     }
@@ -226,7 +206,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     // never pass back the CR
   }
 
-  private int searchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int searchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("search next is single char cmd");
     }
@@ -239,7 +219,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     // never pass back the CR
   }
 
-  private int alarmSearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int alarmSearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("alarm search is single char cmd");
     }
@@ -257,7 +237,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     // never pass back the CR
   }
 
-  private int alarmSearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int alarmSearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("alarm search next is single char cmd");
     }
@@ -271,7 +251,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     // never pass back the CR
   }
 
-  private int familySearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int familySearch(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 3) {
       throw new IllegalArgumentException("family search cmd length must be three");
     }
@@ -292,7 +272,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     // never pass back the CR
   }
 
-  private int familySearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int familySearchNext(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("family search next is single char cmd");
     }
@@ -306,7 +286,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     // never pass back the CR
   }
 
-  private int reset(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int reset(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("Reset is single cmd char");
     }
@@ -318,7 +298,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     return 0;
   }
 
-  private int readBit(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int readBit(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) != 1) {
       throw new IllegalArgumentException("ReadBit is single cmd char");
     }
@@ -327,7 +307,7 @@ public class HA7SSerialDummy implements HA7SSerial {
     return 1;
   }
 
-  private int writeBlock(byte[] wBuf, int wStart, int wEnd, byte[] rBuf, Logger optLogger) throws IllegalArgumentException {
+  private int writeBlock(byte[] wBuf, int wStart, int wEnd, byte[] rBuf) throws IllegalArgumentException {
     if ((wEnd - wStart) < 3) {
       throw new IllegalArgumentException("Write block must be at least 3 chars");
     }

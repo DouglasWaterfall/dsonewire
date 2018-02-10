@@ -12,17 +12,17 @@ public class StopBusTests extends TestBase {
   @Test
   public void testStopCmd() {
     HA7SSerial serial = new HA7SSerialDummy("port");
-    Assert.assertEquals(serial.start(null), StartResult.SR_Success);
+    Assert.assertEquals(serial.start(), StartResult.SR_Success);
     HA7S ha7s = new HA7S(serial);
 
     String name = ha7s.getName();
 
     try {
-      ha7s.stopBus(null);
+      ha7s.stopBus();
       Assert.assertNotEquals(ha7s.getName(), name);
 
       // 2nd call makes no difference
-      ha7s.stopBus(null);
+      ha7s.stopBus();
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }

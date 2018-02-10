@@ -161,7 +161,7 @@ public class ScheduleNotifySearchBusCmdTests extends TestBase {
   @Test
   public void testScheduleNotifySearchBusByAlarmCmd() {
     HA7SSerialDummy serialDummy = new HA7SSerialDummy("port");
-    serialDummy.start(null);
+    serialDummy.start();
 
     HA7S ha7s = new HA7S(serialDummy);
 
@@ -297,7 +297,7 @@ public class ScheduleNotifySearchBusCmdTests extends TestBase {
 
   private void internal_testScheduleNotifySearchBusCmdTiming(boolean byAlarm) {
     HA7SSerialDummy serialDummy = new HA7SSerialDummy("port");
-    serialDummy.start(null);
+    serialDummy.start();
 
     HA7S ha7s = new HA7S(serialDummy);
 
@@ -432,7 +432,7 @@ public class ScheduleNotifySearchBusCmdTests extends TestBase {
 
     // Stop the busmaster to cancel everything.
     try {
-      ha7s.stopBus(null);
+      ha7s.stopBus();
     } catch (Exception e) {
       Assert.fail("Unexpected exception:" + e);
     }

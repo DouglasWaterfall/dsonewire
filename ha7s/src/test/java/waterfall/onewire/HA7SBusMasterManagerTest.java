@@ -6,7 +6,6 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import waterfall.onewire.busmaster.BusMaster;
-import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 import waterfall.onewire.busmasters.HA7S.HA7SSerialDummy;
 
@@ -17,18 +16,18 @@ public class HA7SBusMasterManagerTest {
 
   @Test(expectedExceptions = IllegalArgumentException.class)
   public void testNullRegistry() {
-    HA7SBusMasterManager ha7sBMM = new HA7SBusMasterManager(null);
+    new HA7SBusMasterManager(null);
   }
 
   @Test(dataProvider = "getNegativeTestData")
-  public void testNegativeTests(String ttyArg, Class serialClass, Logger.LogLevel logLevel,
+  public void testNegativeTests(String ttyArg, Class serialClass,
       Class exceptionClass) {
     BusMasterRegistry bmRegistry = new BusMasterRegistry();
 
     HA7SBusMasterManager ha7sBMM = new HA7SBusMasterManager(bmRegistry);
 
     try {
-      ha7sBMM.start(ttyArg, serialClass.getName(), logLevel);
+      ha7sBMM.start(ttyArg, serialClass.getName());
       Assert.fail("expected exception");
     } catch (Exception e) {
       Assert.assertNotNull(exceptionClass);
@@ -40,18 +39,16 @@ public class HA7SBusMasterManagerTest {
   public Object[][] getNegativeTestData() {
     return new Object[][]{
         // ttyArg
-        {null, HA7SSerialDummy.class, Logger.LogLevel.CmdOnlyLevel(),
-            IllegalArgumentException.class},
-        {"", HA7SSerialDummy.class, Logger.LogLevel.CmdOnlyLevel(), IllegalArgumentException.class},
-        {",", HA7SSerialDummy.class, Logger.LogLevel.CmdOnlyLevel(),
-            IllegalArgumentException.class},
+        {null, HA7SSerialDummy.class, IllegalArgumentException.class},
+        {"", HA7SSerialDummy.class, IllegalArgumentException.class},
+        {",", HA7SSerialDummy.class, IllegalArgumentException.class},
 
         // class
-        {"Foo", null, Logger.LogLevel.CmdOnlyLevel(), IllegalArgumentException.class},
-        {"Foo", Object.class, Logger.LogLevel.CmdOnlyLevel(), IllegalArgumentException.class},
+        {"Foo", null, IllegalArgumentException.class},
+        {"Foo", Object.class, IllegalArgumentException.class},
 
         // Logger
-        {"Foo,", HA7SSerialDummy.class, null, IllegalArgumentException.class}
+        {"Foo,", HA7SSerialDummy.class, IllegalArgumentException.class}
     };
   }
 
@@ -72,7 +69,7 @@ public class HA7SBusMasterManagerTest {
     HA7S[] addedList = null;
 
     try {
-      addedList = ha7sBMM.start("Foo", HA7SSerialDummy.class.getName(), Logger.LogLevel.CmdOnlyLevel());
+      addedList = ha7sBMM.start("Foo", HA7SSerialDummy.class.getName());
     } catch (Exception e) {
       Assert.fail("exception not expected");
     }
@@ -124,7 +121,7 @@ public class HA7SBusMasterManagerTest {
     String ha7sTTYArg = foo + "," + bar;
 
     try {
-      ha7sBMM.start(ha7sTTYArg, HA7SSerialDummy.class.getName(), Logger.LogLevel.CmdOnlyLevel());
+      ha7sBMM.start(ha7sTTYArg, HA7SSerialDummy.class.getName());
     } catch (Exception e) {
       Assert.fail("exception not expected");
     }
