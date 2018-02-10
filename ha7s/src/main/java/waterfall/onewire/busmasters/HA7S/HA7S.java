@@ -3,7 +3,6 @@ package waterfall.onewire.busmasters.HA7S;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.BiConsumer;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.BusMaster;
@@ -11,7 +10,6 @@ import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmaster.NotifySearchBusCmdHelper;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchPusherByBusCmd;
-import waterfall.onewire.busmasters.HA7S.HA7SSerial.HexByteArrayListResult;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult;
 
 public class HA7S implements BusMaster {
@@ -234,8 +232,7 @@ public class HA7S implements BusMaster {
           byte[] rBuf = (byte[]) sequence[1];
           BiConsumer<byte[], Integer> checkDataF = (BiConsumer<byte[], Integer>) sequence[2];
 
-          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf,
-              getDeviceLevelLogger());
+          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf);
 
           if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
             throw new BusDataException("writeReadTilCR:" + readResult.getError().name());
@@ -260,10 +257,8 @@ public class HA7S implements BusMaster {
         // TODO: logging with the HA7S (need more data in the throw errors)
         // TODO: resync with the HA7S (a bunch of resets and read until the queue is empty) and
         // TODO: then retry...
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       } catch (BusFaultException e) {
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       }
     }
@@ -271,19 +266,6 @@ public class HA7S implements BusMaster {
     public void setResultData(long resultWriteCTM) {
       assert (result == Result.cmdBusy);
       this.resultWriteCTM = resultWriteCTM;
-    }
-
-    private Logger getDeviceLevelLogger() {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        return getLogger();
-      }
-      return null;
-    }
-
-    private void logErrorInternal(String str) {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        getLogger().logError(this.getClass().getSimpleName(), str);
-      }
     }
 
   }
@@ -356,8 +338,7 @@ public class HA7S implements BusMaster {
           byte[] rBuf = (byte[]) sequence[1];
           BiConsumer<byte[], Integer> checkDataF = (BiConsumer<byte[], Integer>) sequence[2];
 
-          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf,
-              getDeviceLevelLogger());
+          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf);
 
           if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
             throw new BusDataException("writeReadTilCR:" + readResult.getError().name());
@@ -384,10 +365,8 @@ public class HA7S implements BusMaster {
         // TODO: logging with the HA7S (need more data in the throw errors)
         // TODO: resync with the HA7S (a bunch of resets and read until the queue is empty) and
         // TODO: then retry...
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       } catch (BusFaultException e) {
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       }
     }
@@ -397,19 +376,6 @@ public class HA7S implements BusMaster {
       assert (result == Result.cmdBusy);
       this.resultWriteCTM = resultWriteCTM;
       this.resultIsParasitic = isParasitic;
-    }
-
-    private Logger getDeviceLevelLogger() {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        return getLogger();
-      }
-      return null;
-    }
-
-    private void logErrorInternal(String str) {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        getLogger().logError(this.getClass().getSimpleName(), str);
-      }
     }
 
   }
@@ -502,8 +468,7 @@ public class HA7S implements BusMaster {
           byte[] rBuf = (byte[]) sequence[1];
           BiConsumer<byte[], Integer> checkDataF = (BiConsumer<byte[], Integer>) sequence[2];
 
-          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf,
-              getDeviceLevelLogger());
+          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf);
 
           if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
             throw new BusDataException("writeReadTilCR:" + readResult.getError().name());
@@ -530,10 +495,8 @@ public class HA7S implements BusMaster {
         // TODO: logging with the HA7S (need more data in the throw errors)
         // TODO: resync with the HA7S (a bunch of resets and read until the queue is empty) and
         // TODO: then retry...
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       } catch (BusFaultException e) {
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       }
     }
@@ -543,19 +506,6 @@ public class HA7S implements BusMaster {
       this.resultWriteCTM = resultWriteCTM;
       this.resultData = resultData;
       this.resultHexData = resultHexData;
-    }
-
-    private Logger getDeviceLevelLogger() {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        return getLogger();
-      }
-      return null;
-    }
-
-    private void logErrorInternal(String str) {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        getLogger().logError(this.getClass().getSimpleName(), str);
-      }
     }
 
   }
@@ -641,8 +591,7 @@ public class HA7S implements BusMaster {
           byte[] rBuf = (byte[]) sequence[1];
           BiConsumer<byte[], Integer> checkDataF = (BiConsumer<byte[], Integer>) sequence[2];
 
-          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf,
-              getDeviceLevelLogger());
+          HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(cmdData, rBuf);
 
           if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
             throw new BusDataException("writeReadTilCR:" + readResult.getError().name());
@@ -666,10 +615,8 @@ public class HA7S implements BusMaster {
         // TODO: logging with the HA7S (need more data in the throw errors)
         // TODO: resync with the HA7S (a bunch of resets and read until the queue is empty) and
         // TODO: then retry...
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       } catch (BusFaultException e) {
-        logErrorInternal("dsAddr:" + dsAddr.toString() + "exception:" + e);
         return Result.busFault;
       }
     }
@@ -677,19 +624,6 @@ public class HA7S implements BusMaster {
     public void setResultData(long resultWriteCTM) {
       assert (result == Result.cmdBusy);
       this.resultWriteCTM = resultWriteCTM;
-    }
-
-    private Logger getDeviceLevelLogger() {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        return getLogger();
-      }
-      return null;
-    }
-
-    private void logErrorInternal(String str) {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        getLogger().logError(this.getClass().getSimpleName(), str);
-      }
     }
 
   }
@@ -750,7 +684,7 @@ public class HA7S implements BusMaster {
         byte[] rHexBuf = new byte[16];
 
         HA7SSerial.ReadResult readResult = serialPort
-            .writeReadTilCR(((index == 0) ? firstCmd : nextCmd), rHexBuf, getLogger());
+            .writeReadTilCR(((index == 0) ? firstCmd : nextCmd), rHexBuf);
 
         if (readResult.getError() != ReadResult.ErrorCode.RR_Success) {
           throw new BusDataException("writeReadTilCR:" + readResult.getError().name());
@@ -793,19 +727,6 @@ public class HA7S implements BusMaster {
     public void setResultData(ResultData resultData) {
       assert (result == SearchBusCmd.Result.busy);
       this.resultData = resultData;
-    }
-
-    private Logger getDeviceLevelLogger() {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        return getLogger();
-      }
-      return null;
-    }
-
-    private void logErrorInternal(String str) {
-      if ((getLogger() != null) && (getLogLevel().isLevelDevice())) {
-        getLogger().logError(this.getClass().getSimpleName(), str);
-      }
     }
 
   }

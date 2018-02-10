@@ -19,8 +19,6 @@ public abstract class ConvertTCmd extends DeviceBaseCmd {
    * writeCTM.
    */
   public Result execute() {
-    clearLog();
-
     synchronized (this) {
       if (result == Result.cmdBusy) {
         throw new NoResultException("busy");
@@ -31,12 +29,9 @@ public abstract class ConvertTCmd extends DeviceBaseCmd {
     }
 
     try {
-      logInfo("execute(dsAddr:" + getAddress().toString() + ")");
       result = execute_internal();
-      logInfo("result:" + result.name());
 
     } catch (Exception e) {
-      logError(e);
       result = Result.deviceFault;
     }
 

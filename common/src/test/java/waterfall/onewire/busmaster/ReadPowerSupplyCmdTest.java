@@ -1,7 +1,6 @@
 package waterfall.onewire.busmaster;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;

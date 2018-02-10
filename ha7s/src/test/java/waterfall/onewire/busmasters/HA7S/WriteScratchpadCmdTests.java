@@ -3,7 +3,6 @@ package waterfall.onewire.busmasters.HA7S;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.Convert;

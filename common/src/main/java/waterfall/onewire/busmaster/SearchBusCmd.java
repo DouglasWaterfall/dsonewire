@@ -61,8 +61,6 @@ public abstract class SearchBusCmd extends BaseCmd {
    * writeCTM.
    */
   public Result execute() {
-    clearLog();
-
     synchronized (this) {
       if (result == Result.busy) {
         throw new NoResultException("busy");
@@ -73,13 +71,9 @@ public abstract class SearchBusCmd extends BaseCmd {
     }
 
     try {
-      logInfo("execute(" + (isByAlarm() ? "byAlarm"
-          : (isByFamilyCode() ? Integer.toHexString(familyCode) : "")) + ")");
       result = execute_internal();
-      logInfo("result:" + result.name());
 
     } catch (Exception e) {
-      logError(e);
       result = Result.communication_error;
     }
 

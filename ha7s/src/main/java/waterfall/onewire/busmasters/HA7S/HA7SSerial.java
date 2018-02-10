@@ -1,11 +1,7 @@
 package waterfall.onewire.busmasters.HA7S;
 
-import java.util.ArrayList;
 import java.util.List;
-import waterfall.onewire.Convert;
-import waterfall.onewire.DSAddress;
 import waterfall.onewire.HexByteArray;
-import waterfall.onewire.busmaster.Logger;
 
 public interface HA7SSerial {
 
@@ -19,7 +15,7 @@ public interface HA7SSerial {
    *
    * @return 0 if successful, negative values for errors
    */
-  public StartResult start(Logger optLogger);
+  public StartResult start();
 
   /**
    * Ask if the serial port is started, or running.
@@ -38,14 +34,14 @@ public interface HA7SSerial {
    * what is expected to be read.
    * @return ReadResult
    */
-  public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], Logger optLogger);
+  public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[]);
 
   /**
    * Stop the serial connector.
    *
    * @return StopResult
    */
-  public StopResult stop(Logger optLogger);
+  public StopResult stop();
 
   /**
    *

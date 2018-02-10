@@ -5,7 +5,6 @@ import java.util.HashMap;
 import waterfall.onewire.Convert;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.Logger;
-import waterfall.onewire.busmaster.ReadScratchpadCmd;
 
 /**
  * Created by dwaterfa on 1/18/17.

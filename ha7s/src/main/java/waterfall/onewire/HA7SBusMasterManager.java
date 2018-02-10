@@ -76,7 +76,7 @@ public class HA7SBusMasterManager {
       }
 
       try {
-          startBus(serial, null);
+          startBus(serial);
       }
       catch (RuntimeException e) {
         throw new IllegalArgumentException("cannot start " + serial.getPortName() + " msg:" + e.getMessage());
@@ -123,10 +123,10 @@ public class HA7SBusMasterManager {
     return bmPaths;
   }
 
-  private void startBus(HA7SSerial serialPort, Logger optLogger) throws RuntimeException {
+  private void startBus(HA7SSerial serialPort) throws RuntimeException {
     final byte[] resetBusCmd = {'R'};
 
-    HA7SSerial.StartResult startResult = serialPort.start(optLogger);
+    HA7SSerial.StartResult startResult = serialPort.start();
 
     if (startResult != HA7SSerial.StartResult.SR_Success) {
       String message = serialPort.getPortName() + ":" + startResult.name();
@@ -135,20 +135,20 @@ public class HA7SBusMasterManager {
 
     byte[] rbuf = new byte[8];
 
-    HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, null);
+    HA7SSerial.ReadResult readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf);
 
     if ((readResult.getError() == HA7SSerial.ReadResult.ErrorCode.RR_Success) &&
         (readResult.getReadCount() == 1) &&
         (rbuf[0] == 0x07)) { // bell
       // This can occur during development when when the first thing read after open is
       // 0x07 0x0D. So we try this again once.
-      readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf, optLogger);
+      readResult = serialPort.writeReadTilCR(resetBusCmd, rbuf);
     }
 
     if ((readResult.getError() != HA7SSerial.ReadResult.ErrorCode.RR_Success) ||
         (readResult.getReadCount() != 0)) {
       String message = readResult.getError().name() + " readCount:" + readResult.getReadCount();
-      HA7SSerial.StopResult stopResult = serialPort.stop(optLogger);
+      HA7SSerial.StopResult stopResult = serialPort.stop();
       throw new RuntimeException(message);
     }
   }

@@ -8,7 +8,6 @@ import org.testng.annotations.Test;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.Logger;
 import waterfall.onewire.busmasters.HA7S.HA7S;
-import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 import waterfall.onewire.busmasters.HA7S.HA7SSerialDummy;
 
 /**

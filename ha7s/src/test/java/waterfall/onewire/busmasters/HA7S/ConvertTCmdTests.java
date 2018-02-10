@@ -7,7 +7,6 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.busmaster.ConvertTCmd;
-import waterfall.onewire.busmaster.ConvertTCmd.Result;
 import waterfall.onewire.busmaster.Logger;
 
 /**

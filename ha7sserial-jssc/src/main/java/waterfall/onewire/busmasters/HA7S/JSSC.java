@@ -14,17 +14,20 @@ public class JSSC implements HA7SSerial {
   SharedData sharedData = new SharedData();
   private final String portName;
   private final long readTimeoutMSec;
-  
+  private final Logger optLogger;
+
   private SerialPort serialPort = null;
 
   public JSSC(String portName, long readTimeoutMSec) {
     this.portName = portName;
     this.readTimeoutMSec = readTimeoutMSec;
+    this.optLogger = null;
   }
 
   public JSSC(String portName) {
     this.portName = portName;
     this.readTimeoutMSec = TimeUnit.SECONDS.toMillis(15);
+    this.optLogger = null;
   }
 
   public static String byteToSafeString(byte[] buf, int bOffset, int bCount) {
@@ -56,7 +59,7 @@ public class JSSC implements HA7SSerial {
   }
 
   @Override
-  public synchronized StartResult start(Logger optLogger) {
+  public synchronized StartResult start() {
 
     String logContext = null;
 
@@ -202,7 +205,7 @@ public class JSSC implements HA7SSerial {
   }
 
   @Override
-  public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[], Logger optLogger) {
+  public ReadResult writeReadTilCR(byte wBuf[], byte rBuf[]) {
     String logContext = null;
 
     if (optLogger != null) {
@@ -289,7 +292,7 @@ public class JSSC implements HA7SSerial {
   }
 
   @Override
-  public synchronized StopResult stop(Logger optLogger) {
+  public synchronized StopResult stop() {
 
     String logContext = null;
 

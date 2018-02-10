@@ -19,9 +19,6 @@ import waterfall.onewire.device.DS18B20Scratchpad;
 @SpringBootConfiguration
 public class WaterHeater implements Runnable {
 
-  // This could be passed in by a property file
-  private static DSAddress whAddress = DSAddress.fromUncheckedHex("260000065BE22D28");
-
   /**
    * This is the temperature point where when crossing we think we are either leaving the flat state
    * when burning or arriving back to it when cooling.
@@ -38,36 +35,11 @@ public class WaterHeater implements Runnable {
    * 5 gives us (5 + 1) sample range to compare to
    */
   private static final int windowSize = 5;
+
+  // This could be passed in by a property file
+  private static DSAddress whAddress = DSAddress.fromUncheckedHex("260000065BE22D28");
   private final float[] window;
   private int wIndex;
-
-  /**
-   * These are the states for our WaterHeater
-   */
-  enum State {
-    /**
-     * We are not able, or have not enough data, to determine if the WaterHeater is in any of the
-     * other three states.
-     */
-    unknown,
-
-    /**
-     * The burner is off and only the pilot light is keeping the burner housing warm at a fairly
-     * constant rate.
-     */
-    flat,
-
-    /**
-     * The burner is on and heating up the burner housing.
-     */
-    burning,
-
-    /**
-     * We have finished burning and the temperature of the burner housing is cooling off but still
-     * back below the tempTrigger.
-     */
-    cooling
-  }
 
   /**
    * Our state.
@@ -86,9 +58,7 @@ public class WaterHeater implements Runnable {
    * This is filled in on start, needs the BusMasterRegistry
    */
   private Temp18B20 temp18B20;
-
   private Thread pushThread;
-
   private Current current;
 
   public WaterHeater() {
@@ -100,6 +70,28 @@ public class WaterHeater implements Runnable {
     this.temp18B20 = null;
     this.pushThread = null;
     this.current = null;
+  }
+
+  private static void logStateChange(Current current, String addMessage) {
+    StringBuffer sb = new StringBuffer();
+    sb.append(Temperature.toDateString(current.stateStartMSec));
+    sb.append('\t');
+    sb.append(current.state.name());
+    if (current.tempF != null) {
+      sb.append('\t');
+      sb.append(current.tempF);
+    }
+    else if (current.error != null) {
+      sb.append('\t');
+      sb.append(current.error);
+    }
+    if (addMessage != null) {
+      sb.append('\t');
+      sb.append(addMessage);
+    }
+    sb.append('\n');
+    System.out.print(sb.toString());
+    System.out.flush();
   }
 
   @PostConstruct
@@ -224,26 +216,36 @@ public class WaterHeater implements Runnable {
     logStateChange(current, null);
   }
 
-  private static void logStateChange(Current current, String addMessage) {
-    StringBuffer sb = new StringBuffer();
-    sb.append(Temperature.toDateString(current.stateStartMSec));
-    sb.append('\t');
-    sb.append(current.state.name());
-    if (current.tempF != null) {
-      sb.append('\t');
-      sb.append(current.tempF);
-    }
-    else if (current.error != null) {
-      sb.append('\t');
-      sb.append(current.error);
-    }
-    if (addMessage != null) {
-      sb.append('\t');
-      sb.append(addMessage);
-    }
-    sb.append('\n');
-    System.out.print(sb.toString());
-    System.out.flush();
+  public Current getCurrent() {
+    return current;
+  }
+
+  /**
+   * These are the states for our WaterHeater
+   */
+  public enum State {
+    /**
+     * We are not able, or have not enough data, to determine if the WaterHeater is in any of the
+     * other three states.
+     */
+    unknown,
+
+    /**
+     * The burner is off and only the pilot light is keeping the burner housing warm at a fairly
+     * constant rate.
+     */
+    flat,
+
+    /**
+     * The burner is on and heating up the burner housing.
+     */
+    burning,
+
+    /**
+     * We have finished burning and the temperature of the burner housing is cooling off but still
+     * back below the tempTrigger.
+     */
+    cooling
   }
 
   public static class Current {
@@ -265,15 +267,15 @@ public class WaterHeater implements Runnable {
       this.error = null;
 
       if (prevCurrent != null) {
-          if ((s == State.cooling) && (prevCurrent.state == State.burning) &&
-              (prevCurrent.error == null)) {
-            float burnTimeSec = ((float)(stateStartMSec - prevCurrent.stateStartMSec)) / 1000;
-            this.burns = addBurn(prevCurrent.burns,
-                Temperature.toDateString(prevCurrent.stateStartMSec), burnTimeSec);
-          }
+        if ((s == State.cooling) && (prevCurrent.state == State.burning) &&
+            (prevCurrent.error == null)) {
+          float burnTimeSec = ((float)(stateStartMSec - prevCurrent.stateStartMSec)) / 1000;
+          this.burns = addBurn(prevCurrent.burns,
+              Temperature.toDateString(prevCurrent.stateStartMSec), burnTimeSec);
+        }
         else {
-            this.burns = prevCurrent.burns;
-          }
+          this.burns = prevCurrent.burns;
+        }
       }
       else {
         this.burns = null;
@@ -313,21 +315,17 @@ public class WaterHeater implements Runnable {
       newBurns[0] = newBurn;
       return newBurns;
     }
-
-    public static class Burn {
-      String date;
-      float timeSecs;
-
-      public Burn(String date, float timeSec) {
-        this.date = date;
-        this.timeSecs = timeSecs;
-      }
-    }
-
   }
 
-  public Current getCurrent() {
-    return current;
+  public static class Burn {
+
+    public String date;
+    public float timeSecs;
+
+    public Burn(String date, float timeSec) {
+      this.date = date;
+      this.timeSecs = timeSec;
+    }
   }
 
 }
