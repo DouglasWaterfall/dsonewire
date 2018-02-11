@@ -1,9 +1,14 @@
+/**
+ * Created by dwaterfa on 1/12/18.
+ */
 package waterfall.model;
 
 import com.dalsemi.onewire.utils.Convert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import waterfall.onewire.BusMasterRegistry;
@@ -13,9 +18,6 @@ import waterfall.onewire.Temp18B20.Reading;
 import waterfall.onewire.Temp18B20.ReadingError;
 import waterfall.onewire.device.DS18B20Scratchpad;
 
-/**
- * Created by dwaterfa on 1/12/18.
- */
 @SpringBootConfiguration
 public class WaterHeater implements Runnable {
 
@@ -54,6 +56,8 @@ public class WaterHeater implements Runnable {
   @Autowired
   private BusMasterRegistry bmRegistry;
 
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
   /**
    * This is filled in on start, needs the BusMasterRegistry
    */
@@ -72,7 +76,7 @@ public class WaterHeater implements Runnable {
     this.current = null;
   }
 
-  private static void logStateChange(Current current, String addMessage) {
+  private void logStateChange(Current current, String addMessage) {
     StringBuffer sb = new StringBuffer();
     sb.append(Temperature.toDateString(current.stateStartMSec));
     sb.append('\t');
@@ -90,8 +94,7 @@ public class WaterHeater implements Runnable {
       sb.append(addMessage);
     }
     sb.append('\n');
-    System.out.print(sb.toString());
-    System.out.flush();
+    logger.info(sb.toString());
   }
 
   @PostConstruct

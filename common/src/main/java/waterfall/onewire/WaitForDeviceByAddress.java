@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Observable;
 import java.util.Observer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import waterfall.onewire.busmaster.BusMaster;
 import waterfall.onewire.busmaster.NotifySearchBusCmdResult;
 import waterfall.onewire.busmaster.SearchBusCmd;
@@ -24,6 +26,7 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
   private final long bmSearchPeriodMSec;
   private final ArrayList<BusMaster> bmScheduledList;
   private final HashMap<DSAddress, WaitForDeviceByAddressCallback> waitMap;
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public WaitForDeviceByAddress(BusMasterRegistry bmRegistry, boolean typeByAlarm,
       long bmSearchPeriodMSec) {
@@ -69,15 +72,13 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
       try {
         bm.scheduleNotifySearchBusCmd(this, typeByAlarm, bmSearchPeriodMSec);
       } catch (Exception e) {
-        System.err
-            .println(bm.getName() + ": WaitForDeviceAddress() scheduleNotifySearchBusCmd:" + e);
+        logger.error("{}: WaitForDeviceAddress() scheduleNotifySearchBusCmd:", bm.getName(), e);
       }
     } else if (removed) {
       try {
         bm.cancelScheduledNotifySearchBusCmd(this, typeByAlarm);
       } catch (Exception e) {
-        System.err.println(
-            bm.getName() + ": WaitForDeviceAddress() cancelScheduledNotifySearchBusCmd:" + e);
+        logger.error("{}: WaitForDeviceAddress() cancelScheduledNotifyBusCmd:", bm.getName(), e);
       }
     }
   }
@@ -99,7 +100,7 @@ public class WaitForDeviceByAddress implements Observer, NotifySearchBusCmdResul
             cancelAddress(callback, addr);
           }
         } catch (Exception e) {
-          System.err.println("Exception from " + callback.getClass().getSimpleName() + ":" + e);
+          logger.error("{} deviceFound", callback.getClass().getName(), e);
         }
       }
     }

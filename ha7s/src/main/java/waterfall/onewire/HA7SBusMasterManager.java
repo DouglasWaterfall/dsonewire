@@ -3,6 +3,8 @@ package waterfall.onewire;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import waterfall.onewire.busmasters.HA7S.HA7S;
 import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 
@@ -12,7 +14,7 @@ import waterfall.onewire.busmasters.HA7S.HA7SSerial;
 public class HA7SBusMasterManager {
 
   private final BusMasterRegistry bmRegistry;
-  private ArrayList<HA7S> bmList = new ArrayList<>();
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
   public HA7SBusMasterManager(BusMasterRegistry bmRegistry) {
     if (bmRegistry == null) {
@@ -46,7 +48,7 @@ public class HA7SBusMasterManager {
     try {
       c = ttyClass.getConstructor(java.lang.String.class);
     } catch (NoSuchMethodException e) {
-      System.err.println("Class " + ttyClass.toString() + " does not have String constructor");
+      logger.error("Class {} does not have String constructor", ttyClass.toString());
       throw e;
     }
 
@@ -58,12 +60,8 @@ public class HA7SBusMasterManager {
 
       try {
         serial = (HA7SSerial)c.newInstance(s);
-      } catch (IllegalAccessException e) {
-        System.err.println(e);
-      } catch (InstantiationException e) {
-        System.err.println(e);
-      } catch (InvocationTargetException e) {
-        System.err.println(e);
+      } catch (IllegalAccessException| InstantiationException | InvocationTargetException e) {
+        logger.error("HA7SSerial {} newInstance", c.getName(), e);
       }
 
       if (serial == null) {
