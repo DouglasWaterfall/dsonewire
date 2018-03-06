@@ -31,8 +31,8 @@ public class Application {
     HA7S[] bmList = null;
     try {
       bmList = ha7SBusMasterManager
-          .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.JSSC");
-      //    .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.HA7SSerialDummy");
+      //    .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.JSSC");
+          .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.HA7SSerialDummy");
     } catch (NoSuchMethodException e) {
       System.err.println(e);
       System.exit(1);

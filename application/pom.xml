@@ -17,13 +17,17 @@
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>1.5.6.RELEASE</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
+    <!--
+    The reason for this is that we already have a parent so we cannot use the spring boot parent.
+    -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-dependencies</artifactId>
+      <version>2.0.0.RELEASE</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+
     </dependencies>
   </dependencyManagement>
 
@@ -43,14 +47,42 @@
 
     <dependency>
       <groupId>waterfall.dsonewire</groupId>
+      <artifactId>waterheater</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>waterfall.dsonewire</groupId>
       <artifactId>ha7sserial-jssc</artifactId>
       <version>1.0-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -83,6 +115,7 @@
       </plugin>
       -->
 
+      <!-- http://www.baeldung.com/spring-boot-dependency-management-custom-parent -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

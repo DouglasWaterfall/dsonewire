@@ -10,12 +10,13 @@
   <version>1.0</version>
 
   <modules>
+    <module>application</module>
     <module>dalsemi</module>
     <module>common</module>
     <module>ha7s</module>
     <module>ha7sserial-jssc</module>
     <module>temperature</module>
-    <module>application</module>
+    <module>waterheater</module>
     <module>scratch</module>
   </modules>
 

@@ -1,16 +1,15 @@
 /**
  * Created by dwaterfa on 1/12/18.
  */
-package waterfall.model;
+package waterfall.onewire;
 
 import com.dalsemi.onewire.utils.Convert;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringBootConfiguration;
 import waterfall.onewire.BusMasterRegistry;
 import waterfall.onewire.DSAddress;
 import waterfall.onewire.Temp18B20;
@@ -18,67 +17,67 @@ import waterfall.onewire.Temp18B20.Reading;
 import waterfall.onewire.Temp18B20.ReadingError;
 import waterfall.onewire.device.DS18B20Scratchpad;
 
-@SpringBootConfiguration
+
+
 public class WaterHeater implements Runnable {
 
-  /**
-   * This is the temperature point where when crossing we think we are either leaving the flat state
-   * when burning or arriving back to it when cooling.
-   */
-  private static final float tempTrigger = 85.0F;
-
-  /**
-   * How often we sample.
-   */
-  private static final int sampleTimeSec = 10;
-
-  /**
-   * The number of samples we take in order to compare the oldest with the most recent. A window of
-   * 5 gives us (5 + 1) sample range to compare to
-   */
-  private static final int windowSize = 5;
-
-  // This could be passed in by a property file
-  private static DSAddress whAddress = DSAddress.fromUncheckedHex("260000065BE22D28");
+  private final float triggerTemp;
+  private final int sampleTimeSec;
+  private final DSAddress whAddress;
   private final float[] window;
-  private int wIndex;
+  private final Temp18B20 temp18B20;
+  private final Thread pushThread;
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+  /**
+   * 
+   */
+  private int wIndex;
+  
   /**
    * Our state.
    */
   private State state;
-
+  
   /**
    * When the current burn time started, -1 if not currently burning.
    */
   private long burnStartTimeMSec;
-
-  @Autowired
-  private BusMasterRegistry bmRegistry;
-
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
-
+  
   /**
    * This is filled in on start, needs the BusMasterRegistry
    */
-  private Temp18B20 temp18B20;
-  private Thread pushThread;
   private Current current;
 
-  public WaterHeater() {
+  /**
+   * 
+   * @param triggerTemp This is the temperature point where when crossing we think we are either leaving the flat state when burning or arriving back to it when cooling.
+   * @param sampleTimeSec How often we sample.
+   * @param windowSize The number of samples we take in order to compare the oldest with the most recent. A window of 5 gives us (5 + 1) sample range to compare to.
+   * @param dsAddress The DSAddress of the sensor clipped to the burner housing.
+   */
+  public WaterHeater(BusMasterRegistry bmRegistry, float triggerTemp, int sampleTimeSec,
+      int windowSize, String dsAddress) {
+    this.triggerTemp = triggerTemp;
+    this.sampleTimeSec = sampleTimeSec;
     this.window = new float[windowSize];
     this.wIndex = 0;
     this.state = State.unknown;
     this.burnStartTimeMSec = -1;
-
-    this.temp18B20 = null;
-    this.pushThread = null;
     this.current = null;
+    
+    this.whAddress = DSAddress.fromUncheckedHex(dsAddress);
+    this.temp18B20 = new Temp18B20(whAddress, (byte) 1, DS18B20Scratchpad.DEFAULT_HALARM,
+        DS18B20Scratchpad.DEFAULT_LALARM)
+        .setBusMasterRegistry(bmRegistry);
+    this.pushThread = new Thread(this);
+    this.pushThread.setDaemon(true);
+    this.pushThread.start();
   }
 
   private void logStateChange(Current current, String addMessage) {
     StringBuffer sb = new StringBuffer();
-    sb.append(Temperature.toDateString(current.stateStartMSec));
+    sb.append(toDateString(current.stateStartMSec));
     sb.append('\t');
     sb.append(current.state.name());
     if (current.tempF != null) {
@@ -97,15 +96,7 @@ public class WaterHeater implements Runnable {
     logger.info(sb.toString());
   }
 
-  @PostConstruct
   public void start() {
-    this.temp18B20 = new Temp18B20(whAddress, (byte) 1, DS18B20Scratchpad.DEFAULT_HALARM,
-        DS18B20Scratchpad.DEFAULT_LALARM)
-        .setBusMasterRegistry(bmRegistry);
-
-    pushThread = new Thread(this);
-    pushThread.setDaemon(true);
-    pushThread.start();
   }
 
   public void run() {
@@ -139,9 +130,9 @@ public class WaterHeater implements Runnable {
         float slopeTempPerMinute = (now - start) / (window.length * sampleTimeSec / (float) 60.0);
 
         if (state == State.unknown) {
-          if ((now < tempTrigger) && (slopeTempPerMinute < 1.0) && (slopeTempPerMinute > -1.0)) {
+          if ((now < triggerTemp) && (slopeTempPerMinute < 1.0) && (slopeTempPerMinute > -1.0)) {
             setStateFlat(reading);
-          } else if (now >= tempTrigger) {
+          } else if (now >= triggerTemp) {
             if (slopeTempPerMinute >= 2.0) {
               setStateBurning(reading);
             } else if (slopeTempPerMinute <= -2.0) {
@@ -164,7 +155,7 @@ public class WaterHeater implements Runnable {
             break;
 
           case cooling:
-            if ((now < tempTrigger) && (slopeTempPerMinute > -0.5)) {
+            if ((now < triggerTemp) && (slopeTempPerMinute > -0.5)) {
               setStateFlat(reading);
             }
             break;
@@ -246,7 +237,7 @@ public class WaterHeater implements Runnable {
 
     /**
      * We have finished burning and the temperature of the burner housing is cooling off but still
-     * back below the tempTrigger.
+     * back below the triggerTemp.
      */
     cooling
   }
@@ -265,7 +256,7 @@ public class WaterHeater implements Runnable {
     public Current(long stateStartMSec, State s, float tempF, Current prevCurrent) {
       this.stateStartMSec = stateStartMSec;
       this.state = s;
-      this.stateStart = Temperature.toDateString(stateStartMSec);
+      this.stateStart = toDateString(stateStartMSec);
       this.tempF = tempF;
       this.error = null;
 
@@ -274,7 +265,7 @@ public class WaterHeater implements Runnable {
             (prevCurrent.error == null)) {
           float burnTimeSec = ((float)(stateStartMSec - prevCurrent.stateStartMSec)) / 1000;
           this.burns = addBurn(prevCurrent.burns,
-              Temperature.toDateString(prevCurrent.stateStartMSec), burnTimeSec);
+              toDateString(prevCurrent.stateStartMSec), burnTimeSec);
         }
         else {
           this.burns = prevCurrent.burns;
@@ -288,7 +279,7 @@ public class WaterHeater implements Runnable {
     public Current(long atStartMSec, State s, String error, Current prevCurrent) {
       this.stateStartMSec = atStartMSec;
       this.state = s;
-      this.stateStart = Temperature.toDateString(stateStartMSec);
+      this.stateStart = toDateString(stateStartMSec);
       this.tempF = null;
       this.error = error;
 
@@ -329,6 +320,18 @@ public class WaterHeater implements Runnable {
       this.date = date;
       this.timeSecs = timeSec;
     }
+  }
+
+  private static String toDateString(long timeMSec) {
+    GregorianCalendar calendar = new GregorianCalendar();
+    calendar.setTimeInMillis(timeMSec);
+    return String.format("%d/%02d/%02d %02d:%02d:%02d",
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH) + 1,
+        calendar.get(Calendar.DAY_OF_MONTH),
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        calendar.get(Calendar.SECOND));
   }
 
 }
