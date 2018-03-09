@@ -18,9 +18,9 @@
   <dependencies>
 
     <dependency>
-      <groupId>waterfall.dsonewire</groupId>
-      <artifactId>dalsemi</artifactId>
-      <version>1.0</version>
+      <groupId>com.dalsemi</groupId>
+      <artifactId>owapi-utils</artifactId>
+      <version>1.10</version>
     </dependency>
 
     <dependency>
