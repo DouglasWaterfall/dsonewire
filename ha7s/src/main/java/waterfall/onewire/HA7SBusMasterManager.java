@@ -26,6 +26,8 @@ public class HA7SBusMasterManager {
   public synchronized HA7S[] start(String ha7sTTYArg, String ttyClassName)
       throws IllegalArgumentException, NoSuchMethodException {
 
+    logger.warn("start({}, {})", ha7sTTYArg, ttyClassName);
+
     String[] bmPaths = checkTTYArg(ha7sTTYArg);
 
     if ((ttyClassName == null) || (ttyClassName.isEmpty())) {
@@ -52,6 +54,7 @@ public class HA7SBusMasterManager {
       throw e;
     }
 
+
     ArrayList<HA7S> addedList = new ArrayList<>();
 
     for (String s : bmPaths) {
@@ -75,7 +78,7 @@ public class HA7SBusMasterManager {
         throw new IllegalArgumentException("cannot start " + serial.getPortName() + " msg:" + e.getMessage());
       }
 
-      // dumpLog(startCmd.getLogger());
+      logger.warn("startBus() complete");
 
       HA7S ha7s = new HA7S(serial);
       bmRegistry.addBusMaster(ha7s);

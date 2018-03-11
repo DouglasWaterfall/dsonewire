@@ -1,6 +1,9 @@
 package waterfall;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
@@ -17,8 +20,17 @@ import waterfall.onewire.busmasters.HA7S.HA7S;
 @SpringBootApplication
 public class Application {
 
+  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+
   @Autowired
   private BusMasterRegistry bmRegistry;
+
+  @Value("${ttypath}")
+  private String ttyPath;
+
+  @Value("${ha7sserialclass}")
+  private String ha7sSerialClass;
+
 
   public static void main(String[] args) {
     ApplicationContext ctx = SpringApplication.run(Application.class, args);
@@ -30,16 +42,14 @@ public class Application {
     HA7SBusMasterManager ha7SBusMasterManager = new HA7SBusMasterManager(bmRegistry);
     HA7S[] bmList = null;
     try {
-      bmList = ha7SBusMasterManager
-      //    .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.JSSC");
-          .start("/dev/ttyAMA0", "waterfall.onewire.busmasters.HA7S.HA7SSerialDummy");
+      bmList = ha7SBusMasterManager.start(ttyPath, ha7sSerialClass);
     } catch (NoSuchMethodException e) {
-      System.err.println(e);
+      logger.error(e.toString());
       System.exit(1);
     }
 
     if ((bmList == null) || (bmList.length == 0)) {
-      System.err.println("No busmaster initialized");
+      logger.error("No busmaster initialized");
       System.exit(2);
     }
   }
