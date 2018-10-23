@@ -1,7 +1,8 @@
-CREATE TABLE `waterheater` (
-  `id` char(32) NOT NULL,
-  `startDts` BIGINT(20) NOT NULL,
-  `endDts` BIGINT(20),
-  `state` INT(1) NOT NULL,
+using home;
+
+CREATE TABLE `water_heater_burn` (
+  `id` BIGINT(20) NOT NULL AUTO_INCREMENT,
+  `start_dts` BIGINT(20) NOT NULL,
+  `end_dts` BIGINT(20) NOT NULL,
   PRIMARY KEY (`id`)
 );
