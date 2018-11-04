@@ -11,10 +11,11 @@ import waterfall.onewire.busmasters.HA7S.HA7SSerial.ReadResult.ErrorCode;
 
 public class JSSC implements HA7SSerial {
 
-  SharedData sharedData = new SharedData();
   private final String portName;
   private final long readTimeoutMSec;
   private final org.slf4j.Logger logger = LoggerFactory.getLogger(this.getClass());
+
+  SharedData sharedData = new SharedData(logger);
 
   private SerialPort serialPort = null;
 
@@ -108,11 +109,10 @@ public class JSSC implements HA7SSerial {
     try {
       if (serialPort.getInputBufferBytesCount() > 0) {
         byte[] flushed = serialPort.readBytes();
-        logger.info("flushing[{}]:{}", flushed.length,
-            JSSC.byteToSafeString(flushed, 0, flushed.length));
+        sharedData.logFlushing(flushed, 0, flushed.length);
       }
     } catch (SerialPortException ex) {
-      logger.error("readBytes", ex);
+      sharedData.logError("readBytes", ex);
       serialPort = null;
       return StartResult.SR_Error;
     }
@@ -124,10 +124,10 @@ public class JSSC implements HA7SSerial {
             try {
               byte[] rbuf = serialPort.readBytes();
               if ((rbuf != null) && (rbuf.length > 0)) {
-                logger.info("thread:{} read[{}]:{}", sharedData.waitingThread, rbuf.length, byteToSafeString(rbuf, 0, rbuf.length));
+                sharedData.logRead(rbuf, 0, rbuf.length);
                 if ((sharedData.waitingThread == null) || (sharedData.readComplete)) {
                   // nobody is waiting so log and clear.
-                  logger.error("No thread or readComplete, flushing");
+                  sharedData.logError("No thread or readComplete, flushing");
                 } else {
                   for (int i = 0; i < rbuf.length; i++) {
                     if (rbuf[i] == '\r') {
@@ -135,7 +135,7 @@ public class JSSC implements HA7SSerial {
                       sharedData.readComplete = true;
                       sharedData.readCRCTM = System.currentTimeMillis();
                       if ((i + 1) != rbuf.length) {
-                        logger.error("thread:{} {} extra bytes ignored", sharedData.waitingThread, (rbuf.length - i - 1));
+                        sharedData.logError(String.format("%d extra bytes ignored", (rbuf.length - i - 1)));
                       }
 
                       if (sharedData.waitingThread != null) {
@@ -150,23 +150,23 @@ public class JSSC implements HA7SSerial {
                         sharedData.readBuffer[sharedData.readOffset
                             + sharedData.readCount++] = rbuf[i];
                       } else if (!sharedData.readOverrun) {
-                        logger.error("thread:{} Read overrun at index {}", sharedData.waitingThread, i);
+                        sharedData.logError(String.format("Read overrun at index %d", sharedData.waitingThread, i));
                         sharedData.readOverrun = true;
                       }
                     }
                   }
                 }
               } else {
-                logger.error("thread:{} Read zero chars?", sharedData.waitingThread);
+                sharedData.logError("Read zero chars?");
               }
             } catch (SerialPortException ex) {
-              logger.error("thread:{}", sharedData.waitingThread, ex);
+              sharedData.logError("readBytes", ex);
             }
           }
         }
       }, SerialPort.MASK_RXCHAR);
     } catch (SerialPortException ex) {
-      logger.error("readBytes", ex);
+      sharedData.logError("readBytes", ex);
       serialPort = null;
       return StartResult.SR_Error;
     }
@@ -193,13 +193,15 @@ public class JSSC implements HA7SSerial {
             try {
               final int wcount = wBuf.length;
 
-              logger.info("write[{}]:{}", wcount, byteToSafeString(wBuf, 0, wcount));
+              sharedData.logWriteStart(wBuf, 0, wcount);
 
               for (int i = 0; i < wcount; i++) {
                 serialPort.writeByte(wBuf[i]);
               }
 
               postWriteCTM = System.currentTimeMillis();
+
+              sharedData.logWriteEnd(postWriteCTM);
 
               serialPort.wait(readTimeoutMSec);
 
@@ -212,14 +214,14 @@ public class JSSC implements HA7SSerial {
                 readCount = sharedData.readCount;
                 readCRCTM = sharedData.readCRCTM;
               } else {
-                logger.error("read not complete?");
+                sharedData.logError("read not complete?");
                 error = ReadResult.ErrorCode.RR_Error;
               }
             } catch (SerialPortException ex) {
-              logger.error("writeByte", ex);
+              sharedData.logError("writeByte", ex);
               error = ReadResult.ErrorCode.RR_Error;
             } catch (InterruptedException ex) {
-              logger.error("wait", ex);
+              sharedData.logError("wait", ex);
               error = ReadResult.ErrorCode.RR_ReadTimeout;
               readCount = sharedData.readCount;
             }
@@ -232,7 +234,7 @@ public class JSSC implements HA7SSerial {
         error = ReadResult.ErrorCode.RR_Error;
       }
     }
-    logger.info(error.name());
+    sharedData.logReadResult(error);
 
     if (error == ErrorCode.RR_Success) {
       return new ReadResult(readCount, postWriteCTM, readCRCTM);
@@ -270,16 +272,37 @@ public class JSSC implements HA7SSerial {
 
   class SharedData {
 
-    public boolean started = false;
+    private final org.slf4j.Logger logger;
+    private final StringBuffer logSB;
+    private long logWriteStart;
 
-    public Thread waitingThread = null;
-    public byte[] readBuffer = null;
+    public boolean started;
 
-    public int readOffset = 0;
-    public int readCount = 0;
-    public boolean readOverrun = false;
-    public boolean readComplete = true;
-    public long readCRCTM = 0;
+    public Thread waitingThread;
+    public byte[] readBuffer;
+
+    public int readOffset;
+    public int readCount;
+    public boolean readOverrun;
+    public boolean readComplete;
+    public long readCRCTM;
+
+
+    public SharedData(org.slf4j.Logger logger) {
+      this.logger = logger;
+      logSB = new StringBuffer();
+      logWriteStart = 0;
+
+      started = false;
+      waitingThread = null;
+      readBuffer = null;
+
+      readOffset = 0;
+      readCount = 0;
+      readOverrun = false;
+      readComplete = true;
+      readCRCTM = 0;
+    }
 
     public void addWaitingThread(Thread waitingThread, byte[] rBuf) {
       this.waitingThread = waitingThread;
@@ -289,6 +312,53 @@ public class JSSC implements HA7SSerial {
       readOverrun = false;
       readComplete = false;
       readCRCTM = 0;
+    }
+
+    public void logWriteStart(byte[] wBuf, int bOffset, int wCount) {
+      if (logSB.length() != 0) {
+        flushLog();
+        logger.error("logWriteStart already has length!");
+      }
+      logWriteStart = System.currentTimeMillis();
+      logSB.append(String.format("w[%d]:%s", wCount, byteToSafeString(wBuf, bOffset, wCount)));
+    }
+
+    public void logWriteEnd(long ctm) {
+      logSB.append(String.format(" [+%d]", (ctm - logWriteStart)));
+    }
+
+    public void logRead(byte[] rBuf, int bOffset, int rCount) {
+      long ctm = System.currentTimeMillis();
+      logSB.append(String.format(" r[+%d %d]:%s", (ctm - logWriteStart), rBuf.length,
+          byteToSafeString(rBuf, bOffset, rCount)));
+    }
+
+    public void logReadResult(ReadResult.ErrorCode errCode) {
+      long ctm = System.currentTimeMillis();
+      logSB.append(String.format(" [+%d]:%s", (ctm - logWriteStart), errCode.name()));
+      flushLog();
+    }
+
+    public void logFlushing(byte[] rBuf, int bOffset, int rCount) {
+      flushLog();
+      logger.info("flushing[{}]:{}", rCount, JSSC.byteToSafeString(rBuf, bOffset, rCount));
+    }
+    public void logError(String s) {
+      flushLog();
+      logger.error(s);
+    }
+
+    public void logError(String s, Exception e) {
+      flushLog();
+      logger.error(s, e);
+    }
+
+    private void flushLog() {
+      if (logSB.length() > 0) {
+        logger.info(logSB.toString());
+        logSB.setLength(0);
+        logWriteStart = 0;
+      }
     }
 
     public void clearWaitingThread() {

@@ -43,7 +43,7 @@ public class Application {
     HA7S[] bmList = null;
     try {
       bmList = ha7SBusMasterManager.start(ttyPath, ha7sSerialClass);
-    } catch (NoSuchMethodException e) {
+    } catch (Exception e) {
       logger.error(e.toString());
       System.exit(1);
     }
